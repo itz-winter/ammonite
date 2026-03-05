@@ -1,6 +1,7 @@
 package com.serverbot.services;
 
 import com.serverbot.commands.SlashCommand;
+import com.serverbot.ServerBot;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import org.slf4j.Logger;
@@ -165,17 +166,22 @@ public class CommandManager {
         logger.info("Updating global slash commands...");
         lastCommandUpdate = currentTime;
         
+        boolean hideOwner = false;
+        try {
+            if (ServerBot.getConfigManager() != null && ServerBot.getConfigManager().getConfig() != null) {
+                hideOwner = ServerBot.getConfigManager().getConfig().isHideOwnerCommands();
+            }
+        } catch (Exception e) {
+            logger.warn("Could not read hide_owner_commands config, defaulting to false");
+        }
+        
         List<CommandData> commandDataList = new ArrayList<>();
         
         // Utility commands
         commandDataList.add(com.serverbot.commands.utility.HelpCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.EchoCommand.getCommandData());
-        commandDataList.add(com.serverbot.commands.utility.StatusCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.InfoCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.PingCommand.getCommandData());
-        commandDataList.add(com.serverbot.commands.utility.PresenceCommand.getCommandData());
-        commandDataList.add(com.serverbot.commands.utility.RestartCommand.getCommandData());
-        commandDataList.add(com.serverbot.commands.utility.AppearanceCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.ServerStatsCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.EmbedCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.DadJokeCommand.getCommandData());
@@ -186,6 +192,15 @@ public class CommandManager {
         commandDataList.add(com.serverbot.commands.utility.ErrorCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.RulesCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.TalkAsCommand.getCommandData());
+        
+        // Owner-only utility commands (hidden from slash command list when hide_owner_commands is true)
+        // These remain accessible via prefix commands (e.g., !statusmsg, !rpc, !appearance, !restart)
+        if (!hideOwner) {
+            commandDataList.add(com.serverbot.commands.utility.StatusCommand.getCommandData());
+            commandDataList.add(com.serverbot.commands.utility.PresenceCommand.getCommandData());
+            commandDataList.add(com.serverbot.commands.utility.RestartCommand.getCommandData());
+            commandDataList.add(com.serverbot.commands.utility.AppearanceCommand.getCommandData());
+        }
         
         // Game commands
         commandDataList.add(com.serverbot.commands.games.PokerCommand.getCommandData());
@@ -234,14 +249,18 @@ public class CommandManager {
         // Configuration commands
         commandDataList.add(com.serverbot.commands.configuration.LevelsCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.configuration.PointsCommand.getCommandData());
-        commandDataList.add(com.serverbot.commands.configuration.ConfigCommand.getCommandData());
+        
+        // Owner-only config commands (hidden when hide_owner_commands is true)
+        if (!hideOwner) {
+            commandDataList.add(com.serverbot.commands.configuration.ConfigCommand.getCommandData());
+            commandDataList.add(com.serverbot.commands.config.BackupCommand.getCommandData());
+        }
         
         // New comprehensive config commands
         commandDataList.add(com.serverbot.commands.config.SettingsCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.config.PermissionsCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.config.AntiSpamCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.config.WelcomeCommand.getCommandData());
-        commandDataList.add(com.serverbot.commands.config.BackupCommand.getCommandData());
     commandDataList.add(com.serverbot.commands.config.LoggingCommand.getCommandData());
     commandDataList.add(com.serverbot.commands.config.AutomodCommand.getCommandData());
     commandDataList.add(com.serverbot.commands.config.LogCommand.getCommandData());
@@ -266,6 +285,10 @@ public class CommandManager {
         // Privacy & data management commands (Discord ToS compliance)
         commandDataList.add(com.serverbot.commands.utility.PrivacyCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.DeleteDataCommand.getCommandData());
+        
+        if (hideOwner) {
+            logger.info("Owner-only commands hidden from slash commands (hide_owner_commands=true). Use prefix commands instead.");
+        }
         
         jda.updateCommands().addCommands(commandDataList).queue(
             success -> {

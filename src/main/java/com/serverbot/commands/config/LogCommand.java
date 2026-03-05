@@ -43,14 +43,26 @@ public class LogCommand implements SlashCommand {
         String actionType = actionTypeOption != null ? actionTypeOption.getAsString() : null;
         
         try {
-            // Get the log channel
+            // Get the log channel — check multiple keys for compatibility
             Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
-            String logChannelId = (String) guildSettings.get("logChannelId");
+            String logChannelId = null;
+            
+            // 1. Check per-type key set by /logging command (e.g., moderation_log_channel)
+            if (logChannelId == null) {
+                Object v = guildSettings.get("moderation_log_channel");
+                if (v instanceof String) logChannelId = (String) v;
+            }
+            
+            // 2. Check legacy key (logChannelId)
+            if (logChannelId == null) {
+                Object v = guildSettings.get("logChannelId");
+                if (v instanceof String) logChannelId = (String) v;
+            }
             
             if (logChannelId == null) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "No Log Channel", 
-                    "No log channel is configured. Use `/logchannel set` to set one."
+                    "No log channel is configured. Use `/logging set` to set one."
                 )).setEphemeral(true).queue();
                 return;
             }

@@ -30,6 +30,7 @@ import com.serverbot.utils.WarnExpiryManager;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 
@@ -140,7 +141,8 @@ public class ServerBot {
                             // Required for: punishment appeal DMs and ticket DM notifications
                             GatewayIntent.DIRECT_MESSAGES
                     )
-                    .setActivity(Activity.watching("for commands"))
+                    .setActivity(buildActivityFromConfig(config))
+                    .setStatus(buildOnlineStatusFromConfig(config))
                     .setAutoReconnect(true)
                     .setRequestTimeoutRetry(true)
                     .setMaxReconnectDelay(32) // Max 32 seconds between reconnect attempts
@@ -314,6 +316,68 @@ public class ServerBot {
             }
         } catch (Exception e) {
             logger.warn("Failed to notify owner of error: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Build the Activity from config settings.
+     * Priority: if default_status_message is set, use custom status.
+     * Otherwise, use default_rpc_type + default_rpc_text.
+     */
+    private static Activity buildActivityFromConfig(BotConfig config) {
+        // If a custom status message is set, use it (overrides RPC)
+        String statusMessage = config.getDefaultStatusMessage();
+        if (statusMessage != null && !statusMessage.isEmpty()) {
+            return Activity.customStatus(statusMessage);
+        }
+        
+        // Otherwise build RPC activity from type + text
+        String rpcText = config.getDefaultRpcText();
+        if (rpcText == null || rpcText.isEmpty()) {
+            rpcText = "for commands";
+        }
+        
+        String rpcType = config.getDefaultRpcType();
+        if (rpcType == null || rpcType.isEmpty()) {
+            rpcType = "watching";
+        }
+        
+        switch (rpcType.toLowerCase()) {
+            case "playing":
+                return Activity.playing(rpcText);
+            case "listening":
+                return Activity.listening(rpcText);
+            case "streaming":
+                return Activity.streaming(rpcText, "https://twitch.tv/placeholder");
+            case "competing":
+                return Activity.competing(rpcText);
+            case "watching":
+            default:
+                return Activity.watching(rpcText);
+        }
+    }
+    
+    /**
+     * Build the OnlineStatus from config settings.
+     */
+    private static OnlineStatus buildOnlineStatusFromConfig(BotConfig config) {
+        String status = config.getDefaultOnlineStatus();
+        if (status == null || status.isEmpty()) {
+            return OnlineStatus.ONLINE;
+        }
+        
+        switch (status.toLowerCase()) {
+            case "dnd":
+            case "do_not_disturb":
+                return OnlineStatus.DO_NOT_DISTURB;
+            case "idle":
+                return OnlineStatus.IDLE;
+            case "invisible":
+            case "offline":
+                return OnlineStatus.INVISIBLE;
+            case "online":
+            default:
+                return OnlineStatus.ONLINE;
         }
     }
     

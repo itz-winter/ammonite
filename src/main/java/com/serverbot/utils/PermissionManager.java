@@ -1,6 +1,7 @@
 package com.serverbot.utils;
 
 import com.serverbot.ServerBot;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import org.slf4j.Logger;
@@ -18,9 +19,15 @@ public class PermissionManager {
     // Default permissions (true = allowed by default for @everyone)
     private static final Map<String, Boolean> DEFAULT_PERMISSIONS = new HashMap<>();
     
+    // Mapping from Discord permissions to bot permission nodes
+    // If a member's Discord roles grant a Discord permission, they automatically get the mapped bot nodes
+    private static final Map<Permission, Set<String>> DISCORD_PERMISSION_MAPPING = new EnumMap<>(Permission.class);
+    
     static {
         // Initialize default permissions
         initializeDefaultPermissions();
+        // Initialize Discord permission -> bot node mapping
+        initializeDiscordPermissionMapping();
     }
     
     private static void initializeDefaultPermissions() {
@@ -147,6 +154,60 @@ public class PermissionManager {
     }
     
     /**
+     * Initialize mapping from Discord role permissions to bot permission nodes.
+     * When a member's Discord roles grant a listed Discord permission, the member
+     * automatically receives the corresponding bot permission nodes — no manual
+     * /permissions set required.  Explicit user/role deny entries still override.
+     */
+    private static void initializeDiscordPermissionMapping() {
+        // BAN_MEMBERS  →  moderation ban-related nodes + warn/unwarn/warns
+        DISCORD_PERMISSION_MAPPING.put(Permission.BAN_MEMBERS, Set.of(
+            "mod.ban", "mod.softban", "mod.warn", "mod.unwarn", "mod.warns", "mod.hist",
+            "permissions.view", "logging.view", "log.manual"
+        ));
+        
+        // KICK_MEMBERS  →  moderation kick-related nodes
+        DISCORD_PERMISSION_MAPPING.put(Permission.KICK_MEMBERS, Set.of(
+            "mod.kick", "mod.warn", "mod.hist",
+            "permissions.view", "logging.view", "log.manual"
+        ));
+        
+        // MODERATE_MEMBERS (timeout)  →  timeout / mute nodes
+        DISCORD_PERMISSION_MAPPING.put(Permission.MODERATE_MEMBERS, Set.of(
+            "mod.timeout", "mod.mute", "mod.warn", "mod.hist",
+            "permissions.view", "logging.view", "log.manual"
+        ));
+        
+        // MANAGE_MESSAGES  →  purge & lockdown
+        DISCORD_PERMISSION_MAPPING.put(Permission.MESSAGE_MANAGE, Set.of(
+            "mod.purge", "mod.purge.messages", "mod.purge.members", "mod.lockdown"
+        ));
+        
+        // MANAGE_ROLES  →  reaction-role admin & role-persistence
+        DISCORD_PERMISSION_MAPPING.put(Permission.MANAGE_ROLES, Set.of(
+            "admin.reactionroles", "admin.rolepersistence"
+        ));
+        
+        // MANAGE_SERVER  →  server-wide admin nodes
+        DISCORD_PERMISSION_MAPPING.put(Permission.MANAGE_SERVER, Set.of(
+            "admin.settings", "admin.config", "admin.welcome", "admin.prefix",
+            "admin.logging", "admin.autolog", "admin.antispam", "admin.punishment_dm",
+            "log.config", "log.setchannel", "log.manual",
+            "automod.viewsettings", "automod.edit",
+            "globalchat.link", "globalchat.unlink",
+            "tickets.admin", "tickets.settings", "tickets.manage",
+            "tickets.category.create", "tickets.category.edit", "tickets.category.delete",
+            "rules.edit", "settings.rules",
+            "serverstats.use"
+        ));
+        
+        // MANAGE_CHANNEL  →  lockdown & ticket management
+        DISCORD_PERMISSION_MAPPING.put(Permission.MANAGE_CHANNEL, Set.of(
+            "mod.lockdown", "tickets.manage"
+        ));
+    }
+    
+    /**
      * Check if a member has a specific permission node
      */
     public static boolean hasPermission(Member member, String permissionNode) {
@@ -192,6 +253,13 @@ public class PermissionManager {
             Boolean everyonePerm = getEveryonePermission(guildSettings, permissionNode);
             if (everyonePerm != null) {
                 return everyonePerm;
+            }
+            
+            // Check if the member's Discord role permissions implicitly grant this node.
+            // This runs after explicit user/role/everyone checks so that manual overrides
+            // (especially denies) always take precedence.
+            if (hasDiscordPermissionFor(member, permissionNode)) {
+                return true;
             }
             
             // Fall back to default permission
@@ -339,6 +407,49 @@ public class PermissionManager {
     }
     
     // Private helper methods
+    
+    /**
+     * Check whether any of the member's Discord role permissions implicitly grant
+     * the requested bot permission node via the DISCORD_PERMISSION_MAPPING table.
+     * This also supports wildcard node queries (e.g. "mod.*") by checking whether
+     * any mapped node starts with the wildcard prefix.
+     */
+    private static boolean hasDiscordPermissionFor(Member member, String permissionNode) {
+        for (Map.Entry<Permission, Set<String>> entry : DISCORD_PERMISSION_MAPPING.entrySet()) {
+            Permission discordPerm = entry.getKey();
+            Set<String> grantedNodes = entry.getValue();
+            
+            if (!member.hasPermission(discordPerm)) {
+                continue;
+            }
+            
+            // Direct match
+            if (grantedNodes.contains(permissionNode)) {
+                return true;
+            }
+            
+            // Wildcard query: "mod.*" should match if any granted node starts with "mod."
+            if (permissionNode.endsWith(".*")) {
+                String prefix = permissionNode.substring(0, permissionNode.length() - 1); // "mod."
+                for (String node : grantedNodes) {
+                    if (node.startsWith(prefix)) {
+                        return true;
+                    }
+                }
+            }
+            
+            // Granted wildcard: if a granted node is "mod.*" and the query is "mod.ban"
+            for (String node : grantedNodes) {
+                if (node.endsWith(".*")) {
+                    String prefix = node.substring(0, node.length() - 1);
+                    if (permissionNode.startsWith(prefix)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
     
     private static Boolean getUserPermission(Map<String, Object> settings, String userId, String permissionNode) {
         // Check exact permission

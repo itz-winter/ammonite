@@ -31,6 +31,21 @@ public class BotConfig {
     @SerializedName("bot_version")
     private String botVersion = "1.0.0";
     
+    @SerializedName("default_status_message")
+    private String defaultStatusMessage = "";
+    
+    @SerializedName("default_online_status")
+    private String defaultOnlineStatus = "online";
+    
+    @SerializedName("default_rpc_type")
+    private String defaultRpcType = "watching";
+    
+    @SerializedName("default_rpc_text")
+    private String defaultRpcText = "for commands";
+    
+    @SerializedName("hide_owner_commands")
+    private boolean hideOwnerCommands = false;
+    
     public String getBotToken() {
         return botToken;
     }
@@ -119,5 +134,45 @@ public class BotConfig {
     
     public void setBotVersion(String botVersion) {
         this.botVersion = botVersion;
+    }
+    
+    public String getDefaultStatusMessage() {
+        return defaultStatusMessage;
+    }
+    
+    public void setDefaultStatusMessage(String defaultStatusMessage) {
+        this.defaultStatusMessage = defaultStatusMessage;
+    }
+    
+    public String getDefaultOnlineStatus() {
+        return defaultOnlineStatus;
+    }
+    
+    public void setDefaultOnlineStatus(String defaultOnlineStatus) {
+        this.defaultOnlineStatus = defaultOnlineStatus;
+    }
+    
+    public String getDefaultRpcType() {
+        return defaultRpcType;
+    }
+    
+    public void setDefaultRpcType(String defaultRpcType) {
+        this.defaultRpcType = defaultRpcType;
+    }
+    
+    public String getDefaultRpcText() {
+        return defaultRpcText;
+    }
+    
+    public void setDefaultRpcText(String defaultRpcText) {
+        this.defaultRpcText = defaultRpcText;
+    }
+    
+    public boolean isHideOwnerCommands() {
+        return hideOwnerCommands;
+    }
+    
+    public void setHideOwnerCommands(boolean hideOwnerCommands) {
+        this.hideOwnerCommands = hideOwnerCommands;
     }
 }

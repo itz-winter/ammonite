@@ -1,73 +1,151 @@
 # Kelpyyium Discord Bot
 
-Kelpyyium is a Java-based Discord bot built using the JDA (Java Discord API). This bot provides various features such as global chat relay, moderation tools, and utility commands.
+Kelpyyium is a feature-rich, Java-based Discord bot built with JDA (Java Discord API). It provides a full suite of moderation, economy, leveling, configuration, and utility tools — all manageable through both slash commands and prefix commands.
 
 ## Prerequisites
 
-Before building and running the bot, ensure you have the following installed:
-
-1. **Java Development Kit (JDK) 17**
-   - Download and install JDK 17 from [Adoptium](https://adoptium.net/) or [Oracle](https://www.oracle.com/java/technologies/javase-downloads.html).
-   - Verify the installation by running:
-     ```powershell
-     java -version
-     ```
-     Ensure the output shows Java 17.
+1. **Java Development Kit (JDK) 17+**
+   - Download from [Adoptium](https://adoptium.net/) or [Oracle](https://www.oracle.com/java/technologies/javase-downloads.html).
+   - Verify: `java -version`
 
 2. **Apache Maven**
-   - Download and install Maven from [Maven's official website](https://maven.apache.org/download.cgi).
-   - Verify the installation by running:
-     ```powershell
-     mvn -version
-     ```
-     Ensure Maven is properly installed and added to your system's PATH.
+   - Download from [Maven's official website](https://maven.apache.org/download.cgi).
+   - Verify: `mvn -version`
 
-## Building the Project
+## Building
 
-Follow these steps to build the project:
+```powershell
+git clone <repository-url>
+cd <repository-directory>
+mvn clean compile package
+```
 
-1. **Clone the Repository**
-     ```powershell
-     git clone <repository-url>
-     cd <repository-directory>
-     ```
+The output JAR will be in the `target` directory.
 
-2. **Install Dependencies**
-   - Maven will automatically download and install the required dependencies during the build process.
+## Running
 
-3. **Build the Project**
-     ```powershell
-     mvn clean compile package
-     ```
-   - The output JAR file will be located in the `target` directory, named something like `kelpyyium-1.0.0.jar`.
+```batch
+@echo off
+java -Xmx2G -Xms1G -jar kelpyyium-2.3.014.jar nogui
+pause
+```
 
-## Running the Bot
-
-1. **Copy the compiled JAR file out of the `target` directory**.
-2. **Run the bot using the following command:**
-      ```batch
-      @echo off
-      java -Xmx2G -Xms1G -jar kelpyyium-1.0.0.jar nogui
-      pause
-      ```
-   - This command allocates a maximum of 2GB of RAM and a minimum of 1GB to the bot. Adjust these values as needed based on your system's resources.
-
-3. **Ensure the bot is running and connected to Discord**. You should see log messages indicating that the bot has started successfully.
-
-## __Running the bot for the first time will generate the necessary configuration files and directories if they do not already exist.__
+Running for the first time generates `config.json` and required directories automatically.
 
 ## Configuration
 
-- The bot's configuration file is `config.json`, located in the root directory. Ensure you update this file with your bot token and other necessary settings before running the bot.
+Edit `config.json` in the root directory before starting the bot:
+
+| Key | Description | Default |
+|-----|-------------|---------|
+| `bot_token` | Your Discord bot token | — |
+| `owner_id` | Primary bot owner's Discord user ID | — |
+| `owner_ids` | Additional owner IDs (array) | `[]` |
+| `default_prefix` | Prefix for text commands | `/` |
+| `default_status_message` | Custom status text (overrides RPC) | `""` |
+| `default_online_status` | `online`, `idle`, `dnd`, `invisible` | `"online"` |
+| `default_rpc_type` | `watching`, `playing`, `listening`, `competing`, `streaming` | `"watching"` |
+| `default_rpc_text` | Text shown in the RPC activity | `"for commands"` |
+| `hide_owner_commands` | Hide owner-only slash commands from the command list | `false` |
 
 ## Logging
 
-- Logs are stored in the `logs` directory. You can configure logging settings in `src/main/resources/logback.xml`.
+Logs are stored in the `logs` directory. Configure logging in `src/main/resources/logback.xml`.
 
 ## Features
 
-- **Global Chat Relay**: Seamlessly relay messages across multiple servers.
-- **Moderation Tools**: Includes commands for managing users and maintaining server integrity.
-- **Utility Commands**: Offers various helpful commands for server management.
-- **Reply Handling**: Relayed replies include clickable jump links to the original message.
-- **Cross-Server Message Deletion**: Deletes relayed copies when a message is deleted in one server.
+### 🔧 Auto Configuration
+- **`/autoconfig`** — Guided setup wizard that walks server owners through configuring log channels, feature toggles, welcome messages, and more in a step-by-step interactive flow.
+
+### 🔨 Moderation
+- `/warn`, `/unwarn`, `/warns` — Warning system with history
+- `/ban`, `/unban`, `/softban` — Ban management with timed bans
+- `/kick` — Kick users
+- `/mute`, `/unmute` — Role-based muting with auto-created Muted role
+- `/timeout` — Discord native timeout (up to 28 days)
+- `/purge` — Bulk message deletion (by count or user)
+- `/lockdown` — Channel lockdown toggle
+- `/hist` — View full moderation history for a user
+- Punishment DM notifications (`/punishmentdm`)
+- Punishment appeal system with modal forms
+- Suspicious account detection & alerts (`/suspiciousnotify`, `/suspiciouslist`)
+
+### 💰 Economy
+- `/balance`, `/pay`, `/baltop` — Currency system
+- `/work`, `/daily` — Earn money
+- `/gamble`, `/slots`, `/flip`, `/dice`, `/blackjack` — Gambling games
+- `/rob` — Steal from other users
+- `/bank` — Banking system with deposits, withdrawals, and loans
+- `/setbalance`, `/addbalance`, `/subtractbalance` — Admin balance management
+- `/chargeback` — Reverse transactions
+- Configurable currency name per server
+
+### 📊 Leveling
+- `/rank`, `/level` — View rank card and level info
+- `/leaderboard`, `/lb` — XP leaderboard
+- `/xp` — View or manage XP
+- `/levels` — Configure level-up rewards and settings
+
+### 🎮 Games
+- `/poker` — Multiplayer poker
+- `/chess` — Chess games
+
+### 🌐 Global Chat
+- `/globalchat` — Link channels across servers for cross-server messaging
+- Reply handling with clickable jump links to original messages
+- Cross-server message deletion sync
+
+### 🎫 Tickets
+- `/ticket` — Ticket system with categories, claiming, and transcripts
+
+### 🪪 Proxy (PluralKit-style)
+- `/proxymember` — Create and manage proxy members
+- `/proxysettings` — Configure proxy behavior
+
+### ⚙️ Server Configuration
+- `/settings` — View and modify server settings
+- `/permissions` — Node-based permission system with user, role, and @everyone overrides
+- `/logging` — Configure auto-logging channels (moderation, messages, members)
+- `/log` — Create manual log entries
+- `/automod` — Auto-moderation rules
+- `/antispam` — Anti-spam configuration (message limits, caps, mentions, duplicates, punishments)
+- `/welcome` — Welcome/leave message configuration
+- `/reactionrole` — Reaction role management
+- `/rolepersistence` — Restore roles when members rejoin
+- `/prefix` — Change the server's command prefix
+- `/rules` — Manage server rules display
+
+### 🛡️ Permission System
+- Granular node-based permissions (e.g., `mod.ban`, `economy.gambling.blackjack`)
+- Automatic Discord permission mapping — members with Discord's Ban Members permission auto-receive `mod.ban`, `mod.warn`, etc.
+- Per-user, per-role, and @everyone overrides
+- Wildcard support (`mod.*`, `economy.*`)
+
+### 🛠️ Utility
+- `/help` — Command reference
+- `/ping` — Bot latency
+- `/info` — Bot info and stats
+- `/serverstats` — Server statistics
+- `/embed` — Create custom embeds
+- `/echo`, `/talkas` — Send messages as the bot
+- `/dadjoke`, `/joke` — Random jokes
+- `/pride`, `/flags`, `/pronouns` — Pride flags and pronoun roles
+- `/rules` — Display server rules
+- `/privacy`, `/deletedata` — GDPR/privacy compliance
+
+### 👑 Owner Commands
+- `/status` — Change bot status message
+- `/presence` — Change online status
+- `/appearance` — Customize bot appearance
+- `/restart` — Restart the bot
+- `/config` — Raw config editor
+- `/backup` — Server data backup/restore
+- Can be hidden from slash command list via `hide_owner_commands` config
+
+### 📝 Prefix Commands
+All major commands also work with prefix syntax (default `!`):
+- `!work`, `!daily`, `!balance`, `!pay`, `!baltop`, `!gamble`, `!slots`, `!flip`, `!dice`
+- `!rank`, `!leaderboard`, `!xp`
+- `!warn`, `!mute`, `!timeout`, `!kick`, `!ban`, `!purge`
+- `!ping`, `!info`, `!serverinfo`, `!echo`, `!help`
+- Aliases supported (e.g., `!bal`, `!lb`, `!r`, `!h`)

@@ -391,11 +391,29 @@ public class PrefixCommandService {
                     }
                 }
                 break;
-            case "kick", "warn", "mute", "timeout":
+            case "kick", "warn":
                 if (positionalArgs.size() >= 1) {
                     options.put("user", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
                         options.put("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                    }
+                }
+                break;
+            case "mute", "timeout":
+                if (positionalArgs.size() >= 1) {
+                    options.put("user", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        // Check if second arg looks like duration (contains d, h, m, s, w)
+                        String secondArg = positionalArgs.get(1);
+                        if (secondArg.matches(".*[dhmsw].*")) {
+                            options.put("duration", secondArg);
+                            if (positionalArgs.size() >= 3) {
+                                options.put("reason", String.join(" ", positionalArgs.subList(2, positionalArgs.size())));
+                            }
+                        } else {
+                            // Treat everything as reason
+                            options.put("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                        }
                     }
                 }
                 break;
@@ -661,12 +679,55 @@ public class PrefixCommandService {
     
     private void handleBaltopCommand(MessageReceivedEvent event) {
         try {
-            // For now, show a placeholder message since we need to check the storage manager interface
-            event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
-                "💰 Balance Leaderboard",
-                "The `!baltop` command shows the top user balances.\nThis uses the same logic as `/baltop`."
-            )).queue();
-            
+            Guild guild = event.getGuild();
+            String guildId = guild.getId();
+
+            // Get guild settings for currency name
+            Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
+            String currencyName = (String) guildSettings.getOrDefault("economy.currencyName", "coins");
+
+            List<Map.Entry<String, Long>> topBalances = ServerBot.getStorageManager().getTopBalances(guildId, 10);
+
+            if (topBalances.isEmpty()) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                    "💰 Balance Leaderboard",
+                    "No economy data yet! Use `!work` or `!daily` to start earning."
+                )).queue();
+                return;
+            }
+
+            StringBuilder leaderboard = new StringBuilder();
+            for (int i = 0; i < topBalances.size(); i++) {
+                Map.Entry<String, Long> entry = topBalances.get(i);
+                String userId = entry.getKey();
+                long balance = entry.getValue();
+
+                // Try to resolve user name
+                String displayName;
+                try {
+                    User user = event.getJDA().getUserById(userId);
+                    displayName = user != null ? user.getName() : "Unknown User";
+                } catch (Exception e) {
+                    displayName = "Unknown User";
+                }
+
+                String medal = switch (i) {
+                    case 0 -> "🥇";
+                    case 1 -> "🥈";
+                    case 2 -> "🥉";
+                    default -> "**" + (i + 1) + ".**";
+                };
+
+                leaderboard.append(String.format("%s %s — **%,d** %s\n", medal, displayName, balance, currencyName));
+            }
+
+            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
+                    .setTitle("💰 Balance Leaderboard")
+                    .setDescription(leaderboard.toString())
+                    .setFooter("Top " + topBalances.size() + " users by balance");
+
+            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+
         } catch (Exception e) {
             event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
                 "Leaderboard Error",
@@ -677,31 +738,166 @@ public class PrefixCommandService {
     
     // Simple implementations for other commands
     private void handleHelpCommand(MessageReceivedEvent event, Map<String, String> options) {
-        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
-            "📚 Help",
-            "**Prefix Commands:**\n" +
-            "• `!work` - Earn money by working\n" +
-            "• `!balance [user]` - Check balance\n" +
-            "• `!pay @user amount` - Send money to another user\n" +
-            "• `!baltop` - View balance leaderboard\n" +
-            "• `!ping` - Check bot latency\n" +
-            "• `!help` - Show this help message\n\n" +
-            "**Note:** All prefix commands (`!command`) use the same logic as slash commands (`/command`)"
-        )).queue();
+        EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
+                .setTitle("📚 Prefix Command Help")
+                .setDescription("All prefix commands use the same logic as their slash command equivalents.\n" +
+                    "Use `!command` or your server's configured prefix.");
+
+        embed.addField("💰 Economy",
+            "`!work` — Earn money\n" +
+            "`!daily` — Claim daily reward\n" +
+            "`!balance [user]` — Check balance\n" +
+            "`!pay @user amount` — Send money\n" +
+            "`!baltop` — Balance leaderboard\n" +
+            "`!gamble <amount>` — Gamble coins\n" +
+            "`!slots <amount>` — Play slots\n" +
+            "`!flip <amount> [heads/tails]` — Coin flip\n" +
+            "`!dice <amount> [guess]` — Dice roll", false);
+
+        embed.addField("📊 Leveling",
+            "`!rank [user]` — View rank & XP\n" +
+            "`!leaderboard` — XP leaderboard\n" +
+            "`!xp [user]` — View XP info", false);
+
+        embed.addField("🔨 Moderation",
+            "`!warn @user [reason]` — Warn a user\n" +
+            "`!mute @user [duration] [reason]` — Mute a user\n" +
+            "`!timeout @user <duration> [reason]` — Timeout a user\n" +
+            "`!kick @user [reason]` — Kick a user\n" +
+            "`!ban @user [duration] [reason]` — Ban a user\n" +
+            "`!purge <amount> [user]` — Delete messages\n" +
+            "`!unban @user` — Unban a user\n" +
+            "`!unmute @user` — Unmute a user\n" +
+            "`!unwarn @user <id>` — Remove a warning", false);
+
+        embed.addField("🛠️ Utility",
+            "`!ping` — Bot latency\n" +
+            "`!info` — Bot info\n" +
+            "`!serverinfo` — Server info\n" +
+            "`!echo <message>` — Echo a message\n" +
+            "`!help` — This help message", false);
+
+        event.getChannel().sendMessageEmbeds(embed.build()).queue();
     }
     
     private void handleRankCommand(MessageReceivedEvent event, Map<String, String> options) {
-        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
-            "📊 Rank Command",
-            "The `!rank` command shows user level/XP information.\nThis uses the same logic as `/rank`."
-        )).queue();
+        try {
+            Guild guild = event.getGuild();
+            String guildId = guild.getId();
+            User targetUser = event.getAuthor();
+
+            // Check if a user was specified
+            String userArg = options.get("user");
+            if (userArg != null) {
+                Matcher matcher = USER_MENTION.matcher(userArg);
+                if (matcher.matches()) {
+                    String userId = matcher.group(1);
+                    User user = event.getJDA().getUserById(userId);
+                    if (user != null) {
+                        targetUser = user;
+                    }
+                }
+            }
+
+            String userId = targetUser.getId();
+            int level = ServerBot.getStorageManager().getLevel(guildId, userId);
+            long experience = ServerBot.getStorageManager().getExperience(guildId, userId);
+
+            // Calculate XP needed for next level
+            long xpForNextLevel = (long) Math.pow((level + 1), 2) * 100;
+            long xpProgress = experience - (long) Math.pow(level, 2) * 100;
+            long xpNeeded = xpForNextLevel - (long) Math.pow(level, 2) * 100;
+
+            // Calculate rank position
+            List<Map.Entry<String, Integer>> topLevels = ServerBot.getStorageManager().getTopLevels(guildId, 1000);
+            int rank = 1;
+            for (Map.Entry<String, Integer> entry : topLevels) {
+                if (entry.getKey().equals(userId)) break;
+                rank++;
+            }
+            if (topLevels.stream().noneMatch(e -> e.getKey().equals(userId))) {
+                rank = topLevels.size() + 1;
+            }
+
+            // Build progress bar
+            int barLength = 10;
+            int filled = xpNeeded > 0 ? (int) ((xpProgress * barLength) / xpNeeded) : 0;
+            filled = Math.max(0, Math.min(barLength, filled));
+            String progressBar = "▓".repeat(filled) + "░".repeat(barLength - filled);
+
+            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
+                    .setTitle("📊 " + targetUser.getName() + "'s Rank")
+                    .setThumbnail(targetUser.getEffectiveAvatarUrl())
+                    .addField("🏅 Rank", "#" + rank, true)
+                    .addField("📈 Level", String.valueOf(level), true)
+                    .addField("✨ Total XP", String.format("%,d", experience), true)
+                    .addField("Progress to Level " + (level + 1),
+                        progressBar + String.format(" (%,d / %,d XP)", Math.max(0, xpProgress), xpNeeded), false);
+
+            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+
+        } catch (Exception e) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Rank Error",
+                "Failed to retrieve rank information: " + e.getMessage()
+            )).queue();
+        }
     }
     
     private void handleLeaderboardCommand(MessageReceivedEvent event) {
-        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
-            "🏆 Leaderboard Command",
-            "The `!leaderboard` command shows the XP leaderboard.\nThis uses the same logic as `/leaderboard`."
-        )).queue();
+        try {
+            Guild guild = event.getGuild();
+            String guildId = guild.getId();
+
+            List<Map.Entry<String, Integer>> topLevels = ServerBot.getStorageManager().getTopLevels(guildId, 10);
+
+            if (topLevels.isEmpty()) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                    "🏆 XP Leaderboard",
+                    "No leveling data yet! Start chatting to earn XP."
+                )).queue();
+                return;
+            }
+
+            StringBuilder leaderboard = new StringBuilder();
+            for (int i = 0; i < topLevels.size(); i++) {
+                Map.Entry<String, Integer> entry = topLevels.get(i);
+                String userId = entry.getKey();
+                int level = entry.getValue();
+                long xp = ServerBot.getStorageManager().getExperience(guildId, userId);
+
+                // Try to resolve user name
+                String displayName;
+                try {
+                    User user = event.getJDA().getUserById(userId);
+                    displayName = user != null ? user.getName() : "Unknown User";
+                } catch (Exception e) {
+                    displayName = "Unknown User";
+                }
+
+                String medal = switch (i) {
+                    case 0 -> "🥇";
+                    case 1 -> "🥈";
+                    case 2 -> "🥉";
+                    default -> "**" + (i + 1) + ".**";
+                };
+
+                leaderboard.append(String.format("%s %s — Level **%d** (%,d XP)\n", medal, displayName, level, xp));
+            }
+
+            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
+                    .setTitle("🏆 XP Leaderboard")
+                    .setDescription(leaderboard.toString())
+                    .setFooter("Top " + topLevels.size() + " users by level");
+
+            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+
+        } catch (Exception e) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Leaderboard Error",
+                "Failed to retrieve XP leaderboard: " + e.getMessage()
+            )).queue();
+        }
     }
     
     private void handleEchoCommand(MessageReceivedEvent event, Map<String, String> options) {
@@ -1435,20 +1631,345 @@ public class PrefixCommandService {
      * Handle mute command with prefix syntax
      */
     private void handleMuteCommand(MessageReceivedEvent event, Map<String, String> options) {
-        event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-            "Command Not Yet Implemented",
-            "The mute command for prefix usage is not yet implemented. Please use `/mute` instead."
-        )).queue();
+        if (!event.isFromGuild()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Guild Only", "This command can only be used in servers.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        Member moderator = event.getMember();
+        if (!PermissionManager.hasPermission(moderator, "mod.mute")) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Insufficient Permissions", "You need the `mod.mute` permission to use this command.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        String userArg = options.get("user");
+        if (userArg == null || userArg.trim().isEmpty()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Missing User", "Please mention a user to mute: `!mute @user [duration] [reason]`",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        User targetUser = parseUserMention(event, userArg);
+        if (targetUser == null) return;
+
+        Member targetMember = event.getGuild().getMember(targetUser);
+        if (targetMember == null) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "User Not Found", "This user is not in the server.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        if (!canInteractWith(moderator, targetMember)) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Cannot Mute User", "You cannot mute this user due to role hierarchy.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        if (!event.getGuild().getSelfMember().canInteract(targetMember)) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Cannot Mute User", "I cannot mute this user due to role hierarchy.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        // Parse duration (default 1h)
+        String durationStr = options.get("duration");
+        if (durationStr == null || durationStr.trim().isEmpty()) {
+            durationStr = "1h";
+        }
+        final Duration muteDuration = TimeUtils.parseDuration(durationStr);
+        if (muteDuration == null) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Invalid Duration",
+                "Please provide a valid duration format.\n" +
+                "**Valid formats:** `1d`, `2h`, `30m`, `1w`, `12h30m`\n" +
+                "**Units:** `s`=seconds, `m`=minutes, `h`=hours, `d`=days, `w`=weeks",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        String reason = options.get("reason");
+        if (reason == null || reason.trim().isEmpty()) {
+            reason = "No reason provided";
+        }
+        final String finalReason = reason;
+
+        // Find or create mute role
+        Role muteRole = event.getGuild().getRolesByName("Muted", true).stream()
+                .findFirst().orElse(null);
+        if (muteRole == null) {
+            try {
+                muteRole = event.getGuild().createRole()
+                        .setName("Muted")
+                        .setColor(0x808080)
+                        .setMentionable(false)
+                        .setHoisted(false)
+                        .reason("Automatically created by ServerBot for muting users")
+                        .complete();
+
+                Role finalMuteRole = muteRole;
+                event.getGuild().getTextChannels().forEach(channel -> {
+                    channel.getManager().putRolePermissionOverride(finalMuteRole.getIdLong(), null,
+                        java.util.EnumSet.of(
+                            net.dv8tion.jda.api.Permission.MESSAGE_SEND,
+                            net.dv8tion.jda.api.Permission.MESSAGE_ADD_REACTION,
+                            net.dv8tion.jda.api.Permission.MESSAGE_SEND_IN_THREADS,
+                            net.dv8tion.jda.api.Permission.CREATE_PUBLIC_THREADS,
+                            net.dv8tion.jda.api.Permission.CREATE_PRIVATE_THREADS
+                        )).queue(null, throwable -> {});
+                });
+                event.getGuild().getVoiceChannels().forEach(channel -> {
+                    channel.getManager().putRolePermissionOverride(finalMuteRole.getIdLong(), null,
+                        java.util.EnumSet.of(net.dv8tion.jda.api.Permission.VOICE_SPEAK)
+                    ).queue(null, throwable -> {});
+                });
+            } catch (Exception e) {
+                DismissibleMessage.sendError(event.getChannel(),
+                    "Mute Role Missing",
+                    "Could not find or create a mute role. Please create a role named 'Muted' and configure its permissions.",
+                    event.getAuthor().getId()
+                );
+                return;
+            }
+        }
+
+        // Apply mute
+        event.getGuild().addRoleToMember(targetMember, muteRole).reason(finalReason)
+                .queue(success -> {
+                    String durationText = TimeUtils.formatDuration(muteDuration);
+                    DismissibleMessage.send(event.getChannel(),
+                        EmbedUtils.createModerationEmbed(
+                            "User Muted", targetUser, moderator.getUser(),
+                            finalReason + "\n**Duration:** " + durationText
+                        ),
+                        moderator.getId()
+                    );
+
+                    // Schedule unmute
+                    try {
+                        String uniqueKey = event.getGuild().getId() + ":" + targetUser.getId() + ":MUTE:" + System.currentTimeMillis();
+                        Map<String, Object> tempPunishment = new HashMap<>();
+                        tempPunishment.put("guildId", event.getGuild().getId());
+                        tempPunishment.put("userId", targetUser.getId());
+                        tempPunishment.put("punishmentType", "MUTE");
+                        tempPunishment.put("expiresAt", System.currentTimeMillis() + muteDuration.toMillis());
+                        tempPunishment.put("moderatorId", moderator.getId());
+                        tempPunishment.put("reason", finalReason);
+                        tempPunishment.put("createdAt", System.currentTimeMillis());
+                        ServerBot.getStorageManager().storeTempPunishment(uniqueKey, tempPunishment);
+                    } catch (Exception e) {
+                        System.err.println("Failed to schedule unmute: " + e.getMessage());
+                    }
+
+                    // Log mute
+                    try {
+                        Map<String, Object> logEntry = new HashMap<>();
+                        logEntry.put("type", "MUTE");
+                        logEntry.put("userId", targetUser.getId());
+                        logEntry.put("moderatorId", moderator.getId());
+                        logEntry.put("reason", finalReason);
+                        logEntry.put("duration", muteDuration.toString());
+                        logEntry.put("timestamp", System.currentTimeMillis());
+                        ServerBot.getStorageManager().addModerationLog(event.getGuild().getId(), logEntry);
+                    } catch (Exception e) {
+                        System.err.println("Failed to log mute: " + e.getMessage());
+                    }
+
+                    // Log to AutoLog channel
+                    AutoLogUtils.logMute(event.getGuild(), targetUser, moderator.getUser(), finalReason, muteDuration);
+
+                    // Send DM notification
+                    PunishmentNotificationService.getInstance().sendPunishmentNotification(
+                        event.getGuild().getId(),
+                        targetUser.getId(),
+                        PunishmentType.MUTE,
+                        finalReason,
+                        muteDuration,
+                        durationText
+                    );
+                }, error -> {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Mute Failed", "Failed to mute user: " + error.getMessage(),
+                        event.getAuthor().getId()
+                    );
+                });
     }
 
     /**
      * Handle timeout command with prefix syntax
      */
     private void handleTimeoutCommand(MessageReceivedEvent event, Map<String, String> options) {
-        event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-            "Command Not Yet Implemented",
-            "The timeout command for prefix usage is not yet implemented. Please use `/timeout` instead."
-        )).queue();
+        if (!event.isFromGuild()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Guild Only", "This command can only be used in servers.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        Member moderator = event.getMember();
+        if (!PermissionManager.hasPermission(moderator, "mod.timeout")) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Insufficient Permissions", "You need the `mod.timeout` permission to use this command.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        String userArg = options.get("user");
+        if (userArg == null || userArg.trim().isEmpty()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Missing User", "Please mention a user to timeout: `!timeout @user <duration> [reason]`",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        User targetUser = parseUserMention(event, userArg);
+        if (targetUser == null) return;
+
+        Member targetMember = event.getGuild().getMember(targetUser);
+        if (targetMember == null) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "User Not Found", "This user is not in the server.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        // Check bot permissions
+        if (!event.getGuild().getSelfMember().hasPermission(net.dv8tion.jda.api.Permission.MODERATE_MEMBERS)) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Missing Bot Permissions", "I need the 'Moderate Members' permission to timeout users.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        if (!event.getGuild().getSelfMember().canInteract(targetMember)) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Cannot Timeout", "I cannot timeout this user. They may have higher permissions than me.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        if (targetUser.getId().equals(moderator.getUser().getId())) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Invalid Target", "You cannot timeout yourself.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        if (!moderator.canInteract(targetMember)) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Cannot Timeout", "You cannot timeout this user. They have higher or equal permissions.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        // Parse duration (required)
+        String durationStr = options.get("duration");
+        if (durationStr == null || durationStr.trim().isEmpty()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Missing Duration", "Please provide a duration: `!timeout @user <duration> [reason]`\n" +
+                "**Example:** `!timeout @user 1h Spamming`",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        Duration timeoutDuration = TimeUtils.parseDuration(durationStr);
+        if (timeoutDuration == null) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Invalid Duration",
+                "Please provide a valid duration (e.g., 1h, 30m, 2d, 1h30m).\n" +
+                "**Units:** `s`=seconds, `m`=minutes, `h`=hours, `d`=days",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        // Discord timeout limit: max 28 days
+        if (timeoutDuration.toDays() > 28) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Duration Too Long", "Timeout duration cannot exceed 28 days.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        String reason = options.get("reason");
+        if (reason == null || reason.trim().isEmpty()) {
+            reason = "No reason provided";
+        }
+        final String finalReason = reason;
+        final String durationText = TimeUtils.formatDuration(timeoutDuration);
+
+        // Apply timeout
+        targetMember.timeoutFor(timeoutDuration).reason(finalReason).queue(
+            success -> {
+                DismissibleMessage.send(event.getChannel(),
+                    EmbedUtils.createSuccessEmbed(
+                        "User Timed Out",
+                        "**User:** " + targetUser.getAsMention() + "\n" +
+                        "**Duration:** " + durationText + "\n" +
+                        "**Reason:** " + finalReason + "\n" +
+                        "**Moderator:** " + moderator.getUser().getAsMention()
+                    ),
+                    moderator.getId()
+                );
+
+                // Log the timeout
+                try {
+                    ServerBot.getStorageManager().logModerationAction(
+                        event.getGuild().getId(),
+                        targetUser.getId(),
+                        moderator.getUser().getId(),
+                        "TIMEOUT",
+                        finalReason,
+                        durationText
+                    );
+                } catch (Exception e) {
+                    System.err.println("Failed to log timeout action: " + e.getMessage());
+                }
+
+                // Log to AutoLog channel
+                AutoLogUtils.logTimeout(event.getGuild(), targetUser, moderator.getUser(), finalReason, timeoutDuration);
+
+                // Send DM notification
+                PunishmentNotificationService.getInstance().sendPunishmentNotification(
+                    event.getGuild().getId(),
+                    targetUser.getId(),
+                    PunishmentType.TIMEOUT,
+                    finalReason,
+                    timeoutDuration,
+                    durationText
+                );
+            },
+            error -> {
+                DismissibleMessage.sendError(event.getChannel(),
+                    "Timeout Failed", "Failed to timeout user: " + error.getMessage(),
+                    event.getAuthor().getId()
+                );
+            }
+        );
     }
 
     /**

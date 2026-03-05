@@ -201,7 +201,11 @@ public class AutoConfigListener extends ListenerAdapter {
             case "ac_select_modlog" -> {
                 GuildChannel selected = event.getMentions().getChannels().get(0);
                 state.modLogChannelId = selected.getId();
-                ServerBot.getStorageManager().updateGuildSettings(guildId, "modLogChannel", selected.getId());
+                // Write to the keys that AutoLogUtils and /logging actually read
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "moderation_log_channel", selected.getId());
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "autoLog_moderation", true);
+                // Also set legacy logChannelId for /log command compatibility
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "logChannelId", selected.getId());
                 ServerBot.getStorageManager().saveGuildSettings();
                 event.getMessage().delete().queue(s -> {}, err -> {});
                 event.reply(CustomEmojis.SUCCESS + " Moderation log channel set to <#" + selected.getId() + ">").setEphemeral(true).queue();
@@ -210,7 +214,9 @@ public class AutoConfigListener extends ListenerAdapter {
             case "ac_select_msglog" -> {
                 GuildChannel selected = event.getMentions().getChannels().get(0);
                 state.msgLogChannelId = selected.getId();
-                ServerBot.getStorageManager().updateGuildSettings(guildId, "messageLogChannel", selected.getId());
+                // Write to the keys that AutoLogUtils and /logging actually read
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "message_log_channel", selected.getId());
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "autoLog_message", true);
                 ServerBot.getStorageManager().saveGuildSettings();
                 event.getMessage().delete().queue(s -> {}, err -> {});
                 event.reply(CustomEmojis.SUCCESS + " Message log channel set to <#" + selected.getId() + ">").setEphemeral(true).queue();
@@ -219,7 +225,9 @@ public class AutoConfigListener extends ListenerAdapter {
             case "ac_select_joinlog" -> {
                 GuildChannel selected = event.getMentions().getChannels().get(0);
                 state.joinLogChannelId = selected.getId();
-                ServerBot.getStorageManager().updateGuildSettings(guildId, "joinLeaveLogChannel", selected.getId());
+                // Write to the keys that AutoLogUtils and /logging actually read
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "member_log_channel", selected.getId());
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "autoLog_member", true);
                 ServerBot.getStorageManager().saveGuildSettings();
                 event.getMessage().delete().queue(s -> {}, err -> {});
                 event.reply(CustomEmojis.SUCCESS + " Join/leave log channel set to <#" + selected.getId() + ">").setEphemeral(true).queue();
@@ -255,13 +263,25 @@ public class AutoConfigListener extends ListenerAdapter {
         List<String> disabled = event.getValues(); // the features the user wants DISABLED
         state.disabledFeatures = disabled;
 
+        // Use the correct setting keys that the rest of the codebase reads
+        // (enableEconomy, enableLeveling, etc.)
+        Map<String, String> featureToSettingKey = Map.of(
+            "economy", "enableEconomy",
+            "leveling", "enableLeveling",
+            "games", "enableGames",
+            "tickets", "enableTickets",
+            "proxy", "enableProxy"
+        );
+
         for (String feature : disabled) {
-            ServerBot.getStorageManager().updateGuildSettings(guildId, feature + "Enabled", false);
+            String key = featureToSettingKey.getOrDefault(feature, feature + "Enabled");
+            ServerBot.getStorageManager().updateGuildSettings(guildId, key, false);
         }
         // Enable features that were NOT selected
         for (String feature : List.of("economy", "leveling", "games", "tickets", "proxy")) {
             if (!disabled.contains(feature)) {
-                ServerBot.getStorageManager().updateGuildSettings(guildId, feature + "Enabled", true);
+                String key = featureToSettingKey.getOrDefault(feature, feature + "Enabled");
+                ServerBot.getStorageManager().updateGuildSettings(guildId, key, true);
             }
         }
         ServerBot.getStorageManager().saveGuildSettings();
