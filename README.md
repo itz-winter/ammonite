@@ -98,6 +98,20 @@ Logs are stored in the `logs` directory. Configure logging in `src/main/resource
 ### 🎫 Tickets
 - `/ticket` — Ticket system with categories, claiming, and transcripts
 
+### 🎵 Music
+- `/play` — Play a track or playlist from URL or search query (YouTube, SoundCloud)
+- `/skip` — Skip the current track (supports skip count)
+- `/queue` — View the music queue with progress bar
+- `/pause` — Pause or resume playback
+- `/stop` — Stop playing and clear the queue
+- `/volume` — View or set playback volume (0–150%)
+- `/repeat` — Toggle repeat mode
+- `/shuffle` — Toggle shuffle mode
+- `/join` — Join your voice channel
+- `/leave` — Leave the voice channel
+- Playlist range selection (e.g. `!play <url> 4:10`)
+- SoundCloud fallback when YouTube search returns no results
+
 ### 🪪 Proxy (PluralKit-style)
 - `/proxymember` — Create and manage proxy members
 - `/proxysettings` — Configure proxy behavior
@@ -110,9 +124,15 @@ Logs are stored in the `logs` directory. Configure logging in `src/main/resource
 - `/automod` — Auto-moderation rules
 - `/antispam` — Anti-spam configuration (message limits, caps, mentions, duplicates, punishments)
 - `/welcome` — Welcome/leave message configuration
-- `/reactionrole` — Reaction role management
+- `/reactionrole` — Carl-bot style reaction role system
+  - `create` — Create a new reaction role embed in any channel
+  - `add` — Add emoji → role pairs to a bot-created message
+  - `attach` — Attach reaction roles to any existing message (not just bot messages)
+  - `remove` — Remove an emoji → role pair
+  - `list` — View all reaction role setups in the server
+  - `delete` — Delete a reaction role message entirely
 - `/rolepersistence` — Restore roles when members rejoin
-- `/prefix` — Change the server's command prefix
+- `/prefix` — Per-guild prefix command management (set prefix, enable/disable individual commands or categories)
 - `/rules` — Manage server rules display
 
 ### 🛡️ Permission System
@@ -148,4 +168,12 @@ All major commands also work with prefix syntax (default `!`):
 - `!rank`, `!leaderboard`, `!xp`
 - `!warn`, `!mute`, `!timeout`, `!kick`, `!ban`, `!purge`
 - `!ping`, `!info`, `!serverinfo`, `!echo`, `!help`
-- Aliases supported (e.g., `!bal`, `!lb`, `!r`, `!h`)
+- `!play`, `!skip`, `!queue`, `!pause`, `!stop`, `!volume`, `!repeat`, `!shuffle`, `!join`, `!leave`
+- Aliases supported (e.g., `!bal`, `!lb`, `!r`, `!h`, `!s`, `!dc`, `!vol`)
+
+**Per-Guild Prefix Management (`/prefix`):**
+- `/prefix set` — Change the command prefix for your server (1–5 characters)
+- `/prefix enable / disable` — Enable or disable individual prefix commands or entire categories
+- `/prefix enable-all / disable-all` — Toggle all prefix commands on or off
+- `/prefix status` — View current prefix settings and disabled commands
+- `/prefix list` — List all available prefix commands by category with enable/disable status

@@ -107,7 +107,25 @@ public class PrefixCommandService {
         Map.entry("presence", "rpc"),
         Map.entry("appearance", "appearance"),
         Map.entry("backup", "backup"),
-        Map.entry("config", "config")
+        Map.entry("config", "config"),
+        // Music command aliases
+        Map.entry("play", "play"),
+        Map.entry("skip", "skip"),
+        Map.entry("s", "skip"),
+        Map.entry("join", "join"),
+        Map.entry("leave", "leave"),
+        Map.entry("disconnect", "leave"),
+        Map.entry("dc", "leave"),
+        Map.entry("queue", "queue"),
+        Map.entry("q", "queue"),
+        Map.entry("pause", "pause"),
+        Map.entry("resume", "pause"),
+        Map.entry("stop", "stop"),
+        Map.entry("volume", "volume"),
+        Map.entry("vol", "volume"),
+        Map.entry("repeat", "repeat"),
+        Map.entry("loop", "repeat"),
+        Map.entry("shuffle", "shuffle")
     );
 
     public PrefixCommandService(CommandManager commandManager) {
@@ -369,6 +387,37 @@ public class PrefixCommandService {
                 break;
             case "config":
                 handleConfigCommand(event, options);
+                break;
+            // Music commands
+            case "play":
+                handlePlayCommand(event, options, args);
+                break;
+            case "skip":
+                handleSkipCommand(event, options);
+                break;
+            case "join":
+                handleJoinCommand(event);
+                break;
+            case "leave":
+                handleLeaveCommand(event);
+                break;
+            case "queue":
+                handleQueueCommand(event);
+                break;
+            case "pause":
+                handlePauseCommand(event);
+                break;
+            case "stop":
+                handleStopCommand(event);
+                break;
+            case "volume":
+                handleVolumeCommand(event, options);
+                break;
+            case "repeat":
+                handleRepeatCommand(event);
+                break;
+            case "shuffle":
+                handleShuffleCommand(event);
                 break;
             default:
                 // For commands not specifically implemented yet
@@ -683,6 +732,25 @@ public class PrefixCommandService {
                     options.put("action", positionalArgs.get(0));
                 }
                 break;
+            // Music command positional arguments
+            case "play":
+                // !play <query...> [index] — handled specially in handler via raw args
+                if (positionalArgs.size() >= 1) {
+                    options.put("query", String.join(" ", positionalArgs));
+                }
+                break;
+            case "skip":
+                // !skip [count]
+                if (positionalArgs.size() >= 1) {
+                    options.put("count", positionalArgs.get(0));
+                }
+                break;
+            case "volume":
+                // !volume [level]
+                if (positionalArgs.size() >= 1) {
+                    options.put("level", positionalArgs.get(0));
+                }
+                break;
             default:
                 // For other commands, put the first positional arg as "target"
                 if (positionalArgs.size() >= 1) {
@@ -984,6 +1052,18 @@ public class PrefixCommandService {
             "`!dadjoke` — Random dad joke\n" +
             "`!joke` — Random joke\n" +
             "`!help` — This help message", false);
+
+        embed.addField("🎵 Music",
+            "`!play <url/query> [index]` — Play a track or playlist\n" +
+            "`!skip [count]` — Skip the current track\n" +
+            "`!queue` — View the music queue\n" +
+            "`!pause` — Pause/resume playback\n" +
+            "`!stop` — Stop playing & clear queue\n" +
+            "`!volume [0-150]` — View/set volume\n" +
+            "`!repeat` — Toggle repeat mode\n" +
+            "`!shuffle` — Toggle shuffle mode\n" +
+            "`!join` — Join your voice channel\n" +
+            "`!leave` — Leave voice channel", false);
 
         // Only show owner commands to the bot owner
         if (PermissionUtils.isBotOwner(event.getAuthor())) {
@@ -5801,5 +5881,443 @@ public class PrefixCommandService {
                 "Reload Failed", "Failed to reload configuration: " + e.getMessage()
             )).queue();
         }
+    }
+
+    // ==================== Music Commands ====================
+
+    /**
+     * Handle !play <query> [index] — Play a track or playlist from URL/search.
+     * The raw args are used to parse query and optional index range.
+     * Last arg is treated as index if it matches a range pattern (e.g. "4:10", "5:", ":9", or a number).
+     */
+    private void handlePlayCommand(MessageReceivedEvent event, Map<String, String> options, String[] args) {
+        if (!event.isFromGuild()) return;
+
+        Member member = event.getMember();
+        if (member == null) return;
+
+        net.dv8tion.jda.api.entities.GuildVoiceState voiceState = member.getVoiceState();
+        if (voiceState == null || !voiceState.inAudioChannel()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Not in Voice Channel",
+                "You need to be in a voice channel to use this command."
+            )).queue();
+            return;
+        }
+
+        if (args.length == 0) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Missing Query",
+                "Usage: `!play <url or search> [index]`\nIndex examples: `4:10`, `5:`, `:9`"
+            )).queue();
+            return;
+        }
+
+        // Determine if last arg is an index range
+        String lastArg = args[args.length - 1];
+        String indexStr = "";
+        String query;
+
+        if (args.length > 1 && lastArg.matches("^\\d*:\\d*$|^\\d+$")) {
+            // Last arg looks like an index range or single number
+            indexStr = lastArg;
+            query = String.join(" ", java.util.Arrays.copyOfRange(args, 0, args.length - 1));
+        } else {
+            query = String.join(" ", args);
+        }
+
+        if (query.isBlank()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Missing Query", "Please provide a URL or search query."
+            )).queue();
+            return;
+        }
+
+        net.dv8tion.jda.api.entities.channel.middleman.AudioChannel channel = voiceState.getChannel();
+        com.serverbot.music.MusicManager musicManager = com.serverbot.music.MusicManager.getInstance();
+
+        if (!musicManager.isConnected(event.getGuild())) {
+            if (!musicManager.joinChannel(channel)) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Connection Failed", "Failed to join your voice channel."
+                )).queue();
+                return;
+            }
+        }
+
+        final String finalQuery = query;
+
+        if (!indexStr.isBlank()) {
+            int[] range = com.serverbot.music.MusicUtils.parseIndexRange(indexStr);
+            musicManager.loadPlaylistWithRange(query, event.getGuild(), range[0], range[1],
+                new com.serverbot.music.MusicManager.MusicLoadCallback() {
+                    @Override
+                    public void onTrackLoaded(com.sedmelluq.discord.lavaplayer.track.AudioTrack track) {
+                        EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
+                                .setTitle("🎵 Added to Queue")
+                                .setDescription(com.serverbot.music.MusicUtils.formatTrack(track));
+                        event.getChannel().sendMessageEmbeds(embed.build()).queue();
+                    }
+                    @Override
+                    public void onPlaylistLoaded(com.sedmelluq.discord.lavaplayer.track.AudioPlaylist playlist) {
+                        com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+                        for (com.sedmelluq.discord.lavaplayer.track.AudioTrack track : playlist.getTracks()) {
+                            gmm.getScheduler().queue(track);
+                        }
+                        EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
+                                .setTitle("🎵 Playlist Added")
+                                .setDescription("**" + playlist.getName() + "** — " + playlist.getTracks().size() + " tracks");
+                        event.getChannel().sendMessageEmbeds(embed.build()).queue();
+                    }
+                    @Override
+                    public void onPlaylistRangeLoaded(String name, java.util.List<com.sedmelluq.discord.lavaplayer.track.AudioTrack> tracks, int start, int end, int total) {
+                        EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
+                                .setTitle("🎵 Playlist Added (Range)")
+                                .setDescription("**" + name + "**")
+                                .addField("Selected", "Tracks " + start + "-" + end + " of " + total, true)
+                                .addField("Added", tracks.size() + " tracks", true);
+                        event.getChannel().sendMessageEmbeds(embed.build()).queue();
+                    }
+                    @Override
+                    public void onNoMatches() {
+                        event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                            "No Results", "No matches found for: `" + finalQuery + "`"
+                        )).queue();
+                    }
+                    @Override
+                    public void onLoadFailed(String message) {
+                        event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                            "Load Failed", "Failed to load track: " + message
+                        )).queue();
+                    }
+                });
+        } else {
+            musicManager.loadAndPlay(query, event.getGuild(),
+                new com.serverbot.music.MusicManager.MusicLoadCallback() {
+                    @Override
+                    public void onTrackLoaded(com.sedmelluq.discord.lavaplayer.track.AudioTrack track) {
+                        com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+                        int position = gmm.getScheduler().getQueueSize();
+                        EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
+                                .setTitle("🎵 Added to Queue")
+                                .setDescription(com.serverbot.music.MusicUtils.formatTrack(track));
+                        if (position > 0) {
+                            embed.addField("Position", "#" + (position + 1) + " in queue", true);
+                        } else {
+                            embed.addField("Status", "Now playing", true);
+                        }
+                        event.getChannel().sendMessageEmbeds(embed.build()).queue();
+                    }
+                    @Override
+                    public void onPlaylistLoaded(com.sedmelluq.discord.lavaplayer.track.AudioPlaylist playlist) {
+                        com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+                        for (com.sedmelluq.discord.lavaplayer.track.AudioTrack track : playlist.getTracks()) {
+                            gmm.getScheduler().queue(track);
+                        }
+                        EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
+                                .setTitle("🎵 Playlist Added")
+                                .setDescription("**" + playlist.getName() + "** — " + playlist.getTracks().size() + " tracks");
+                        if (!playlist.getTracks().isEmpty()) {
+                            embed.addField("First Track", com.serverbot.music.MusicUtils.formatTrack(playlist.getTracks().get(0)), false);
+                        }
+                        event.getChannel().sendMessageEmbeds(embed.build()).queue();
+                    }
+                    @Override
+                    public void onNoMatches() {
+                        event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                            "No Results", "No matches found for: `" + finalQuery + "`"
+                        )).queue();
+                    }
+                    @Override
+                    public void onLoadFailed(String message) {
+                        event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                            "Load Failed", "Failed to load track: " + message
+                        )).queue();
+                    }
+                });
+        }
+    }
+
+    private void handleSkipCommand(MessageReceivedEvent event, Map<String, String> options) {
+        com.serverbot.music.MusicManager musicManager = com.serverbot.music.MusicManager.getInstance();
+
+        if (!musicManager.isConnected(event.getGuild())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Not Playing", "The bot is not currently playing music."
+            )).queue();
+            return;
+        }
+
+        com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+        if (gmm.getScheduler().getCurrentTrack() == null) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Nothing Playing", "There is no track currently playing."
+            )).queue();
+            return;
+        }
+
+        int count = 1;
+        String countStr = options.get("count");
+        if (countStr != null) {
+            try { count = Math.max(1, Integer.parseInt(countStr)); } catch (NumberFormatException ignored) {}
+        }
+
+        int skipped = gmm.getScheduler().skip(count);
+        var currentTrack = gmm.getScheduler().getCurrentTrack();
+        String nowPlaying = currentTrack != null
+                ? "Now playing: **" + currentTrack.getInfo().title + "**"
+                : "Queue is now empty.";
+
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "⏭️ Skipped",
+            "Skipped **" + skipped + "** track" + (skipped != 1 ? "s" : "") + ".\n" + nowPlaying
+        )).queue();
+    }
+
+    private void handleJoinCommand(MessageReceivedEvent event) {
+        if (!event.isFromGuild()) return;
+        Member member = event.getMember();
+        if (member == null) return;
+
+        net.dv8tion.jda.api.entities.GuildVoiceState voiceState = member.getVoiceState();
+        if (voiceState == null || !voiceState.inAudioChannel()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Not in Voice Channel", "You need to be in a voice channel for me to join."
+            )).queue();
+            return;
+        }
+
+        net.dv8tion.jda.api.entities.channel.middleman.AudioChannel channel = voiceState.getChannel();
+        com.serverbot.music.MusicManager musicManager = com.serverbot.music.MusicManager.getInstance();
+
+        if (musicManager.isConnected(event.getGuild())) {
+            var currentChannel = musicManager.getConnectedChannel(event.getGuild());
+            if (currentChannel != null && currentChannel.getIdLong() == channel.getIdLong()) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Already Connected", "I'm already in your voice channel!"
+                )).queue();
+                return;
+            }
+        }
+
+        if (musicManager.joinChannel(channel)) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                "🔊 Joined", "Connected to **" + channel.getName() + "**"
+            )).queue();
+        } else {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Connection Failed", "Failed to join **" + channel.getName() + "**. Check bot permissions."
+            )).queue();
+        }
+    }
+
+    private void handleLeaveCommand(MessageReceivedEvent event) {
+        if (!event.isFromGuild()) return;
+
+        com.serverbot.music.MusicManager musicManager = com.serverbot.music.MusicManager.getInstance();
+        if (!musicManager.isConnected(event.getGuild())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Not Connected", "I'm not currently in a voice channel."
+            )).queue();
+            return;
+        }
+
+        musicManager.leaveChannel(event.getGuild());
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "👋 Disconnected", "Left the voice channel and cleared the queue."
+        )).queue();
+    }
+
+    private void handleQueueCommand(MessageReceivedEvent event) {
+        if (!event.isFromGuild()) return;
+
+        com.serverbot.music.MusicManager musicManager = com.serverbot.music.MusicManager.getInstance();
+        if (!musicManager.isConnected(event.getGuild())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Not Playing", "The bot is not currently playing music."
+            )).queue();
+            return;
+        }
+
+        com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+        com.sedmelluq.discord.lavaplayer.track.AudioTrack currentTrack = gmm.getScheduler().getCurrentTrack();
+        java.util.List<com.sedmelluq.discord.lavaplayer.track.AudioTrack> queue = gmm.getScheduler().getQueue();
+
+        EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
+                .setTitle("🎶 Music Queue");
+
+        if (currentTrack != null) {
+            String progress = com.serverbot.music.MusicUtils.createProgressBar(currentTrack.getPosition(), currentTrack.getDuration());
+            embed.addField("Now Playing",
+                    com.serverbot.music.MusicUtils.formatTrack(currentTrack) + "\n" +
+                    progress + " `" + com.serverbot.music.MusicUtils.formatDuration(currentTrack.getPosition()) +
+                    "/" + com.serverbot.music.MusicUtils.formatDuration(currentTrack.getDuration()) + "`",
+                    false);
+        } else {
+            embed.addField("Now Playing", "Nothing is currently playing.", false);
+        }
+
+        if (queue.isEmpty()) {
+            embed.addField("Up Next", "Queue is empty. Use `!play` to add tracks!", false);
+        } else {
+            StringBuilder queueStr = new StringBuilder();
+            int displayCount = Math.min(queue.size(), 10);
+            for (int i = 0; i < displayCount; i++) {
+                queueStr.append(com.serverbot.music.MusicUtils.formatTrackShort(queue.get(i), i + 1)).append("\n");
+            }
+            if (queue.size() > 10) {
+                queueStr.append("*... and ").append(queue.size() - 10).append(" more*");
+            }
+            long totalDuration = queue.stream().mapToLong(t -> t.getDuration()).sum();
+            if (currentTrack != null) {
+                totalDuration += currentTrack.getDuration() - currentTrack.getPosition();
+            }
+            embed.addField("Up Next (" + queue.size() + " tracks)", queueStr.toString(), false);
+            embed.setFooter("Total queue time: " + com.serverbot.music.MusicUtils.formatDuration(totalDuration));
+        }
+
+        String statusLine = "";
+        if (gmm.getScheduler().isRepeating()) statusLine += "🔁 Repeat ON  ";
+        if (gmm.getScheduler().isShuffling()) statusLine += "🔀 Shuffle ON";
+        if (!statusLine.isEmpty()) {
+            embed.addField("Mode", statusLine.trim(), false);
+        }
+
+        event.getChannel().sendMessageEmbeds(embed.build()).queue();
+    }
+
+    private void handlePauseCommand(MessageReceivedEvent event) {
+        if (!event.isFromGuild()) return;
+
+        com.serverbot.music.MusicManager musicManager = com.serverbot.music.MusicManager.getInstance();
+        if (!musicManager.isConnected(event.getGuild())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Not Playing", "The bot is not currently playing music."
+            )).queue();
+            return;
+        }
+
+        com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+        boolean isPaused = gmm.getPlayer().isPaused();
+        gmm.getPlayer().setPaused(!isPaused);
+
+        if (isPaused) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                "▶️ Resumed", "Music playback has been resumed."
+            )).queue();
+        } else {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                "⏸️ Paused", "Music playback has been paused."
+            )).queue();
+        }
+    }
+
+    private void handleStopCommand(MessageReceivedEvent event) {
+        if (!event.isFromGuild()) return;
+
+        com.serverbot.music.MusicManager musicManager = com.serverbot.music.MusicManager.getInstance();
+        if (!musicManager.isConnected(event.getGuild())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Not Playing", "The bot is not currently playing music."
+            )).queue();
+            return;
+        }
+
+        var gmm = musicManager.getGuildMusicManager(event.getGuild());
+        gmm.getScheduler().clearQueue();
+        gmm.getPlayer().stopTrack();
+
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "⏹️ Stopped", "Stopped playing and cleared the queue."
+        )).queue();
+    }
+
+    private void handleVolumeCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) return;
+
+        com.serverbot.music.MusicManager musicManager = com.serverbot.music.MusicManager.getInstance();
+        if (!musicManager.isConnected(event.getGuild())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Not Playing", "The bot is not currently playing music."
+            )).queue();
+            return;
+        }
+
+        com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+        int currentVolume = gmm.getPlayer().getVolume();
+
+        String levelStr = options.get("level");
+        if (levelStr == null) {
+            int barLen = 10;
+            int filled = (int) Math.round((currentVolume / 100.0) * barLen);
+            filled = Math.max(0, Math.min(barLen, filled));
+            String volumeBar = "▓".repeat(filled) + "░".repeat(barLen - filled);
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                "🔊 Volume", "Current volume: **" + currentVolume + "%**\n" + volumeBar
+            )).queue();
+            return;
+        }
+
+        int newVolume;
+        try {
+            newVolume = Math.max(0, Math.min(150, Integer.parseInt(levelStr)));
+        } catch (NumberFormatException e) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Invalid Volume", "Please provide a number between 0 and 150."
+            )).queue();
+            return;
+        }
+
+        gmm.getPlayer().setVolume(newVolume);
+        String emoji = newVolume == 0 ? "🔇" : newVolume <= 50 ? "🔉" : "🔊";
+        int barLen = 10;
+        int filled = (int) Math.round((newVolume / 100.0) * barLen);
+        filled = Math.max(0, Math.min(barLen, filled));
+        String volumeBar = "▓".repeat(filled) + "░".repeat(barLen - filled);
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            emoji + " Volume Set", "Volume set to **" + newVolume + "%**\n" + volumeBar
+        )).queue();
+    }
+
+    private void handleRepeatCommand(MessageReceivedEvent event) {
+        if (!event.isFromGuild()) return;
+
+        com.serverbot.music.MusicManager musicManager = com.serverbot.music.MusicManager.getInstance();
+        if (!musicManager.isConnected(event.getGuild())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Not Playing", "The bot is not currently playing music."
+            )).queue();
+            return;
+        }
+
+        com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+        boolean newState = !gmm.getScheduler().isRepeating();
+        gmm.getScheduler().setRepeating(newState);
+
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "🔁 Repeat " + (newState ? "Enabled" : "Disabled"),
+            newState ? "The current track will now repeat." : "Repeat mode has been turned off."
+        )).queue();
+    }
+
+    private void handleShuffleCommand(MessageReceivedEvent event) {
+        if (!event.isFromGuild()) return;
+
+        com.serverbot.music.MusicManager musicManager = com.serverbot.music.MusicManager.getInstance();
+        if (!musicManager.isConnected(event.getGuild())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Not Playing", "The bot is not currently playing music."
+            )).queue();
+            return;
+        }
+
+        com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+        boolean newState = !gmm.getScheduler().isShuffling();
+        gmm.getScheduler().setShuffling(newState);
+
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "🔀 Shuffle " + (newState ? "Enabled" : "Disabled"),
+            newState ? "The queue will now be shuffled." : "Shuffle mode has been turned off."
+        )).queue();
     }
 }

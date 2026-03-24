@@ -46,6 +46,14 @@
             <version>2.2.3</version>
         </dependency>
 
+        <!-- youtube-source v2 - Working YouTube source for LavaPlayer 2.x -->
+        <!-- Replaces LavaPlayer's broken built-in YouTube source -->
+        <dependency>
+            <groupId>dev.lavalink.youtube</groupId>
+            <artifactId>v2</artifactId>
+            <version>1.18.0</version>
+        </dependency>
+
         <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>

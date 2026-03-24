@@ -137,6 +137,18 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.utility.PrivacyCommand());
         registerCommand(new com.serverbot.commands.utility.DeleteDataCommand());
         
+        // Music commands
+        registerCommand(new com.serverbot.commands.music.PlayCommand());
+        registerCommand(new com.serverbot.commands.music.SkipCommand());
+        registerCommand(new com.serverbot.commands.music.JoinCommand());
+        registerCommand(new com.serverbot.commands.music.LeaveCommand());
+        registerCommand(new com.serverbot.commands.music.QueueCommand());
+        registerCommand(new com.serverbot.commands.music.PauseCommand());
+        registerCommand(new com.serverbot.commands.music.StopCommand());
+        registerCommand(new com.serverbot.commands.music.VolumeCommand());
+        registerCommand(new com.serverbot.commands.music.RepeatCommand());
+        registerCommand(new com.serverbot.commands.music.ShuffleCommand());
+        
         logger.info("Registered {} commands", commands.size());
     }
     
@@ -265,6 +277,8 @@ public class CommandManager {
     commandDataList.add(com.serverbot.commands.config.AutomodCommand.getCommandData());
     commandDataList.add(com.serverbot.commands.config.LogCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.config.RolePersistenceCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.config.ReactionRoleCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.config.PrefixCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.config.PunishmentDMCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.config.SuspiciousNotifyCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.SuspiciousListCommand.getCommandData());
@@ -285,6 +299,18 @@ public class CommandManager {
         // Privacy & data management commands (Discord ToS compliance)
         commandDataList.add(com.serverbot.commands.utility.PrivacyCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.DeleteDataCommand.getCommandData());
+        
+        // Music commands
+        commandDataList.add(com.serverbot.commands.music.PlayCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.music.SkipCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.music.JoinCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.music.LeaveCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.music.QueueCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.music.PauseCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.music.StopCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.music.VolumeCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.music.RepeatCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.music.ShuffleCommand.getCommandData());
         
         if (hideOwner) {
             logger.info("Owner-only commands hidden from slash commands (hide_owner_commands=true). Use prefix commands instead.");

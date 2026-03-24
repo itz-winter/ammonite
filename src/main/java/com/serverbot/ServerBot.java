@@ -33,6 +33,7 @@ import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
 import java.util.List;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
@@ -125,6 +126,7 @@ public class ServerBot {
             jda = JDABuilder.createDefault(config.getBotToken())
                     .setChunkingFilter(ChunkingFilter.ALL)
                     .setMemberCachePolicy(MemberCachePolicy.ALL)
+                    .enableCache(CacheFlag.VOICE_STATE)
                     .enableIntents(
                             // Required for: role persistence (tracking member join/leave), suspicious account
                             // detection (member screening), welcome messages, and member cache for moderation
@@ -139,7 +141,9 @@ public class ServerBot {
                             // Required for: suspicious account detection (account age + status analysis)
                             GatewayIntent.GUILD_PRESENCES,
                             // Required for: punishment appeal DMs and ticket DM notifications
-                            GatewayIntent.DIRECT_MESSAGES
+                            GatewayIntent.DIRECT_MESSAGES,
+                            // Required for: music bot voice channel connections and tracking
+                            GatewayIntent.GUILD_VOICE_STATES
                     )
                     .setActivity(buildActivityFromConfig(config))
                     .setStatus(buildOnlineStatusFromConfig(config))
