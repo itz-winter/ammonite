@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import com.serverbot.utils.EmbedUtils;
 import com.serverbot.utils.CustomEmojis;
 import com.serverbot.utils.PermissionManager;
+import com.serverbot.utils.PermissionUtils;
 import com.serverbot.utils.AutoLogUtils;
 import com.serverbot.utils.TimeUtils;
 import com.serverbot.utils.DismissibleMessage;
@@ -80,7 +81,33 @@ public class PrefixCommandService {
         Map.entry("purge", "purge"),
         Map.entry("echo", "echo"),
         Map.entry("rules", "rules"),
-        Map.entry("talkas", "talkas")
+        Map.entry("talkas", "talkas"),
+        // Moderation aliases
+        Map.entry("softban", "softban"),
+        Map.entry("hist", "hist"),
+        Map.entry("history", "hist"),
+        Map.entry("warns", "warns"),
+        Map.entry("lockdown", "lockdown"),
+        Map.entry("lock", "lockdown"),
+        // Economy aliases
+        Map.entry("rob", "rob"),
+        Map.entry("steal", "rob"),
+        Map.entry("blackjack", "blackjack"),
+        Map.entry("bj", "blackjack"),
+        Map.entry("bank", "bank"),
+        // Utility aliases
+        Map.entry("embed", "embed"),
+        Map.entry("dadjoke", "dadjoke"),
+        Map.entry("joke", "joke"),
+        // Owner-only command aliases
+        Map.entry("statusmsg", "statusmsg"),
+        Map.entry("status", "statusmsg"),
+        Map.entry("restart", "restart"),
+        Map.entry("rpc", "rpc"),
+        Map.entry("presence", "rpc"),
+        Map.entry("appearance", "appearance"),
+        Map.entry("backup", "backup"),
+        Map.entry("config", "config")
     );
 
     public PrefixCommandService(CommandManager commandManager) {
@@ -291,6 +318,58 @@ public class PrefixCommandService {
             case "ticket":
                 handleTicketCommand(event, options);
                 break;
+            // New moderation commands
+            case "softban":
+                handleSoftbanCommand(event, options);
+                break;
+            case "hist":
+                handleHistCommand(event, options);
+                break;
+            case "warns":
+                handleWarnsCommand(event, options);
+                break;
+            case "lockdown":
+                handleLockdownCommand(event, options);
+                break;
+            // New economy commands
+            case "rob":
+                handleRobCommand(event, options);
+                break;
+            case "blackjack":
+                handleBlackjackCommand(event, options);
+                break;
+            case "bank":
+                handleBankCommand(event, options);
+                break;
+            // New utility commands
+            case "embed":
+                handleEmbedCommand(event, options);
+                break;
+            case "dadjoke":
+                handleDadJokeCommand(event);
+                break;
+            case "joke":
+                handleJokeCommand(event);
+                break;
+            // Owner-only commands
+            case "statusmsg":
+                handleStatusMsgCommand(event, options);
+                break;
+            case "restart":
+                handleRestartCommand(event);
+                break;
+            case "rpc":
+                handleRpcCommand(event, options);
+                break;
+            case "appearance":
+                handleAppearanceCommand(event, options);
+                break;
+            case "backup":
+                handleBackupCommand(event, options);
+                break;
+            case "config":
+                handleConfigCommand(event, options);
+                break;
             default:
                 // For commands not specifically implemented yet
                 event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
@@ -483,6 +562,125 @@ public class PrefixCommandService {
                     if (positionalArgs.size() >= 2) {
                         options.put("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
                     }
+                }
+                break;
+            case "softban":
+                // !softban @user [reason]
+                if (positionalArgs.size() >= 1) {
+                    options.put("user", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        options.put("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                    }
+                }
+                break;
+            case "hist":
+                // !hist @user
+                if (positionalArgs.size() >= 1) {
+                    options.put("user", positionalArgs.get(0));
+                }
+                break;
+            case "warns":
+                // !warns [@user]
+                if (positionalArgs.size() >= 1) {
+                    options.put("user", positionalArgs.get(0));
+                }
+                break;
+            case "lockdown":
+                // !lockdown [#channel]
+                if (positionalArgs.size() >= 1) {
+                    options.put("channel", positionalArgs.get(0));
+                }
+                break;
+            case "rob":
+                // !rob @user
+                if (positionalArgs.size() >= 1) {
+                    options.put("user", positionalArgs.get(0));
+                }
+                break;
+            case "blackjack":
+                // !blackjack <bet>
+                if (positionalArgs.size() >= 1) {
+                    options.put("bet", positionalArgs.get(0));
+                }
+                break;
+            case "bank":
+                // !bank <setting> [action] [user] [amount]
+                if (positionalArgs.size() >= 1) {
+                    options.put("setting", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        options.put("action", positionalArgs.get(1));
+                    }
+                    if (positionalArgs.size() >= 3) {
+                        options.put("user", positionalArgs.get(2));
+                    }
+                    if (positionalArgs.size() >= 4) {
+                        options.put("amount", positionalArgs.get(3));
+                    }
+                }
+                break;
+            case "embed":
+                // !embed <title> | <description> [-color #hex]
+                if (positionalArgs.size() >= 1) {
+                    String fullText = String.join(" ", positionalArgs);
+                    // Support pipe separator: !embed Title | Description
+                    if (fullText.contains("|")) {
+                        String[] splitParts = fullText.split("\\|", 2);
+                        options.put("title", splitParts[0].trim());
+                        if (splitParts.length > 1) {
+                            options.put("description", splitParts[1].trim());
+                        }
+                    } else {
+                        options.put("title", fullText);
+                    }
+                }
+                break;
+            // Owner-only command positional arguments
+            case "statusmsg":
+                // !statusmsg [message...] (all args are the status message)
+                if (positionalArgs.size() >= 1) {
+                    options.put("message", String.join(" ", positionalArgs));
+                }
+                break;
+            case "rpc":
+                // !rpc <action> [type] [text...]
+                if (positionalArgs.size() >= 1) {
+                    options.put("action", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        // Check if second arg is a known type
+                        String secondArg = positionalArgs.get(1).toLowerCase();
+                        if (secondArg.equals("playing") || secondArg.equals("watching") || 
+                            secondArg.equals("listening") || secondArg.equals("streaming") || 
+                            secondArg.equals("competing")) {
+                            options.put("type", secondArg);
+                            if (positionalArgs.size() >= 3) {
+                                options.put("text", String.join(" ", positionalArgs.subList(2, positionalArgs.size())));
+                            }
+                        } else {
+                            // No type specified, everything after action is text
+                            options.put("text", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                        }
+                    }
+                }
+                break;
+            case "appearance":
+                // !appearance <status>
+                if (positionalArgs.size() >= 1) {
+                    options.put("status", positionalArgs.get(0));
+                }
+                break;
+            case "backup":
+                // !backup <action> [timestamp]
+                if (positionalArgs.size() >= 1) {
+                    options.put("action", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        options.put("timestamp", positionalArgs.get(1));
+                    }
+                }
+                break;
+            case "config":
+                // !config [action]
+                if (positionalArgs.size() >= 1) {
+                    options.put("action", positionalArgs.get(0));
                 }
                 break;
             default:
@@ -752,7 +950,10 @@ public class PrefixCommandService {
             "`!gamble <amount>` — Gamble coins\n" +
             "`!slots <amount>` — Play slots\n" +
             "`!flip <amount> [heads/tails]` — Coin flip\n" +
-            "`!dice <amount> [guess]` — Dice roll", false);
+            "`!dice <amount> [guess]` — Dice roll\n" +
+            "`!rob @user` — Attempt to rob a user\n" +
+            "`!blackjack <bet>` — Play blackjack\n" +
+            "`!bank [setting]` — Bank management", false);
 
         embed.addField("📊 Leveling",
             "`!rank [user]` — View rank & XP\n" +
@@ -765,7 +966,11 @@ public class PrefixCommandService {
             "`!timeout @user <duration> [reason]` — Timeout a user\n" +
             "`!kick @user [reason]` — Kick a user\n" +
             "`!ban @user [duration] [reason]` — Ban a user\n" +
+            "`!softban @user [reason]` — Softban (ban+unban to delete msgs)\n" +
             "`!purge <amount> [user]` — Delete messages\n" +
+            "`!lockdown [#channel]` — Lock/unlock a channel\n" +
+            "`!warns [@user]` — View warnings\n" +
+            "`!hist @user` — View moderation history\n" +
             "`!unban @user` — Unban a user\n" +
             "`!unmute @user` — Unmute a user\n" +
             "`!unwarn @user <id>` — Remove a warning", false);
@@ -775,7 +980,21 @@ public class PrefixCommandService {
             "`!info` — Bot info\n" +
             "`!serverinfo` — Server info\n" +
             "`!echo <message>` — Echo a message\n" +
+            "`!embed Title | Description` — Create a custom embed\n" +
+            "`!dadjoke` — Random dad joke\n" +
+            "`!joke` — Random joke\n" +
             "`!help` — This help message", false);
+
+        // Only show owner commands to the bot owner
+        if (PermissionUtils.isBotOwner(event.getAuthor())) {
+            embed.addField("👑 Bot Owner",
+                "`!statusmsg [message]` — Set/clear bot status\n" +
+                "`!rpc <set|remove> [type] [text]` — Set bot presence\n" +
+                "`!appearance <status>` — Set bot online status\n" +
+                "`!restart` — Restart the bot\n" +
+                "`!backup <create|list|info|restore>` — Manage backups\n" +
+                "`!config [show|reload]` — View/reload server config", false);
+        }
 
         event.getChannel().sendMessageEmbeds(embed.build()).queue();
     }
@@ -3826,6 +4045,1761 @@ public class PrefixCommandService {
                 "Failed to close ticket: " + e.getMessage(),
                 event.getAuthor().getId()
             );
+        }
+    }
+
+    // ========================= NEW MODERATION PREFIX COMMANDS =========================
+
+    /**
+     * Handle softban command - ban and immediately unban to delete messages
+     */
+    private void handleSoftbanCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Guild Only", "This command can only be used in servers.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        Member moderator = event.getMember();
+        if (!PermissionManager.hasPermission(moderator, "mod.softban")) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Insufficient Permissions", "You need the `mod.softban` permission to use this command.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        String userArg = options.get("user");
+        if (userArg == null || userArg.trim().isEmpty()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Missing User", "Please mention a user to softban: `!softban @user [reason]`",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        User targetUser = parseUserMention(event, userArg);
+        if (targetUser == null) return;
+
+        if (targetUser.equals(event.getAuthor())) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Invalid Target", "You cannot softban yourself.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        if (targetUser.equals(event.getJDA().getSelfUser())) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Invalid Target", "I cannot softban myself.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        Member targetMember = event.getGuild().getMember(targetUser);
+        if (targetMember != null) {
+            if (!canInteractWith(moderator, targetMember)) {
+                DismissibleMessage.sendError(event.getChannel(),
+                    "Cannot Softban", "You cannot softban this user due to role hierarchy.",
+                    event.getAuthor().getId()
+                );
+                return;
+            }
+            if (!event.getGuild().getSelfMember().canInteract(targetMember)) {
+                DismissibleMessage.sendError(event.getChannel(),
+                    "Cannot Softban", "I cannot softban this user due to role hierarchy.",
+                    event.getAuthor().getId()
+                );
+                return;
+            }
+        }
+
+        final String reason = options.getOrDefault("reason", "No reason provided");
+
+        event.getGuild().ban(targetUser, 7, TimeUnit.DAYS)
+                .reason(reason + " (Softban by " + moderator.getEffectiveName() + ")")
+                .flatMap(v -> event.getGuild().unban(targetUser))
+                .queue(
+                    success -> {
+                        try {
+                            Map<String, Object> logEntry = new HashMap<>();
+                            logEntry.put("type", "SOFTBAN");
+                            logEntry.put("userId", targetUser.getId());
+                            logEntry.put("moderatorId", moderator.getId());
+                            logEntry.put("reason", reason);
+                            logEntry.put("timestamp", System.currentTimeMillis());
+                            ServerBot.getStorageManager().addModerationLog(event.getGuild().getId(), logEntry);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                        DismissibleMessage.sendSuccess(event.getChannel(),
+                            "User Softbanned",
+                            "Successfully softbanned " + targetUser.getAsMention() +
+                            "\n**Reason:** " + reason +
+                            "\n**Moderator:** " + moderator.getAsMention(),
+                            moderator.getId()
+                        );
+                    },
+                    error -> {
+                        DismissibleMessage.sendError(event.getChannel(),
+                            "Softban Failed",
+                            "Failed to softban user: " + error.getMessage(),
+                            event.getAuthor().getId()
+                        );
+                    }
+                );
+    }
+
+    /**
+     * Handle hist command - view user moderation history
+     */
+    private void handleHistCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Guild Only", "This command can only be used in servers.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        Member moderator = event.getMember();
+        if (!PermissionManager.hasPermission(moderator, "mod.history")) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Insufficient Permissions", "You need the `mod.history` permission to view user history.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        String userArg = options.get("user");
+        if (userArg == null || userArg.trim().isEmpty()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Missing User", "Please mention a user: `!hist @user`",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        User targetUser = parseUserMention(event, userArg);
+        if (targetUser == null) return;
+
+        try {
+            List<Map<String, Object>> moderationLogs = ServerBot.getStorageManager().getModerationLogs(event.getGuild().getId());
+
+            List<Map<String, Object>> userHistory = moderationLogs.stream()
+                .filter(log -> targetUser.getId().equals(log.get("userId")))
+                .sorted((a, b) -> {
+                    long timestampA = getLongValue(a.get("timestamp"));
+                    long timestampB = getLongValue(b.get("timestamp"));
+                    return Long.compare(timestampB, timestampA);
+                })
+                .limit(20)
+                .toList();
+
+            if (userHistory.isEmpty()) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                    "No Moderation History",
+                    targetUser.getAsMention() + " has no recorded moderation actions."
+                )).queue();
+                return;
+            }
+
+            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.WARNING_COLOR)
+                    .setTitle("📋 Moderation History")
+                    .setDescription("Recent moderation actions for " + targetUser.getAsMention())
+                    .setThumbnail(targetUser.getAvatarUrl());
+
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                    .withZone(ZoneId.systemDefault());
+
+            int displayCount = Math.min(userHistory.size(), 10);
+
+            for (int i = 0; i < displayCount; i++) {
+                Map<String, Object> log = userHistory.get(i);
+                long timestamp = getLongValue(log.get("timestamp"));
+                String type = (String) log.get("type");
+                String reason = (String) log.get("reason");
+                String moderatorId = (String) log.get("moderatorId");
+
+                String moderatorName = "Unknown";
+                try {
+                    User mod = event.getJDA().getUserById(moderatorId);
+                    if (mod != null) moderatorName = mod.getName();
+                } catch (Exception ignored) {}
+
+                String dateStr = formatter.format(java.time.Instant.ofEpochMilli(timestamp));
+
+                String fieldTitle = getHistoryActionEmoji(type) + " " + type + " (#" + (i + 1) + ")";
+                String fieldValue = "**Reason:** " + reason + "\n" +
+                                   "**Moderator:** " + moderatorName + "\n" +
+                                   "**Date:** " + dateStr;
+
+                embed.addField(fieldTitle, fieldValue, false);
+            }
+
+            embed.addField("📊 Statistics",
+                          "**Total Records:** " + userHistory.size() + "\n" +
+                          "**User:** " + targetUser.getName(), true);
+
+            if (userHistory.size() > displayCount) {
+                embed.setFooter("Showing " + displayCount + " most recent entries out of " + userHistory.size());
+            }
+
+            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+
+        } catch (Exception e) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "History Error",
+                "Failed to retrieve moderation history: " + e.getMessage(),
+                event.getAuthor().getId()
+            );
+        }
+    }
+
+    /**
+     * Helper to get emoji for moderation action type
+     */
+    private String getHistoryActionEmoji(String actionType) {
+        if (actionType == null) return "📋";
+        return switch (actionType.toUpperCase()) {
+            case "WARN", "WARNING" -> "⚠️";
+            case "MUTE", "TIMEOUT" -> "🔇";
+            case "KICK" -> "👢";
+            case "BAN" -> "🔨";
+            case "SOFTBAN" -> "🔨";
+            case "UNBAN" -> "🔓";
+            case "UNMUTE" -> "🔊";
+            default -> "📋";
+        };
+    }
+
+    /**
+     * Helper to safely convert timestamp values
+     */
+    private long getLongValue(Object value) {
+        if (value instanceof Long) {
+            return (Long) value;
+        } else if (value instanceof Double) {
+            return ((Double) value).longValue();
+        } else if (value instanceof Integer) {
+            return ((Integer) value).longValue();
+        } else {
+            return 0L;
+        }
+    }
+
+    /**
+     * Handle warns command - view user warnings
+     */
+    private void handleWarnsCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Guild Only", "This command can only be used in servers.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        Member member = event.getMember();
+        String userArg = options.get("user");
+        User targetUser = event.getAuthor();
+
+        // If a user was specified, resolve them
+        if (userArg != null && !userArg.trim().isEmpty()) {
+            User parsed = parseUserMention(event, userArg);
+            if (parsed == null) return;
+            targetUser = parsed;
+        }
+
+        // Check permissions - can view own warnings or need mod perms for others
+        if (!targetUser.equals(event.getAuthor()) && !PermissionManager.hasPermission(member, "mod.warns")) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Insufficient Permissions", "You need the `mod.warns` permission to view other users' warnings.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        try {
+            List<Map<String, Object>> warnings = ServerBot.getStorageManager().getWarnings(event.getGuild().getId(), targetUser.getId());
+
+            if (warnings.isEmpty()) {
+                String target = targetUser.equals(event.getAuthor()) ? "You have" : targetUser.getName() + " has";
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                    "No Warnings", target + " no active warnings."
+                )).queue();
+                return;
+            }
+
+            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.WARNING_COLOR)
+                    .setTitle("⚠️ User Warnings")
+                    .setDescription("Warnings for " + targetUser.getAsMention())
+                    .setThumbnail(targetUser.getAvatarUrl());
+
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                    .withZone(ZoneId.systemDefault());
+
+            int displayCount = Math.min(warnings.size(), 10);
+
+            for (int i = 0; i < displayCount; i++) {
+                Map<String, Object> warning = warnings.get(i);
+                String reason = (String) warning.get("reason");
+                String moderatorId = (String) warning.get("moderatorId");
+                long timestamp = getLongValue(warning.get("timestamp"));
+
+                String moderatorName = "*unknown*";
+                try {
+                    User mod = event.getJDA().getUserById(moderatorId);
+                    if (mod != null) moderatorName = mod.getName();
+                } catch (Exception ignored) {}
+
+                String dateStr = formatter.format(java.time.Instant.ofEpochMilli(timestamp));
+
+                String fieldTitle = "Warn #" + (i + 1);
+                String fieldValue = "**Reason:** " + reason + "\n" +
+                                   "**Moderator:** " + moderatorName + "\n" +
+                                   "**Date:** " + dateStr;
+
+                embed.addField(fieldTitle, fieldValue, false);
+            }
+
+            embed.addField("Stats",
+                          "**Total Active Warnings:** " + warnings.size(), true);
+
+            if (warnings.size() > displayCount) {
+                embed.setFooter("Showing " + displayCount + " most recent warnings out of " + warnings.size());
+            }
+
+            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+
+        } catch (Exception e) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Storage Error",
+                "Failed to retrieve warnings: " + e.getMessage(),
+                event.getAuthor().getId()
+            );
+        }
+    }
+
+    /**
+     * Handle lockdown command - lock/unlock a channel
+     */
+    private void handleLockdownCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Guild Only", "This command can only be used in servers.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        Member member = event.getMember();
+        if (!PermissionManager.hasPermission(member, "mod.lockdown")) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Insufficient Permissions", "You need the `mod.lockdown` permission to use this command.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        // Determine target channel
+        net.dv8tion.jda.api.entities.channel.concrete.TextChannel targetChannel;
+        String channelArg = options.get("channel");
+
+        if (channelArg != null && !channelArg.trim().isEmpty()) {
+            // Parse channel mention: <#123456>
+            String channelId = channelArg.replaceAll("[<#>]", "");
+            try {
+                targetChannel = event.getGuild().getTextChannelById(channelId);
+                if (targetChannel == null) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Invalid Channel", "Could not find that channel.",
+                        event.getAuthor().getId()
+                    );
+                    return;
+                }
+            } catch (Exception e) {
+                DismissibleMessage.sendError(event.getChannel(),
+                    "Invalid Channel", "Please mention a valid channel: `!lockdown [#channel]`",
+                    event.getAuthor().getId()
+                );
+                return;
+            }
+        } else {
+            // Default to current channel
+            try {
+                targetChannel = event.getChannel().asTextChannel();
+            } catch (Exception e) {
+                DismissibleMessage.sendError(event.getChannel(),
+                    "Invalid Channel", "This command can only be used in text channels.",
+                    event.getAuthor().getId()
+                );
+                return;
+            }
+        }
+
+        // Check if bot has permissions
+        if (!event.getGuild().getSelfMember().hasPermission(targetChannel, net.dv8tion.jda.api.Permission.MANAGE_CHANNEL)) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Missing Permissions", "I don't have permission to manage the channel " + targetChannel.getAsMention(),
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        Role everyoneRole = event.getGuild().getPublicRole();
+        net.dv8tion.jda.api.entities.PermissionOverride everyoneOverride = targetChannel.getPermissionOverride(everyoneRole);
+
+        boolean isLocked = everyoneOverride != null &&
+                everyoneOverride.getDenied().contains(net.dv8tion.jda.api.Permission.MESSAGE_SEND);
+
+        if (isLocked) {
+            // Unlock the channel
+            unlockChannelPrefix(event, targetChannel, everyoneRole, everyoneOverride);
+        } else {
+            // Lock the channel
+            lockChannelPrefix(event, targetChannel, everyoneRole);
+        }
+    }
+
+    private void lockChannelPrefix(MessageReceivedEvent event, net.dv8tion.jda.api.entities.channel.concrete.TextChannel channel,
+                                   Role everyoneRole) {
+        try {
+            channel.getManager()
+                    .putRolePermissionOverride(everyoneRole.getIdLong(),
+                            java.util.EnumSet.noneOf(net.dv8tion.jda.api.Permission.class),
+                            java.util.EnumSet.of(net.dv8tion.jda.api.Permission.MESSAGE_SEND,
+                                                 net.dv8tion.jda.api.Permission.MESSAGE_ADD_REACTION))
+                    .queue(
+                        success -> {
+                            channel.sendMessageEmbeds(EmbedUtils.createWarningEmbed(
+                                "🔒 Channel Locked",
+                                "This channel has been locked by " + event.getAuthor().getAsMention() + ".\n" +
+                                "Only moderators can send messages during lockdown."
+                            )).queue();
+
+                            if (!channel.getId().equals(event.getChannel().getId())) {
+                                event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                                    "Channel Locked", channel.getAsMention() + " has been locked."
+                                )).queue();
+                            }
+                        },
+                        error -> DismissibleMessage.sendError(event.getChannel(),
+                            "Lock Failed", "Failed to lock channel: " + error.getMessage(),
+                            event.getAuthor().getId()
+                        )
+                    );
+        } catch (Exception e) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Lock Error", "An error occurred while locking the channel: " + e.getMessage(),
+                event.getAuthor().getId()
+            );
+        }
+    }
+
+    private void unlockChannelPrefix(MessageReceivedEvent event, net.dv8tion.jda.api.entities.channel.concrete.TextChannel channel,
+                                     Role everyoneRole, net.dv8tion.jda.api.entities.PermissionOverride override) {
+        try {
+            if (override != null) {
+                java.util.EnumSet<net.dv8tion.jda.api.Permission> newDenied = java.util.EnumSet.copyOf(override.getDenied());
+                newDenied.remove(net.dv8tion.jda.api.Permission.MESSAGE_SEND);
+                newDenied.remove(net.dv8tion.jda.api.Permission.MESSAGE_ADD_REACTION);
+
+                if (newDenied.isEmpty() && override.getAllowed().isEmpty()) {
+                    override.delete().queue(
+                        success -> handleUnlockSuccessPrefix(event, channel),
+                        error -> DismissibleMessage.sendError(event.getChannel(),
+                            "Unlock Failed", "Failed to unlock channel: " + error.getMessage(),
+                            event.getAuthor().getId()
+                        )
+                    );
+                } else {
+                    channel.getManager()
+                            .putRolePermissionOverride(everyoneRole.getIdLong(),
+                                    override.getAllowed(), newDenied)
+                            .queue(
+                                success -> handleUnlockSuccessPrefix(event, channel),
+                                error -> DismissibleMessage.sendError(event.getChannel(),
+                                    "Unlock Failed", "Failed to unlock channel: " + error.getMessage(),
+                                    event.getAuthor().getId()
+                                )
+                            );
+                }
+            } else {
+                handleUnlockSuccessPrefix(event, channel);
+            }
+        } catch (Exception e) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Unlock Error", "An error occurred while unlocking the channel: " + e.getMessage(),
+                event.getAuthor().getId()
+            );
+        }
+    }
+
+    private void handleUnlockSuccessPrefix(MessageReceivedEvent event, net.dv8tion.jda.api.entities.channel.concrete.TextChannel channel) {
+        channel.sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "🔓 Channel Unlocked",
+            "This channel has been unlocked by " + event.getAuthor().getAsMention() + ".\n" +
+            "Normal conversation can now resume."
+        )).queue();
+
+        if (!channel.getId().equals(event.getChannel().getId())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                "Channel Unlocked", channel.getAsMention() + " has been unlocked."
+            )).queue();
+        }
+    }
+
+    // ========================= NEW ECONOMY PREFIX COMMANDS =========================
+
+    /**
+     * Handle rob command - attempt to steal points from another user
+     */
+    private void handleRobCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Guild Only", "This command can only be used in servers.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        // Check if economy is enabled
+        try {
+            Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
+            Boolean economyEnabled = (Boolean) guildSettings.get("enableEconomy");
+            if (economyEnabled != null && !economyEnabled) {
+                DismissibleMessage.sendError(event.getChannel(),
+                    "Economy Disabled", "The economy system is disabled in this server.",
+                    event.getAuthor().getId()
+                );
+                return;
+            }
+        } catch (Exception ignored) {}
+
+        String userArg = options.get("user");
+        if (userArg == null || userArg.trim().isEmpty()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Missing User", "Please mention a user to rob: `!rob @user`",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        User targetUser = parseUserMention(event, userArg);
+        if (targetUser == null) return;
+
+        User robber = event.getAuthor();
+
+        if (targetUser.isBot()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Invalid Target", "You cannot rob bots.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        if (robber.equals(targetUser)) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Invalid Target", "You cannot rob yourself.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        try {
+            String guildId = event.getGuild().getId();
+            long robberBalance = ServerBot.getStorageManager().getBalance(guildId, robber.getId());
+
+            if (robberBalance < 100) {
+                DismissibleMessage.sendError(event.getChannel(),
+                    "Not Enough Money", "You need at least 100 points to attempt a robbery.",
+                    event.getAuthor().getId()
+                );
+                return;
+            }
+
+            long targetBalance = ServerBot.getStorageManager().getBalance(guildId, targetUser.getId());
+
+            if (targetBalance <= 0) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "No Money", targetUser.getName() + " has no points to rob!"
+                )).queue();
+                return;
+            }
+
+            Random random = new Random();
+            boolean success = random.nextDouble() < 0.35;
+
+            EmbedBuilder embed = EmbedUtils.createEmbedBuilder();
+
+            if (success) {
+                long maxSteal = Math.min(targetBalance / 4, 500);
+                long minSteal = Math.max(1, targetBalance / 10);
+                long stolenAmount = minSteal + (maxSteal > minSteal ? random.nextLong(maxSteal - minSteal + 1) : 0);
+
+                ServerBot.getStorageManager().setBalance(guildId, robber.getId(), robberBalance + stolenAmount);
+                ServerBot.getStorageManager().setBalance(guildId, targetUser.getId(), targetBalance - stolenAmount);
+
+                embed.setColor(EmbedUtils.SUCCESS_COLOR)
+                        .setTitle("🎯 Robbery Successful!")
+                        .setDescription("**" + robber.getName() + "** successfully robbed **" + targetUser.getName() + "**!")
+                        .addField("💰 Stolen", stolenAmount + " points", true)
+                        .addField("🏃 Your Balance", (robberBalance + stolenAmount) + " points", true)
+                        .addField("😢 Victim's Balance", (targetBalance - stolenAmount) + " points", true);
+            } else {
+                long penalty = Math.min(robberBalance / 10, 100);
+                if (penalty > 0) {
+                    ServerBot.getStorageManager().setBalance(guildId, robber.getId(), robberBalance - penalty);
+                }
+
+                embed.setColor(EmbedUtils.ERROR_COLOR)
+                        .setTitle("🚨 Robbery Failed!")
+                        .setDescription("**" + robber.getName() + "** tried to rob **" + targetUser.getName() + "** but got caught!")
+                        .addField("💸 Fine", penalty + " points", true)
+                        .addField("💰 Your Balance", (robberBalance - penalty) + " points", true)
+                        .addField("😤 Victim", targetUser.getName() + " kept their money safe!", true);
+            }
+
+            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+
+        } catch (Exception e) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Robbery Failed", "An error occurred during the robbery attempt.",
+                event.getAuthor().getId()
+            );
+        }
+    }
+
+    /**
+     * Handle blackjack command - play a game of blackjack
+     * Note: The interactive button-based blackjack only works with slash commands.
+     * This prefix version provides a simplified auto-play experience.
+     */
+    private void handleBlackjackCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Guild Only", "This command can only be used in servers.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        String betStr = options.get("bet");
+        if (betStr == null || betStr.trim().isEmpty()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Missing Bet", "Please specify a bet amount: `!blackjack <amount>`\n" +
+                "**Tip:** For the full interactive experience with hit/stand buttons, use `/blackjack`.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        long bet;
+        try {
+            bet = Long.parseLong(betStr);
+        } catch (NumberFormatException e) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Invalid Amount", "Please enter a valid number.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        if (bet <= 0) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Invalid Amount", "You must bet at least 1 coin.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        if (bet > 10000) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Bet Too High", "You cannot bet more than 10,000 coins at once.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        String guildId = event.getGuild().getId();
+        String userId = event.getAuthor().getId();
+        long balance = ServerBot.getStorageManager().getBalance(guildId, userId);
+
+        if (balance < bet) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Insufficient Funds",
+                String.format("You only have %,d coins but tried to bet %,d coins.", balance, bet),
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        // Simple auto-play blackjack for prefix
+        Random random = new Random();
+        int playerTotal = random.nextInt(11) + 12; // 12-22
+        int dealerTotal = random.nextInt(11) + 12; // 12-22
+
+        boolean playerBust = playerTotal > 21;
+        boolean dealerBust = dealerTotal > 21;
+
+        EmbedBuilder embed = EmbedUtils.createEmbedBuilder();
+        long winnings = 0;
+
+        if (playerBust) {
+            // Player busts
+            embed.setColor(EmbedUtils.ERROR_COLOR)
+                 .setTitle("🃏 Blackjack - Bust!")
+                 .setDescription("You went over 21!")
+                 .addField("Your Hand", String.valueOf(playerTotal), true)
+                 .addField("Dealer Hand", String.valueOf(dealerTotal), true);
+            // Loss - bet already deducted below
+        } else if (dealerBust || playerTotal > dealerTotal) {
+            // Player wins
+            winnings = bet * 2;
+            embed.setColor(EmbedUtils.SUCCESS_COLOR)
+                 .setTitle("🃏 Blackjack - You Win! 🎉")
+                 .setDescription(dealerBust ? "Dealer busted!" : "You beat the dealer!")
+                 .addField("Your Hand", String.valueOf(playerTotal), true)
+                 .addField("Dealer Hand", String.valueOf(dealerTotal), true)
+                 .addField("Winnings", String.format("+%,d coins", winnings - bet), true);
+        } else if (playerTotal == dealerTotal) {
+            // Push
+            winnings = bet; // Return bet
+            embed.setColor(EmbedUtils.WARNING_COLOR)
+                 .setTitle("🃏 Blackjack - Push!")
+                 .setDescription("It's a tie! Your bet has been returned.")
+                 .addField("Your Hand", String.valueOf(playerTotal), true)
+                 .addField("Dealer Hand", String.valueOf(dealerTotal), true);
+        } else {
+            // Dealer wins
+            embed.setColor(EmbedUtils.ERROR_COLOR)
+                 .setTitle("🃏 Blackjack - Dealer Wins!")
+                 .setDescription("The dealer beat you!")
+                 .addField("Your Hand", String.valueOf(playerTotal), true)
+                 .addField("Dealer Hand", String.valueOf(dealerTotal), true);
+        }
+
+        long newBalance = balance - bet + winnings;
+        ServerBot.getStorageManager().setBalance(guildId, userId, newBalance);
+        embed.addField("💰 Balance", String.format("%,d coins", newBalance), false);
+        embed.setFooter("For the full interactive experience, use /blackjack");
+
+        event.getChannel().sendMessageEmbeds(embed.build()).queue();
+    }
+
+    /**
+     * Handle bank command - manage banking system
+     */
+    private void handleBankCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Guild Only", "This command can only be used in servers.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        String setting = options.get("setting");
+        if (setting == null || setting.trim().isEmpty()) {
+            // Show bank help
+            EmbedBuilder embed = new EmbedBuilder()
+                    .setTitle("🏦 Bank Command Help")
+                    .setDescription("Manage banking system, user balances, and loan settings")
+                    .setColor(0x00AA00)
+                    .addField("**Usage**",
+                        "`!bank balance [view/set/add/subtract] [@user] [amount]`\n" +
+                        "`!bank maxloan <amount>` — Set max loan amount\n" +
+                        "`!bank minloan <amount>` — Set min loan amount\n" +
+                        "`!bank autocollect [enable/disable]` — Toggle auto-collect", false)
+                    .addField("**Examples**",
+                        "`!bank balance` — View your balance\n" +
+                        "`!bank balance view @user` — View user's balance\n" +
+                        "`!bank balance add @user 100` — Give 100 points\n" +
+                        "`!bank maxloan 1000` — Set max loan to 1000", false);
+
+            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+            return;
+        }
+
+        String guildId = event.getGuild().getId();
+        Member member = event.getMember();
+
+        switch (setting.toLowerCase()) {
+            case "balance" -> {
+                String action = options.getOrDefault("action", "view");
+                User targetUser = event.getAuthor();
+
+                String userArg = options.get("user");
+                if (userArg != null && !userArg.trim().isEmpty()) {
+                    User parsed = parseUserMention(event, userArg);
+                    if (parsed == null) return;
+                    targetUser = parsed;
+                }
+
+                // Check permissions for viewing other users
+                if (!targetUser.getId().equals(event.getAuthor().getId()) &&
+                    !PermissionManager.hasPermission(member, "economy.admin.view")) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Insufficient Permissions",
+                        "You need the `economy.admin.view` permission to view other users' balances.",
+                        event.getAuthor().getId()
+                    );
+                    return;
+                }
+
+                try {
+                    long currentBalance = ServerBot.getStorageManager().getBalance(guildId, targetUser.getId());
+                    String amountStr = options.get("amount");
+                    Long amount = null;
+                    if (amountStr != null) {
+                        try { amount = Long.parseLong(amountStr); } catch (NumberFormatException ignored) {}
+                    }
+
+                    switch (action.toLowerCase()) {
+                        case "view" -> {
+                            event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                                "💰 Bank Balance",
+                                "**User:** " + targetUser.getAsMention() + "\n" +
+                                "**Balance:** " + currentBalance + " points"
+                            )).queue();
+                        }
+                        case "set" -> {
+                            if (amount == null) {
+                                DismissibleMessage.sendError(event.getChannel(),
+                                    "Missing Amount", "Please specify the amount: `!bank balance set @user <amount>`",
+                                    event.getAuthor().getId()
+                                );
+                                return;
+                            }
+                            ServerBot.getStorageManager().setBalance(guildId, targetUser.getId(), amount);
+                            event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                                "💰 Balance Updated",
+                                "**User:** " + targetUser.getAsMention() + "\n" +
+                                "**New Balance:** " + amount + " points\n" +
+                                "**Previous Balance:** " + currentBalance + " points"
+                            )).queue();
+                        }
+                        case "add" -> {
+                            if (amount == null) {
+                                DismissibleMessage.sendError(event.getChannel(),
+                                    "Missing Amount", "Please specify the amount: `!bank balance add @user <amount>`",
+                                    event.getAuthor().getId()
+                                );
+                                return;
+                            }
+                            ServerBot.getStorageManager().addBalance(guildId, targetUser.getId(), amount);
+                            long newBal = ServerBot.getStorageManager().getBalance(guildId, targetUser.getId());
+                            event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                                "💰 Balance Updated",
+                                "**User:** " + targetUser.getAsMention() + "\n" +
+                                "**Added:** " + amount + " points\n" +
+                                "**New Balance:** " + newBal + " points"
+                            )).queue();
+                        }
+                        case "subtract" -> {
+                            if (amount == null) {
+                                DismissibleMessage.sendError(event.getChannel(),
+                                    "Missing Amount", "Please specify the amount: `!bank balance subtract @user <amount>`",
+                                    event.getAuthor().getId()
+                                );
+                                return;
+                            }
+                            long newBalance = Math.max(0, currentBalance - amount);
+                            ServerBot.getStorageManager().setBalance(guildId, targetUser.getId(), newBalance);
+                            event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                                "💰 Balance Updated",
+                                "**User:** " + targetUser.getAsMention() + "\n" +
+                                "**Subtracted:** " + amount + " points\n" +
+                                "**New Balance:** " + newBalance + " points"
+                            )).queue();
+                        }
+                        default -> DismissibleMessage.sendError(event.getChannel(),
+                            "Invalid Action", "Valid actions: `view`, `set`, `add`, `subtract`",
+                            event.getAuthor().getId()
+                        );
+                    }
+                } catch (Exception e) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Balance Error", "Failed to handle balance operation: " + e.getMessage(),
+                        event.getAuthor().getId()
+                    );
+                }
+            }
+            case "maxloan" -> {
+                if (!PermissionManager.hasPermission(member, "economy.admin.config")) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Insufficient Permissions", "You need the `economy.admin.config` permission.",
+                        event.getAuthor().getId()
+                    );
+                    return;
+                }
+                String amountStr = options.get("amount");
+                if (amountStr == null) {
+                    // Also check action field as it might hold the amount in positional args
+                    amountStr = options.get("action");
+                }
+                if (amountStr == null) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Missing Amount", "Usage: `!bank maxloan <amount>`",
+                        event.getAuthor().getId()
+                    );
+                    return;
+                }
+                try {
+                    long amount = Long.parseLong(amountStr);
+                    ServerBot.getStorageManager().updateGuildSettings(guildId, "bankMaxLoan", amount);
+                    event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                        "🏦 Max Loan Updated",
+                        "**Maximum loan amount set to:** " + amount + " points"
+                    )).queue();
+                } catch (NumberFormatException e) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Invalid Amount", "Please enter a valid number.",
+                        event.getAuthor().getId()
+                    );
+                } catch (Exception e) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Update Failed", "Failed to update max loan: " + e.getMessage(),
+                        event.getAuthor().getId()
+                    );
+                }
+            }
+            case "minloan" -> {
+                if (!PermissionManager.hasPermission(member, "economy.admin.config")) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Insufficient Permissions", "You need the `economy.admin.config` permission.",
+                        event.getAuthor().getId()
+                    );
+                    return;
+                }
+                String amountStr = options.get("amount");
+                if (amountStr == null) amountStr = options.get("action");
+                if (amountStr == null) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Missing Amount", "Usage: `!bank minloan <amount>`",
+                        event.getAuthor().getId()
+                    );
+                    return;
+                }
+                try {
+                    long amount = Long.parseLong(amountStr);
+                    ServerBot.getStorageManager().updateGuildSettings(guildId, "bankMinLoan", amount);
+                    event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                        "🏦 Min Loan Updated",
+                        "**Minimum loan amount set to:** " + amount + " points"
+                    )).queue();
+                } catch (NumberFormatException e) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Invalid Amount", "Please enter a valid number.",
+                        event.getAuthor().getId()
+                    );
+                } catch (Exception e) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Update Failed", "Failed to update min loan: " + e.getMessage(),
+                        event.getAuthor().getId()
+                    );
+                }
+            }
+            case "autocollect" -> {
+                if (!PermissionManager.hasPermission(member, "economy.admin.config")) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Insufficient Permissions", "You need the `economy.admin.config` permission.",
+                        event.getAuthor().getId()
+                    );
+                    return;
+                }
+                String action = options.get("action");
+                if (action == null || action.trim().isEmpty()) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Missing Action", "Usage: `!bank autocollect <enable/disable>`",
+                        event.getAuthor().getId()
+                    );
+                    return;
+                }
+                boolean enabled = action.equalsIgnoreCase("enable");
+                try {
+                    ServerBot.getStorageManager().updateGuildSettings(guildId, "bankAutoCollect", enabled);
+                    event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                        "🏦 Auto-Collect " + (enabled ? "Enabled" : "Disabled"),
+                        "Auto-collect is now **" + (enabled ? "enabled" : "disabled") + "**."
+                    )).queue();
+                } catch (Exception e) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Update Failed", "Failed to update auto-collect: " + e.getMessage(),
+                        event.getAuthor().getId()
+                    );
+                }
+            }
+            default -> DismissibleMessage.sendError(event.getChannel(),
+                "Invalid Setting",
+                "Valid settings: `balance`, `maxloan`, `minloan`, `autocollect`\nUse `!bank` for help.",
+                event.getAuthor().getId()
+            );
+        }
+    }
+
+    // ========================= NEW UTILITY PREFIX COMMANDS =========================
+
+    /**
+     * Handle embed command - create custom embeds
+     */
+    private void handleEmbedCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Guild Only", "This command can only be used in servers.",
+                event.getAuthor().getId()
+            );
+            return;
+        }
+
+        Member member = event.getMember();
+        if (!PermissionManager.hasPermission(member, "mod.embed")) {
+            // Fall back to checking mod perms
+            try {
+                if (!member.hasPermission(net.dv8tion.jda.api.Permission.MANAGE_CHANNEL)) {
+                    DismissibleMessage.sendError(event.getChannel(),
+                        "Insufficient Permissions", "You need moderation permissions to create embeds.",
+                        event.getAuthor().getId()
+                    );
+                    return;
+                }
+            } catch (Exception ignored) {
+                DismissibleMessage.sendError(event.getChannel(),
+                    "Insufficient Permissions", "You need moderation permissions to create embeds.",
+                    event.getAuthor().getId()
+                );
+                return;
+            }
+        }
+
+        String title = options.get("title");
+        String description = options.get("description");
+        String colorHex = options.getOrDefault("color", "#0099FF");
+
+        if ((title == null || title.trim().isEmpty()) && (description == null || description.trim().isEmpty())) {
+            EmbedBuilder help = new EmbedBuilder()
+                    .setTitle("📝 Embed Command Help")
+                    .setDescription("Create custom embeds")
+                    .setColor(0x5865F2)
+                    .addField("Usage",
+                        "`!embed Title | Description` — Simple embed\n" +
+                        "`!embed Title | Description -color #FF0000` — Colored embed\n" +
+                        "`!embed -title MyTitle -description MyDesc -color #00FF00` — Flag syntax", false)
+                    .addField("Examples",
+                        "`!embed Welcome | Hello everyone!`\n" +
+                        "`!embed Announcement | Check this out -color #FF0000`", false);
+            event.getChannel().sendMessageEmbeds(help.build()).queue();
+            return;
+        }
+
+        try {
+            java.awt.Color embedColor = parseHexColor(colorHex);
+            EmbedBuilder embed = new EmbedBuilder();
+
+            if (title != null && !title.trim().isEmpty()) {
+                embed.setTitle(title.trim());
+            }
+            if (description != null && !description.trim().isEmpty()) {
+                embed.setDescription(description.replace("\\n", "\n").trim());
+            }
+
+            embed.setColor(embedColor);
+            embed.setFooter("Created by " + event.getAuthor().getEffectiveName(),
+                           event.getAuthor().getAvatarUrl());
+
+            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+
+        } catch (Exception e) {
+            DismissibleMessage.sendError(event.getChannel(),
+                "Embed Creation Failed", "Failed to create embed: " + e.getMessage(),
+                event.getAuthor().getId()
+            );
+        }
+    }
+
+    /**
+     * Parse a hex color string to a Color object
+     */
+    private java.awt.Color parseHexColor(String hex) {
+        if (hex == null || hex.isEmpty()) return new java.awt.Color(0x0099FF);
+        hex = hex.replace("#", "");
+        try {
+            return new java.awt.Color(Integer.parseInt(hex, 16));
+        } catch (NumberFormatException e) {
+            // Try named colors
+            return switch (hex.toLowerCase()) {
+                case "red" -> java.awt.Color.RED;
+                case "green" -> java.awt.Color.GREEN;
+                case "blue" -> java.awt.Color.BLUE;
+                case "yellow" -> java.awt.Color.YELLOW;
+                case "orange" -> java.awt.Color.ORANGE;
+                case "pink" -> java.awt.Color.PINK;
+                case "cyan" -> java.awt.Color.CYAN;
+                case "purple" -> new java.awt.Color(0x9B59B6);
+                default -> new java.awt.Color(0x0099FF);
+            };
+        }
+    }
+
+    /**
+     * Handle dadjoke command - get a random dad joke
+     */
+    private void handleDadJokeCommand(MessageReceivedEvent event) {
+        String[] dadJokes = {
+            "Why don't scientists trust atoms? Because they make up everything!",
+            "I told my wife she was drawing her eyebrows too high. She looked surprised.",
+            "What do you call a fake noodle? An impasta!",
+            "Why did the scarecrow win an award? He was outstanding in his field!",
+            "I used to hate facial hair, but then it grew on me.",
+            "What do you call a bear with no teeth? A gummy bear!",
+            "Why don't eggs tell jokes? They'd crack each other up!",
+            "What's the best thing about Switzerland? I don't know, but the flag is a big plus.",
+            "I invented a new word: Plagiarism!",
+            "Did you hear about the mathematician who's afraid of negative numbers? He'll stop at nothing to avoid them!",
+            "Why did the coffee file a police report? It got mugged!",
+            "What did the ocean say to the beach? Nothing, it just waved.",
+            "Why don't skeletons fight each other? They don't have the guts.",
+            "What do you call a sleeping bull? A bulldozer!",
+            "I'm reading a book about anti-gravity. It's impossible to put down!",
+            "Why did the bicycle fall over? Because it was two tired!",
+            "What do you call a dinosaur that crashes his car? Tyrannosaurus Wrecks!",
+            "Want to hear a joke about construction? I'm still working on it.",
+            "What do you call a factory that makes okay products? A satisfactory!",
+            "What did the janitor say when he jumped out of the closet? Supplies!",
+            "I don't trust stairs. They're always up to something.",
+            "What do you call a pig that does karate? A pork chop!",
+            "Why did the golfer wear two pairs of pants? In case he got a hole in one!",
+            "How does a penguin build its house? Igloos it together!",
+            "What did one wall say to the other wall? I'll meet you at the corner!"
+        };
+
+        String joke = dadJokes[new Random().nextInt(dadJokes.length)];
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "Dad Joke 🔥", joke
+        )).queue();
+    }
+
+    /**
+     * Handle joke command - get a random joke
+     */
+    private void handleJokeCommand(MessageReceivedEvent event) {
+        String[] jokes = {
+            "Why did the programmer quit his job? He didn't get arrays!",
+            "A SQL query goes into a bar, walks up to two tables and asks: 'Can I join you?'",
+            "Why do Java developers wear glasses? Because they can't C#!",
+            "How many programmers does it take to change a light bulb? None, that's a hardware problem!",
+            "Why did the developer go broke? Because he used up all his cache!",
+            "What's a computer's favorite snack? Microchips!",
+            "Why do programmers prefer dark mode? Because light attracts bugs!",
+            "What do you call 8 hobbits? A hobbyte!",
+            "Why did the smartphone need glasses? It lost all its contacts!",
+            "What do you call a fish wearing a bowtie? Sofishticated!",
+            "What do you call a sleeping bull? A bulldozer!",
+            "Why did the coffee file a police report? It got mugged!",
+            "What's the best way to communicate with a fish? Drop it a line!",
+            "Why did the bicycle fall over? Because it was two tired!",
+            "What do you call a belt made of watches? A waist of time!",
+            "What's orange and sounds like a parrot? A carrot!",
+            "Why did the stadium get hot after the game? All of the fans left!",
+            "What do you call a dog magician? A labracadabrador!",
+            "Why did the picture go to jail? Because it was framed!",
+            "What did the big flower say to the little flower? Hi, bud!",
+            "Why don't skeletons fight each other? They don't have the guts!",
+            "What did the ocean say to the beach? Nothing, it just waved!",
+            "I told my wife she was drawing her eyebrows too high. She looked surprised!",
+            "I'm reading a book about anti-gravity. It's impossible to put down!",
+            "Want to hear a joke about construction? I'm still working on it!"
+        };
+
+        String joke = jokes[new Random().nextInt(jokes.length)];
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "😄 Random Joke", joke
+        )).queue();
+    }
+
+    // ==================== Owner-Only Commands ====================
+
+    /**
+     * Handle !statusmsg [message] - Set or clear bot custom status message
+     * Owner only - non-owners get "Unknown Command" from the main flow since these
+     * commands are hidden. But if they somehow reach here, we block them.
+     */
+    private void handleStatusMsgCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!PermissionUtils.isBotOwner(event.getAuthor())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Unknown Command",
+                "The command was not found. Use `" + getGuildPrefix(event) + "help` to see available commands."
+            )).queue();
+            return;
+        }
+
+        String message = options.get("message");
+
+        if (message == null || message.isBlank()) {
+            // Clear status
+            try {
+                event.getJDA().getPresence().setActivity(null);
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                    "Status Cleared", "Bot status has been cleared."
+                )).queue();
+            } catch (Exception e) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Status Clear Failed", "Failed to clear bot status: " + e.getMessage()
+                )).queue();
+            }
+        } else {
+            // Set status
+            try {
+                net.dv8tion.jda.api.entities.Activity activity = net.dv8tion.jda.api.entities.Activity.customStatus(message);
+                event.getJDA().getPresence().setActivity(activity);
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                    "Status Updated", "Bot status has been set to:\n**" + message + "**"
+                )).queue();
+            } catch (Exception e) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Status Update Failed", "Failed to update bot status: " + e.getMessage()
+                )).queue();
+            }
+        }
+    }
+
+    /**
+     * Handle !restart - Restart the bot
+     * Owner only
+     */
+    private void handleRestartCommand(MessageReceivedEvent event) {
+        if (!PermissionUtils.isBotOwner(event.getAuthor())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Unknown Command",
+                "The command was not found. Use `" + getGuildPrefix(event) + "help` to see available commands."
+            )).queue();
+            return;
+        }
+
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+            "\uD83D\uDD04 Restarting Bot",
+            "The bot is restarting... This may take a few moments."
+        )).queue(message -> {
+            new Thread(() -> {
+                try {
+                    Thread.sleep(2000);
+                    System.out.println("Bot restart initiated by owner: " + event.getAuthor().getName());
+                    ServerBot.getStorageManager().saveAllData();
+                    event.getJDA().shutdown();
+                    System.exit(0);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.err.println("Restart interrupted: " + e.getMessage());
+                }
+            }).start();
+        });
+    }
+
+    /**
+     * Handle !rpc <action> [type] [text] - Set bot rich presence (activity)
+     * Owner only
+     */
+    private void handleRpcCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!PermissionUtils.isBotOwner(event.getAuthor())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Unknown Command",
+                "The command was not found. Use `" + getGuildPrefix(event) + "help` to see available commands."
+            )).queue();
+            return;
+        }
+
+        String action = options.get("action");
+        if (action == null) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Missing Action",
+                "Usage: `!rpc <set|remove> [type] [text]`\n" +
+                "Types: `playing`, `watching`, `listening`, `streaming`, `competing`"
+            )).queue();
+            return;
+        }
+
+        switch (action.toLowerCase()) {
+            case "set":
+                String presenceText = options.get("text");
+                String activityType = options.getOrDefault("type", "playing");
+
+                if (presenceText == null || presenceText.trim().isEmpty()) {
+                    event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                        "Missing Text", "Please provide presence text when using `set`.\n" +
+                        "Usage: `!rpc set [type] <text>`"
+                    )).queue();
+                    return;
+                }
+
+                try {
+                    net.dv8tion.jda.api.entities.Activity activity = switch (activityType.toLowerCase()) {
+                        case "playing" -> net.dv8tion.jda.api.entities.Activity.playing(presenceText);
+                        case "watching" -> net.dv8tion.jda.api.entities.Activity.watching(presenceText);
+                        case "listening" -> net.dv8tion.jda.api.entities.Activity.listening(presenceText);
+                        case "streaming" -> net.dv8tion.jda.api.entities.Activity.streaming(presenceText, "https://twitch.tv/placeholder");
+                        case "competing" -> net.dv8tion.jda.api.entities.Activity.competing(presenceText);
+                        default -> net.dv8tion.jda.api.entities.Activity.playing(presenceText);
+                    };
+
+                    event.getJDA().getPresence().setActivity(activity);
+                    event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                        "Presence Updated",
+                        "Bot presence has been set to: **" + activityType.substring(0, 1).toUpperCase() + activityType.substring(1) + " " + presenceText + "**"
+                    )).queue();
+                } catch (Exception e) {
+                    event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                        "Presence Update Failed", "Failed to update bot presence: " + e.getMessage()
+                    )).queue();
+                }
+                break;
+
+            case "remove":
+            case "clear":
+                try {
+                    event.getJDA().getPresence().setActivity(null);
+                    event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                        "Presence Cleared", "Bot presence has been cleared."
+                    )).queue();
+                } catch (Exception e) {
+                    event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                        "Presence Clear Failed", "Failed to clear bot presence: " + e.getMessage()
+                    )).queue();
+                }
+                break;
+
+            default:
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Invalid Action", "Available actions: `set`, `remove`"
+                )).queue();
+                break;
+        }
+    }
+
+    /**
+     * Handle !appearance <status> - Set bot online status
+     * Owner only
+     */
+    private void handleAppearanceCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!PermissionUtils.isBotOwner(event.getAuthor())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Unknown Command",
+                "The command was not found. Use `" + getGuildPrefix(event) + "help` to see available commands."
+            )).queue();
+            return;
+        }
+
+        String statusType = options.get("status");
+        if (statusType == null) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Missing Status",
+                "Usage: `!appearance <online|dnd|idle|offline>`"
+            )).queue();
+            return;
+        }
+
+        net.dv8tion.jda.api.OnlineStatus status;
+        String statusText;
+
+        switch (statusType.toLowerCase()) {
+            case "online":
+                status = net.dv8tion.jda.api.OnlineStatus.ONLINE;
+                statusText = "Online " + CustomEmojis.ONLINE;
+                break;
+            case "dnd":
+            case "do-not-disturb":
+                status = net.dv8tion.jda.api.OnlineStatus.DO_NOT_DISTURB;
+                statusText = "Do Not Disturb " + CustomEmojis.DND;
+                break;
+            case "idle":
+            case "away":
+                status = net.dv8tion.jda.api.OnlineStatus.IDLE;
+                statusText = "Idle " + CustomEmojis.IDLE;
+                break;
+            case "offline":
+                status = net.dv8tion.jda.api.OnlineStatus.OFFLINE;
+                statusText = "Offline " + CustomEmojis.OFFLINE;
+                break;
+            default:
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Invalid Status", "Valid statuses are: `online`, `dnd`, `idle`, `offline`"
+                )).queue();
+                return;
+        }
+
+        try {
+            event.getJDA().getPresence().setStatus(status);
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                "Appearance Updated", "Bot appearance has been set to: **" + statusText + "**"
+            )).queue();
+        } catch (Exception e) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Appearance Update Failed", "Failed to update bot appearance: " + e.getMessage()
+            )).queue();
+        }
+    }
+
+    /**
+     * Handle !backup <action> [timestamp] - Manage server configuration backups
+     * Requires admin.backup permission
+     */
+    private void handleBackupCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Guild Only", "This command can only be used in servers."
+            )).queue();
+            return;
+        }
+
+        Member member = event.getMember();
+        if (!PermissionManager.hasPermission(member, "admin.backup")) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Unknown Command",
+                "The command was not found. Use `" + getGuildPrefix(event) + "help` to see available commands."
+            )).queue();
+            return;
+        }
+
+        String action = options.getOrDefault("action", "list");
+        String guildId = event.getGuild().getId();
+
+        switch (action.toLowerCase()) {
+            case "create":
+                handleBackupCreate(event, guildId);
+                break;
+            case "list":
+                handleBackupList(event, guildId);
+                break;
+            case "info":
+                handleBackupInfo(event, guildId, options.get("timestamp"));
+                break;
+            case "restore":
+                handleBackupRestore(event, guildId, options.get("timestamp"));
+                break;
+            default:
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Invalid Action",
+                    "Usage: `!backup <create|list|info|restore> [timestamp]`"
+                )).queue();
+                break;
+        }
+    }
+
+    private void handleBackupCreate(MessageReceivedEvent event, String guildId) {
+        try {
+            String guildName = event.getGuild().getName();
+            String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+            String backupName = "backup_" + guildName.replaceAll("[^a-zA-Z0-9]", "_") + "_" + timestamp;
+
+            Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
+
+            StringBuilder backupData = new StringBuilder();
+            backupData.append("# Server Bot Configuration Backup\n");
+            backupData.append("# Server: ").append(guildName).append(" (").append(guildId).append(")\n");
+            backupData.append("# Created: ").append(java.time.LocalDateTime.now()).append("\n");
+            backupData.append("# DO NOT EDIT THIS FILE MANUALLY\n\n");
+
+            int settingsCount = 0;
+            for (Map.Entry<String, Object> entry : guildSettings.entrySet()) {
+                backupData.append(entry.getKey()).append("=").append(entry.getValue()).append("\n");
+                settingsCount++;
+            }
+
+            ServerBot.getStorageManager().updateGuildSettings(guildId, "backup_" + timestamp, backupData.toString());
+
+            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
+                    .setTitle("Backup Created Successfully")
+                    .setDescription("Server configuration has been backed up!")
+                    .addField("Backup Details",
+                              "**Name:** " + backupName + "\n" +
+                              "**Settings Saved:** " + settingsCount + "\n" +
+                              "**Created:** " + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm")),
+                              false)
+                    .addField("Usage",
+                              "Use `!backup list` to view all backups\n" +
+                              "Use `!backup restore <timestamp>` to restore from this backup",
+                              false);
+
+            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+        } catch (Exception e) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Backup Failed", "Failed to create backup: " + e.getMessage()
+            )).queue();
+        }
+    }
+
+    private void handleBackupList(MessageReceivedEvent event, String guildId) {
+        try {
+            Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
+
+            StringBuilder backupList = new StringBuilder();
+            int backupCount = 0;
+
+            for (Map.Entry<String, Object> entry : guildSettings.entrySet()) {
+                if (entry.getKey().startsWith("backup_")) {
+                    String timestamp = entry.getKey().substring(7);
+                    try {
+                        java.time.LocalDateTime dateTime = java.time.LocalDateTime.parse(timestamp,
+                                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+                        String formattedDate = dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm"));
+                        backupList.append("**").append(timestamp).append("**\n")
+                                 .append("Created: ").append(formattedDate).append("\n\n");
+                        backupCount++;
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+
+            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
+                    .setTitle(CustomEmojis.SAVE + " Server Backups")
+                    .setDescription("Available configuration backups for **" + event.getGuild().getName() + "**");
+
+            if (backupCount == 0) {
+                embed.addField(CustomEmojis.NOTE + " No Backups Found",
+                              "Use `!backup create` to create your first backup.", false);
+            } else {
+                embed.addField(CustomEmojis.NOTE + " Available Backups (" + backupCount + ")",
+                              backupList.toString(), false);
+                embed.addField(CustomEmojis.INFO + " Usage",
+                              "Use `!backup info <timestamp>` to view backup details\n" +
+                              "Use `!backup restore <timestamp>` to restore a backup", false);
+            }
+
+            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+        } catch (Exception e) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "List Failed", "Failed to list backups: " + e.getMessage()
+            )).queue();
+        }
+    }
+
+    private void handleBackupInfo(MessageReceivedEvent event, String guildId, String timestamp) {
+        if (timestamp == null) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Missing Parameter", "Please specify the backup timestamp.\nUsage: `!backup info <timestamp>`"
+            )).queue();
+            return;
+        }
+
+        try {
+            Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
+            String backupData = (String) guildSettings.get("backup_" + timestamp);
+
+            if (backupData == null) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Backup Not Found", "No backup found with timestamp: " + timestamp
+                )).queue();
+                return;
+            }
+
+            String[] lines = backupData.split("\n");
+            int settingsCount = 0;
+            for (String line : lines) {
+                if (line.contains("=") && !line.startsWith("#")) {
+                    settingsCount++;
+                }
+            }
+
+            java.time.LocalDateTime dateTime = java.time.LocalDateTime.parse(timestamp,
+                    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+            String formattedDate = dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm"));
+
+            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
+                    .setTitle(CustomEmojis.SAVE + " Backup Information")
+                    .setDescription("Details for backup: **" + timestamp + "**")
+                    .addField(CustomEmojis.NOTE + " Created", formattedDate, true)
+                    .addField(CustomEmojis.SETTING + " Settings Count", String.valueOf(settingsCount), true)
+                    .addField(CustomEmojis.INFO + " Size", backupData.length() + " characters", true)
+                    .addField(CustomEmojis.WARN + " Restore Warning",
+                              "Restoring this backup will **overwrite all current settings**!\n" +
+                              "Make sure to create a current backup first.", false);
+
+            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+        } catch (Exception e) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Info Failed", "Failed to get backup info: " + e.getMessage()
+            )).queue();
+        }
+    }
+
+    private void handleBackupRestore(MessageReceivedEvent event, String guildId, String timestamp) {
+        if (timestamp == null) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Missing Parameter", "Please specify the backup timestamp to restore.\nUsage: `!backup restore <timestamp>`"
+            )).queue();
+            return;
+        }
+
+        try {
+            Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
+            String backupData = (String) guildSettings.get("backup_" + timestamp);
+
+            if (backupData == null) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Backup Not Found", "No backup found with timestamp: " + timestamp
+                )).queue();
+                return;
+            }
+
+            String[] lines = backupData.split("\n");
+            int restoredCount = 0;
+
+            for (String line : lines) {
+                if (line.contains("=") && !line.startsWith("#") && !line.startsWith("backup_")) {
+                    String[] parts = line.split("=", 2);
+                    if (parts.length == 2) {
+                        String key = parts[0];
+                        String value = parts[1];
+
+                        Object convertedValue;
+                        if (value.equals("true") || value.equals("false")) {
+                            convertedValue = Boolean.parseBoolean(value);
+                        } else if (value.equals("null")) {
+                            convertedValue = null;
+                        } else {
+                            try {
+                                convertedValue = Long.parseLong(value);
+                            } catch (NumberFormatException e) {
+                                convertedValue = value;
+                            }
+                        }
+
+                        ServerBot.getStorageManager().updateGuildSettings(guildId, key, convertedValue);
+                        restoredCount++;
+                    }
+                }
+            }
+
+            java.time.LocalDateTime dateTime = java.time.LocalDateTime.parse(timestamp,
+                    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+            String formattedDate = dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm"));
+
+            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
+                    .setTitle(CustomEmojis.SUCCESS + " Backup Restored Successfully")
+                    .setDescription("Server configuration has been restored from backup!")
+                    .addField(CustomEmojis.NOTE + " Backup From", formattedDate, true)
+                    .addField(CustomEmojis.SETTING + " Settings Restored", String.valueOf(restoredCount), true)
+                    .addField(CustomEmojis.INFO + " Status", "All settings have been applied", false)
+                    .addField(CustomEmojis.INFO + " Next Steps",
+                              "Your server configuration has been restored to the backed up state.\n" +
+                              "You may need to restart the bot for some changes to take effect.", false);
+
+            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+        } catch (Exception e) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Restore Failed", "Failed to restore backup: " + e.getMessage()
+            )).queue();
+        }
+    }
+
+    /**
+     * Handle !config [action] - View or reload server configuration
+     * Requires Manage Server permissions
+     */
+    private void handleConfigCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Guild Only", "This command can only be used in servers."
+            )).queue();
+            return;
+        }
+
+        Member member = event.getMember();
+        if (!PermissionUtils.hasManageServerPermissions(member)) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Unknown Command",
+                "The command was not found. Use `" + getGuildPrefix(event) + "help` to see available commands."
+            )).queue();
+            return;
+        }
+
+        String action = options.getOrDefault("action", "show");
+
+        switch (action.toLowerCase()) {
+            case "show":
+                handleConfigShow(event);
+                break;
+            case "reload":
+                handleConfigReload(event);
+                break;
+            default:
+                handleConfigShow(event);
+                break;
+        }
+    }
+
+    private void handleConfigShow(MessageReceivedEvent event) {
+        String guildId = event.getGuild().getId();
+
+        try {
+            Map<String, Object> config = ServerBot.getStorageManager().getGuildSettings(guildId);
+
+            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
+                    .setTitle("Server Config")
+                    .setDescription("Current bot settings for this server");
+
+            String prefix = (String) config.getOrDefault("prefix", "/");
+            boolean levelsEnabled = (Boolean) config.getOrDefault("enableLeveling", false);
+            boolean pointsEnabled = (Boolean) config.getOrDefault("enableEconomy", false);
+            boolean automodEnabled = (Boolean) config.getOrDefault("enableAutoMod", false);
+            boolean autoroleEnabled = (Boolean) config.getOrDefault("enableAutoRole", false);
+
+            embed.addField("Basic",
+                    "**Prefix:** " + prefix + "\n" +
+                    "**Levels:** " + (levelsEnabled ? CustomEmojis.ON + " Enabled" : CustomEmojis.OFF + " Disabled") + "\n" +
+                    "**Economy:** " + (pointsEnabled ? CustomEmojis.ON + " Enabled" : CustomEmojis.OFF + " Disabled") + "\n" +
+                    "**AutoMod:** " + (automodEnabled ? CustomEmojis.ON + " Enabled" : CustomEmojis.OFF + " Disabled") + "\n" +
+                    "**AutoRole:** " + (autoroleEnabled ? CustomEmojis.ON + " Enabled" : CustomEmojis.OFF + " Disabled"),
+                    false);
+
+            String modLogChannel = (String) config.get("modLogChannel");
+            String punishmentLogChannel = (String) config.get("punishmentLogChannel");
+            String allLogChannel = (String) config.get("allLogChannel");
+
+            String logChannels = "";
+            if (modLogChannel != null) {
+                logChannels += "**Mod Log:** <#" + modLogChannel + ">\n";
+            }
+            if (punishmentLogChannel != null) {
+                logChannels += "**Punishment Log:** <#" + punishmentLogChannel + ">\n";
+            }
+            if (allLogChannel != null) {
+                logChannels += "**All Events:** <#" + allLogChannel + ">\n";
+            }
+            if (logChannels.isEmpty()) {
+                logChannels = "No logging channels configured";
+            }
+
+            embed.addField("Logchannels", logChannels, false);
+
+            embed.addField("Config Commands",
+                    "`/levels enable|disable` - Toggle leveling system\n" +
+                    "`/points enable|disable` - Toggle economy system\n" +
+                    "`!config reload` - Reload configuration",
+                    false);
+
+            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+        } catch (Exception e) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Configuration Error", "Failed to load server configuration: " + e.getMessage()
+            )).queue();
+        }
+    }
+
+    private void handleConfigReload(MessageReceivedEvent event) {
+        try {
+            ServerBot.getStorageManager().saveAllData();
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                "Configuration Reloaded", "Bot configuration has been reloaded successfully."
+            )).queue();
+        } catch (Exception e) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Reload Failed", "Failed to reload configuration: " + e.getMessage()
+            )).queue();
         }
     }
 }

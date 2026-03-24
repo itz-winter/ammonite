@@ -20,7 +20,8 @@ public enum CommandCategory {
     REACTION_ROLES("Reaction Roles", "🎭", "Reaction role system"),
     LOGGING("Logging", "📝", "Server logging configuration"),
     SUPPORT("Support", "🎫", "Ticket and support system"),
-    GLOBAL_CHAT("Global Chat", "🌐", "Cross-server global chat system");
+    GLOBAL_CHAT("Global Chat", "🌐", "Cross-server global chat system"),
+    MUSIC("Music", "🎵", "Music playback and queue management");
     
     private final String displayName;
     private final String emoji;

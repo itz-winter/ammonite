@@ -23,12 +23,27 @@
         <sqlite.version>3.43.2.2</sqlite.version>
     </properties>
 
+    <repositories>
+        <!-- Lavalink repository for LavaPlayer fork -->
+        <repository>
+            <id>lavalink</id>
+            <url>https://maven.lavalink.dev/releases</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <!-- JDA (Java Discord API) -->
         <dependency>
             <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>
             <version>${jda.version}</version>
+        </dependency>
+
+        <!-- LavaPlayer - Audio player library for Discord bots -->
+        <dependency>
+            <groupId>dev.arbjerg</groupId>
+            <artifactId>lavaplayer</artifactId>
+            <version>2.2.3</version>
         </dependency>
 
         <!-- Logging -->
