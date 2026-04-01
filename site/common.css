@@ -44,6 +44,14 @@ h2 {
     border-radius: 10px;
     animation: fadeIn 0.3s ease;
 }
+
+.container button:hover {
+    background-color: #0b0022;
+    color: white;
+    cursor: pointer;
+}
+
+/* Buttons */
 .container button {
     max-width: 600px;
     margin: auto;
@@ -57,13 +65,6 @@ h2 {
     align-items: center;
     transition: all 0.3s ease;
 }
-.container button:hover {
-    background-color: #0b0022;
-    color: white;
-    cursor: pointer;
-}
-
-/* Buttons */
 .back {
     position: relative;
 }
