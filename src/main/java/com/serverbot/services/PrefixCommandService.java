@@ -133,13 +133,25 @@ public class PrefixCommandService {
     }
     
     /**
-     * Get the prefix for a guild, or default if not in a guild
+     * Get the primary prefix for a guild, or default if not in a guild.
      */
     private String getGuildPrefix(MessageReceivedEvent event) {
         if (event.isFromGuild()) {
             return ServerBot.getStorageManager().getPrefix(event.getGuild().getId());
         }
         return DEFAULT_PREFIX;
+    }
+
+    /**
+     * Get all active prefixes for a guild (supports multiple per guild).
+     */
+    private java.util.List<String> getGuildPrefixes(MessageReceivedEvent event) {
+        if (event.isFromGuild()) {
+            return ServerBot.getStorageManager().getPrefixes(event.getGuild().getId());
+        }
+        java.util.List<String> defaults = new java.util.ArrayList<>();
+        defaults.add(DEFAULT_PREFIX);
+        return defaults;
     }
     
     /**
@@ -154,17 +166,25 @@ public class PrefixCommandService {
             return;
         }
         
-        // Get the prefix for this guild
-        String prefix = getGuildPrefix(event);
-        
-        // Check if it's a regular prefix command
-        if (!content.startsWith(prefix)) {
-            // Also check default prefix for backwards compatibility
-            if (!content.startsWith(DEFAULT_PREFIX)) {
-                return;
+        // Find which prefix (if any) this message starts with.
+        // Check all guild prefixes and the hardcoded default for backwards compatibility.
+        java.util.List<String> guildPrefixes = getGuildPrefixes(event);
+        String matchedPrefix = null;
+        for (String p : guildPrefixes) {
+            if (content.startsWith(p)) {
+                matchedPrefix = p;
+                break;
             }
-            prefix = DEFAULT_PREFIX;
         }
+        // Also accept the hardcoded default prefix as a fallback so existing users
+        // aren't broken if a guild changes their prefix.
+        if (matchedPrefix == null && content.startsWith(DEFAULT_PREFIX)) {
+            matchedPrefix = DEFAULT_PREFIX;
+        }
+        if (matchedPrefix == null) {
+            return;
+        }
+        final String prefix = matchedPrefix;
         
         // Parse the command and arguments
         String[] parts = content.substring(prefix.length()).split("\\s+");

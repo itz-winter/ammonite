@@ -38,6 +38,7 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.utility.StatusCommand());
         registerCommand(new com.serverbot.commands.utility.InfoCommand());
         registerCommand(new com.serverbot.commands.utility.PingCommand());
+        registerCommand(new com.serverbot.commands.utility.AvatarCommand());
         registerCommand(new com.serverbot.commands.utility.PresenceCommand());
         registerCommand(new com.serverbot.commands.utility.RestartCommand());
         registerCommand(new com.serverbot.commands.utility.AppearanceCommand());
@@ -194,6 +195,7 @@ public class CommandManager {
         commandDataList.add(com.serverbot.commands.utility.EchoCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.InfoCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.PingCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.utility.AvatarCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.ServerStatsCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.EmbedCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.DadJokeCommand.getCommandData());

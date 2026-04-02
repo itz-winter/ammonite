@@ -829,19 +829,64 @@ public class FileStorageManager {
     // Prefix command settings methods
     
     /**
-     * Get the command prefix for a guild
+     * Get all active command prefixes for a guild.
+     * Returns a list; the first element is the "primary" prefix shown in help text.
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> getPrefixes(String guildId) {
+        Map<String, Object> settings = getGuildSettings(guildId);
+        Object prefixes = settings.get("commandPrefixes");
+        if (prefixes instanceof List && !((List<?>) prefixes).isEmpty()) {
+            return new ArrayList<>((List<String>) prefixes);
+        }
+        // Fall back to legacy single-prefix field, then default
+        Object legacy = settings.get("commandPrefix");
+        List<String> result = new ArrayList<>();
+        result.add(legacy != null ? legacy.toString() : "!");
+        return result;
+    }
+
+    /**
+     * Get the primary (first) command prefix for a guild.
      */
     public String getPrefix(String guildId) {
-        Map<String, Object> settings = getGuildSettings(guildId);
-        Object prefix = settings.get("commandPrefix");
-        return prefix != null ? prefix.toString() : "!";
+        return getPrefixes(guildId).get(0);
     }
-    
+
     /**
-     * Set the command prefix for a guild
+     * Replace all prefixes for a guild with a single prefix.
      */
     public void setPrefix(String guildId, String prefix) {
-        updateGuildSettings(guildId, "commandPrefix", prefix);
+        List<String> list = new ArrayList<>();
+        list.add(prefix);
+        updateGuildSettings(guildId, "commandPrefixes", list);
+        updateGuildSettings(guildId, "commandPrefix", prefix); // keep legacy field in sync
+    }
+
+    /**
+     * Add a prefix to the guild's active prefix list (no-op if already present).
+     */
+    public boolean addPrefix(String guildId, String prefix) {
+        List<String> prefixes = getPrefixes(guildId);
+        if (prefixes.contains(prefix)) return false;
+        prefixes.add(prefix);
+        updateGuildSettings(guildId, "commandPrefixes", prefixes);
+        updateGuildSettings(guildId, "commandPrefix", prefixes.get(0));
+        return true;
+    }
+
+    /**
+     * Remove a prefix from the guild's active prefix list.
+     * @return false if the prefix wasn't present or it's the only one remaining
+     */
+    public boolean removePrefix(String guildId, String prefix) {
+        List<String> prefixes = getPrefixes(guildId);
+        if (!prefixes.contains(prefix)) return false;
+        if (prefixes.size() == 1) return false; // must keep at least one
+        prefixes.remove(prefix);
+        updateGuildSettings(guildId, "commandPrefixes", prefixes);
+        updateGuildSettings(guildId, "commandPrefix", prefixes.get(0));
+        return true;
     }
     
     /**

@@ -14,6 +14,7 @@ import com.serverbot.listeners.ProxyListener;
 import com.serverbot.listeners.AutoLogListener;
 import com.serverbot.listeners.SuspiciousAccountListener;
 import com.serverbot.listeners.SuspiciousAccountButtonListener;
+import com.serverbot.listeners.VoiceStateListener;
 import com.serverbot.listeners.DismissButtonListener;
 import com.serverbot.listeners.BlackjackButtonListener;
 import com.serverbot.listeners.GlobalChatListener;
@@ -165,6 +166,7 @@ public class ServerBot {
                             new SuspiciousAccountButtonListener(),
                             new ConnectionListener(),
                             new DismissButtonListener(),
+                            new VoiceStateListener(),
                             new BlackjackButtonListener(),
                             new GlobalChatListener(),
                             new GlobalChatButtonListener(),

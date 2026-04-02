@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.serverbot</groupId>
-    <artifactId>kelpyyium</artifactId>
-    <version>2.3.014</version>
+    <artifactId>discord-server-bot</artifactId>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>Kelpyyium Discord Bot</name>

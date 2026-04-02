@@ -61,3 +61,44 @@ Logs are stored in the `logs` directory. Configure logging in `src/main/resource
 - **Utility Commands**: Offers various helpful commands for server management.
 - **Reply Handling**: Relayed replies include clickable jump links to the original message.
 - **Cross-Server Message Deletion**: Deletes relayed copies when a message is deleted in one server.
+- **Economy System**: Per-server economy with balance, shop, and transactions.
+- **Leveling System**: XP and level tracking with customizable rank cards.
+- **Ticket System**: Support ticket creation and management.
+- **Reaction Roles**: Assign roles based on message reactions.
+- **Music Playback**: Stream music from YouTube and other sources in voice channels.
+- **Prefix Commands**: Traditional text-based commands alongside slash commands.
+
+## Prefix Commands
+
+Each server can configure its own set of command prefixes independently.
+
+| Subcommand | Description |
+| --- | --- |
+| `/prefix set prefix:!` | Replace all prefixes with a single new one |
+| `/prefix add prefix:-k` | Add an additional prefix (multiple can be active at once) |
+| `/prefix remove prefix:!` | Remove a specific prefix |
+| `/prefix enable command:ping` | Re-enable a previously disabled command |
+| `/prefix disable command:ping` | Disable a specific command for this server |
+| `/prefix enable-all` | Re-enable all prefix commands |
+| `/prefix disable-all` | Disable all prefix commands server-wide |
+| `/prefix status` | Show all active prefixes and disabled commands |
+| `/prefix list` | List all available prefix commands |
+
+> **Note:** A server must always have at least one prefix — `/prefix remove` will refuse to remove the last one. The default prefix is `!`.
+
+## Music
+
+The bot supports music playback in voice channels via LavaPlayer and YouTube.
+
+| Command | Description |
+| --- | --- |
+| `!play <query or URL>` | Play a song or add it to the queue |
+| `!skip` | Skip the current song |
+| `!stop` | Stop playback and clear the queue |
+| `!queue` | Show the current queue |
+| `!pause` / `!resume` | Pause or resume playback |
+| `!nowplaying` | Show the currently playing song |
+| `!volume <0-100>` | Adjust the playback volume |
+| `!leave` | Disconnect the bot from voice |
+
+> The bot will automatically disconnect when the voice channel is empty or when kicked.

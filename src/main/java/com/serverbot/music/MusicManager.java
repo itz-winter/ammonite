@@ -75,9 +75,11 @@ public class MusicManager {
         if (musicManager == null) {
             musicManager = new GuildMusicManager(playerManager);
             musicManagers.put(guildId, musicManager);
+            // Only set the handler when first creating — resetting it on every call
+            // can interrupt an active audio connection.
+            guild.getAudioManager().setSendingHandler(musicManager.getSendHandler());
         }
 
-        guild.getAudioManager().setSendingHandler(musicManager.getSendHandler());
         return musicManager;
     }
 
@@ -93,9 +95,12 @@ public class MusicManager {
             // otherwise JDA will immediately disconnect due to no audio handler.
             GuildMusicManager musicManager = getGuildMusicManager(guild);
             audioManager.setSendingHandler(musicManager.getSendHandler());
-            // Self-deafen to reduce unnecessary audio receiving and signal to Discord
-            // that the bot is a music bot (standard practice)
             audioManager.setSelfDeafened(true);
+            // Disable JDA's automatic voice reconnect. When Discord closes the voice
+            // WebSocket (e.g. network blip or bot kicked), JDA's auto-reconnect
+            // immediately re-opens the connection before our state is cleaned up,
+            // causing a rapid join/leave loop. We handle reconnects manually.
+            audioManager.setAutoReconnect(false);
             audioManager.openAudioConnection(channel);
             logger.info("Opened audio connection to channel: {} in guild: {}", channel.getName(), guild.getName());
             return true;
@@ -111,12 +116,21 @@ public class MusicManager {
     public void leaveChannel(Guild guild) {
         AudioManager audioManager = guild.getAudioManager();
         audioManager.closeAudioConnection();
+        cleanupGuild(guild);
+    }
 
-        // Clean up the music manager
+    /**
+     * Clean up all music state for a guild without closing the audio connection.
+     * Called when the bot is disconnected externally (kicked, channel deleted, etc.)
+     */
+    public synchronized void cleanupGuild(Guild guild) {
         GuildMusicManager musicManager = musicManagers.remove(guild.getIdLong());
         if (musicManager != null) {
             musicManager.destroy();
+            logger.info("Cleaned up music state for guild: {}", guild.getName());
         }
+        // Clear the sending handler so JDA doesn't try to reuse a destroyed player
+        guild.getAudioManager().setSendingHandler(null);
     }
 
     /**
