@@ -18,7 +18,8 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -358,7 +359,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
                 if (owner != null) {
                     Message sentMessage = owner.openPrivateChannel().complete()
                         .sendMessageEmbeds(reportEmbed.build())
-                        .setActionRow(validateBtn, invalidateBtn, viewBtn)
+                        .setComponents(ActionRow.of(validateBtn, invalidateBtn, viewBtn))
                         .complete();
                     
                     // Store the message ID for this owner

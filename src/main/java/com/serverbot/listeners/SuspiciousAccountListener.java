@@ -12,7 +12,8 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -251,7 +252,7 @@ public class SuspiciousAccountListener extends ListenerAdapter {
                         "open DM channel with bot owner",
                         channel -> SafeRestAction.queue(
                             channel.sendMessageEmbeds(embed.build())
-                                .setActionRow(markSuspicious, addNote, setAction, viewDetails, ignore),
+                                .setComponents(ActionRow.of(markSuspicious, addNote, setAction, viewDetails, ignore)),
                             "send suspicious account alert to bot owner",
                             success -> logger.debug("Sent suspicious account alert to bot owner {} for user {} in guild {}", 
                                 botOwner.getName(), suspiciousUser.getName(), guild.getName()),

@@ -8,9 +8,10 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.components.text.TextInput;
-import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
-import net.dv8tion.jda.api.interactions.modals.Modal;
+import net.dv8tion.jda.api.components.label.Label;
+import net.dv8tion.jda.api.components.textinput.TextInput;
+import net.dv8tion.jda.api.components.textinput.TextInputStyle;
+import net.dv8tion.jda.api.modals.Modal;
 
 import java.awt.*;
 import java.time.OffsetDateTime;
@@ -78,14 +79,14 @@ public class PunishmentAppealListener extends ListenerAdapter {
         }
         
         // Create appeal modal
-        TextInput reasonInput = TextInput.create("appeal_reason", "Reason for Appeal", TextInputStyle.PARAGRAPH)
+        TextInput reasonInput = TextInput.create("appeal_reason", TextInputStyle.PARAGRAPH)
             .setPlaceholder("Explain why you believe this punishment should be appealed...")
             .setMinLength(10)
             .setMaxLength(1000)
             .setRequired(true)
             .build();
         
-        TextInput evidenceInput = TextInput.create("appeal_evidence", "Additional Evidence (Optional)", TextInputStyle.PARAGRAPH)
+        TextInput evidenceInput = TextInput.create("appeal_evidence", TextInputStyle.PARAGRAPH)
             .setPlaceholder("Provide any additional context or evidence...")
             .setMaxLength(1000)
             .setRequired(false)
@@ -93,8 +94,8 @@ public class PunishmentAppealListener extends ListenerAdapter {
         
         Modal modal = Modal.create("appeal_submit:" + guildId + ":" + userId + ":" + punishmentType, 
                 "Appeal " + punishmentType + " Punishment")
-            .addActionRow(reasonInput)
-            .addActionRow(evidenceInput)
+            .addComponents(Label.of("Reason for Appeal", reasonInput))
+            .addComponents(Label.of("Additional Evidence (Optional)", evidenceInput))
             .build();
         
         event.replyModal(modal).queue();

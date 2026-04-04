@@ -96,11 +96,19 @@ public class MusicManager {
             GuildMusicManager musicManager = getGuildMusicManager(guild);
             audioManager.setSendingHandler(musicManager.getSendHandler());
             audioManager.setSelfDeafened(true);
-            // Disable JDA's automatic voice reconnect. When Discord closes the voice
-            // WebSocket (e.g. network blip or bot kicked), JDA's auto-reconnect
-            // immediately re-opens the connection before our state is cleaned up,
-            // causing a rapid join/leave loop. We handle reconnects manually.
-            audioManager.setAutoReconnect(false);
+            // Keep auto-reconnect ENABLED. Discord's voice gateway frequently sends
+            // a close-and-reconnect instruction (code 4014/4015) during the initial
+            // handshake, telling the client to reconnect to a different voice server.
+            // With auto-reconnect disabled, JDA would give up on the first close,
+            // causing the bot to immediately leave after joining. Our silence-frame
+            // AudioPlayerSendHandler keeps the UDP stream alive, so a reconnect loop
+            // will NOT occur even with auto-reconnect on.
+            audioManager.setAutoReconnect(true);
+            // Use JDA's ConnectionListener to detect permanent disconnects (kicked,
+            // channel deleted, etc.) rather than watching GuildVoiceUpdateEvents.
+            // ConnectionStatus.shouldReconnect() correctly distinguishes transient
+            // errors (where JDA retries) from permanent ones (where we must clean up).
+            audioManager.setConnectionListener(new GuildAudioConnectionListener(guild));
             audioManager.openAudioConnection(channel);
             logger.info("Opened audio connection to channel: {} in guild: {}", channel.getName(), guild.getName());
             return true;
@@ -173,8 +181,9 @@ public class MusicManager {
             @Override
             public void trackLoaded(AudioTrack track) {
                 logger.info("Track loaded: {} by {}", track.getInfo().title, track.getInfo().author);
+                // Notify the callback only — queuing is the caller's responsibility so it
+                // can join the voice channel first before starting playback.
                 callback.onTrackLoaded(track);
-                musicManager.getScheduler().queue(track);
             }
 
             @Override
@@ -187,8 +196,8 @@ public class MusicManager {
                     }
                     AudioTrack track = playlist.getTracks().get(0);
                     logger.info("Search result loaded: {} by {}", track.getInfo().title, track.getInfo().author);
+                    // Treat the top search result as a single track load
                     callback.onTrackLoaded(track);
-                    musicManager.getScheduler().queue(track);
                 } else {
                     logger.info("Playlist loaded: {} with {} tracks", playlist.getName(), playlist.getTracks().size());
                     callback.onPlaylistLoaded(playlist);
@@ -206,7 +215,6 @@ public class MusicManager {
                         public void trackLoaded(AudioTrack track) {
                             logger.info("SoundCloud track loaded: {}", track.getInfo().title);
                             callback.onTrackLoaded(track);
-                            musicManager.getScheduler().queue(track);
                         }
                         @Override
                         public void playlistLoaded(AudioPlaylist playlist) {
@@ -214,7 +222,6 @@ public class MusicManager {
                                 AudioTrack track = playlist.getTracks().get(0);
                                 logger.info("SoundCloud search result: {}", track.getInfo().title);
                                 callback.onTrackLoaded(track);
-                                musicManager.getScheduler().queue(track);
                             } else {
                                 callback.onNoMatches();
                             }
@@ -247,14 +254,12 @@ public class MusicManager {
                         @Override
                         public void trackLoaded(AudioTrack track) {
                             callback.onTrackLoaded(track);
-                            musicManager.getScheduler().queue(track);
                         }
                         @Override
                         public void playlistLoaded(AudioPlaylist playlist) {
                             if (playlist.isSearchResult() && !playlist.getTracks().isEmpty()) {
                                 AudioTrack track = playlist.getTracks().get(0);
                                 callback.onTrackLoaded(track);
-                                musicManager.getScheduler().queue(track);
                             } else {
                                 callback.onLoadFailed(exception.getMessage());
                             }
@@ -289,9 +294,8 @@ public class MusicManager {
         playerManager.loadItemOrdered(musicManager, query, new AudioLoadResultHandler() {
             @Override
             public void trackLoaded(AudioTrack track) {
-                // Single track, just queue it
+                // Single track — let the caller queue it after joining voice
                 callback.onTrackLoaded(track);
-                musicManager.getScheduler().queue(track);
             }
 
             @Override
@@ -299,7 +303,6 @@ public class MusicManager {
                 if (playlist.isSearchResult()) {
                     AudioTrack track = playlist.getTracks().get(0);
                     callback.onTrackLoaded(track);
-                    musicManager.getScheduler().queue(track);
                     return;
                 }
 
@@ -318,10 +321,7 @@ public class MusicManager {
                 List<AudioTrack> selectedTracks = allTracks.subList(start, end);
                 List<AudioTrack> queuedTracks = new ArrayList<>(selectedTracks);
 
-                for (AudioTrack track : queuedTracks) {
-                    musicManager.getScheduler().queue(track);
-                }
-
+                // Let the caller queue after joining voice
                 callback.onPlaylistRangeLoaded(playlist.getName(), queuedTracks, start + 1, end, size);
             }
 

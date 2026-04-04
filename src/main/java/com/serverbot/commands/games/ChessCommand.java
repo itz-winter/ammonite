@@ -13,7 +13,8 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 
 import java.awt.*;
 import java.util.*;
@@ -115,11 +116,11 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
         EmbedBuilder embed = createGameEmbed(game, player1, opponent);
         
         event.replyEmbeds(embed.build())
-             .addActionRow(
+             .addComponents(ActionRow.of(
                  Button.primary("chess_move", "Make Move"),
                  Button.secondary("chess_resign", "Resign"),
                  Button.danger("chess_draw", "Offer Draw")
-             )
+             ))
              .queue();
 
         // Schedule game cleanup after 30 minutes

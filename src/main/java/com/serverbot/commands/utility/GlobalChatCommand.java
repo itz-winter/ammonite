@@ -17,7 +17,8 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -317,10 +318,10 @@ public class GlobalChatCommand implements SlashCommand {
                             .setColor(EmbedUtils.WARNING_COLOR)
                             .setTimestamp(Instant.now())
                             .build())
-                            .addActionRow(
+                            .addComponents(ActionRow.of(
                                     Button.danger("gc_confirm_delete:" + channelId, "Confirm Delete"),
                                     Button.secondary("gc_cancel_delete:" + channelId, "Cancel")
-                            ).queue(s -> {}, err -> {});
+                            )).queue(s -> {}, err -> {});
                 }, err -> {});
             }, err -> {});
             event.replyEmbeds(EmbedUtils.createInfoEmbed("Deletion Requested",
@@ -541,8 +542,8 @@ public class GlobalChatCommand implements SlashCommand {
         // Send to DMs
         event.getUser().openPrivateChannel().queue(dm -> {
             var msgAction = dm.sendMessageEmbeds(eb.build());
-            if (!row1.isEmpty()) msgAction = msgAction.addActionRow(row1);
-            msgAction = msgAction.addActionRow(row2).addActionRow(row3);
+            if (!row1.isEmpty()) msgAction = msgAction.addComponents(ActionRow.of(row1));
+            msgAction = msgAction.addComponents(ActionRow.of(row2)).addComponents(ActionRow.of(row3));
             msgAction.queue(s -> {}, err -> {});
         }, err -> {});
 

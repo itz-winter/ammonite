@@ -13,9 +13,10 @@ import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.EntitySelectInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
-import net.dv8tion.jda.api.interactions.components.selections.EntitySelectMenu;
-import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
+import net.dv8tion.jda.api.components.selections.EntitySelectMenu;
+import net.dv8tion.jda.api.components.selections.StringSelectMenu;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,10 +78,10 @@ public class AutoConfigListener extends ListenerAdapter {
                 .setTimestamp(Instant.now());
 
         channel.sendMessageEmbeds(eb.build())
-                .addActionRow(
+                .addComponents(ActionRow.of(
                         Button.success("ac_start:" + guild.getId(), "Yes, let's go!").withEmoji(Emoji.fromFormatted(CustomEmojis.SUCCESS)),
                         Button.danger("ac_skip:" + guild.getId(), "No thanks").withEmoji(Emoji.fromFormatted(CustomEmojis.ERROR))
-                )
+                ))
                 .queue();
     }
 
@@ -299,20 +300,20 @@ public class AutoConfigListener extends ListenerAdapter {
                 .setDescription("Would you like to set up a log channel for moderation actions, such as bans, kicks, and warnings?")
                 .setColor(EmbedUtils.INFO_COLOR);
         event.getChannel().asTextChannel().sendMessageEmbeds(eb.build())
-                .addActionRow(
+                .addComponents(ActionRow.of(
                         Button.success("ac_modlog_yes:" + guildId, "Yes"),
                         Button.danger("ac_modlog_no:" + guildId, "No")
-                ).queue();
+                )).queue();
     }
 
     private void sendModLogChannelSelect(TextChannel channel, String guildId) {
         channel.sendMessage("Please select the channel for moderation logs:")
-                .addActionRow(
+                .addComponents(ActionRow.of(
                         EntitySelectMenu.create("ac_select_modlog", EntitySelectMenu.SelectTarget.CHANNEL)
                                 .setPlaceholder("Select a channel")
                                 .setRequiredRange(1, 1)
                                 .build()
-                ).queue();
+                )).queue();
     }
 
     private void sendStep3MsgLog(ButtonInteractionEvent event, String guildId) {
@@ -325,20 +326,20 @@ public class AutoConfigListener extends ListenerAdapter {
                 .setDescription("Would you like to set up a log channel for message logging, such as message edits and deletions?")
                 .setColor(EmbedUtils.INFO_COLOR);
         channel.sendMessageEmbeds(eb.build())
-                .addActionRow(
+                .addComponents(ActionRow.of(
                         Button.success("ac_msglog_yes:" + guildId, "Yes"),
                         Button.danger("ac_msglog_no:" + guildId, "No")
-                ).queue();
+                )).queue();
     }
 
     private void sendMsgLogChannelSelect(TextChannel channel, String guildId) {
         channel.sendMessage("Please select the channel for message logs:")
-                .addActionRow(
+                .addComponents(ActionRow.of(
                         EntitySelectMenu.create("ac_select_msglog", EntitySelectMenu.SelectTarget.CHANNEL)
                                 .setPlaceholder("Select a channel")
                                 .setRequiredRange(1, 1)
                                 .build()
-                ).queue();
+                )).queue();
     }
 
     private void sendStep4JoinLeaveLog(ButtonInteractionEvent event, String guildId) {
@@ -351,20 +352,20 @@ public class AutoConfigListener extends ListenerAdapter {
                 .setDescription("Would you like to set up a log channel for join and leave logging?")
                 .setColor(EmbedUtils.INFO_COLOR);
         channel.sendMessageEmbeds(eb.build())
-                .addActionRow(
+                .addComponents(ActionRow.of(
                         Button.success("ac_joinlog_yes:" + guildId, "Yes"),
                         Button.danger("ac_joinlog_no:" + guildId, "No")
-                ).queue();
+                )).queue();
     }
 
     private void sendJoinLogChannelSelect(TextChannel channel, String guildId) {
         channel.sendMessage("Please select the channel for join/leave logs:")
-                .addActionRow(
+                .addComponents(ActionRow.of(
                         EntitySelectMenu.create("ac_select_joinlog", EntitySelectMenu.SelectTarget.CHANNEL)
                                 .setPlaceholder("Select a channel")
                                 .setRequiredRange(1, 1)
                                 .build()
-                ).queue();
+                )).queue();
     }
 
     private void sendStep5SuspiciousNotify(ButtonInteractionEvent event, String guildId) {
@@ -378,20 +379,20 @@ public class AutoConfigListener extends ListenerAdapter {
                         "They will receive a DM notification whenever a user is flagged as suspicious.")
                 .setColor(EmbedUtils.INFO_COLOR);
         channel.sendMessageEmbeds(eb.build())
-                .addActionRow(
+                .addComponents(ActionRow.of(
                         Button.success("ac_suspicious_yes:" + guildId, "Yes"),
                         Button.danger("ac_suspicious_no:" + guildId, "No")
-                ).queue();
+                )).queue();
     }
 
     private void sendSuspiciousNotifySelect(TextChannel channel, String guildId) {
         channel.sendMessage("Please select the users and/or roles for suspicious account notifications:")
-                .addActionRow(
+                .addComponents(ActionRow.of(
                         EntitySelectMenu.create("ac_select_suspicious", EntitySelectMenu.SelectTarget.USER, EntitySelectMenu.SelectTarget.ROLE)
                                 .setPlaceholder("Select users/roles")
                                 .setRequiredRange(1, 10)
                                 .build()
-                ).queue();
+                )).queue();
     }
 
     private void sendStep6FeatureToggle(ButtonInteractionEvent event, String guildId) {
@@ -404,10 +405,10 @@ public class AutoConfigListener extends ListenerAdapter {
                 .setDescription("Would you like to disable any features of the bot that you do not want to use?")
                 .setColor(EmbedUtils.INFO_COLOR);
         channel.sendMessageEmbeds(eb.build())
-                .addActionRow(
+                .addComponents(ActionRow.of(
                         Button.success("ac_features_yes:" + guildId, "Yes"),
                         Button.danger("ac_features_no:" + guildId, "No")
-                ).queue();
+                )).queue();
     }
 
     private void sendFeatureToggleSelect(TextChannel channel, String guildId) {
@@ -422,8 +423,8 @@ public class AutoConfigListener extends ListenerAdapter {
                 .build();
 
         channel.sendMessage("Select the features you'd like to **disable**. Leave unselected to keep enabled.")
-                .addActionRow(menu)
-                .addActionRow(Button.primary("ac_features_done:" + guildId, "Done — Keep All Enabled"))
+                .addComponents(ActionRow.of(menu))
+                .addComponents(ActionRow.of(Button.primary("ac_features_done:" + guildId, "Done — Keep All Enabled")))
                 .queue();
     }
 

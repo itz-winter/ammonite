@@ -15,7 +15,8 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -318,7 +319,7 @@ public class SuspiciousListCommand implements SlashCommand {
         Button removeBtn = Button.danger("suspicious_remove:" + userId, "🗑️ Remove");
         
         event.getHook().sendMessageEmbeds(embed.build())
-            .setActionRow(viewBtn, validateBtn, invalidateBtn, removeBtn)
+            .setComponents(ActionRow.of(viewBtn, validateBtn, invalidateBtn, removeBtn))
             .queue();
     }
 

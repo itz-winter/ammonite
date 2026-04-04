@@ -6,7 +6,8 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 import com.serverbot.utils.EmbedUtils;
 import com.serverbot.utils.CustomEmojis;
 import com.serverbot.utils.PermissionManager;
@@ -1400,7 +1401,7 @@ public class PrefixCommandService {
         Button dismissButton = Button.secondary("dismiss_help", "Dismiss");
         
         event.getChannel().sendMessageEmbeds(embed.build())
-                .setActionRow(dismissButton)
+                .setComponents(ActionRow.of(dismissButton))
                 .queue();
     }
 
@@ -1423,7 +1424,7 @@ public class PrefixCommandService {
         Button dismissButton = Button.secondary("dismiss_help", "Dismiss");
         
         event.getChannel().sendMessageEmbeds(embed.build())
-                .setActionRow(dismissButton)
+                .setComponents(ActionRow.of(dismissButton))
                 .queue();
     }
 

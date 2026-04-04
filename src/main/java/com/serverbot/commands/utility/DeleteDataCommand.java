@@ -13,7 +13,8 @@ import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,11 +87,11 @@ public class DeleteDataCommand extends ListenerAdapter implements SlashCommand {
         pendingConfirmations.put(userId, System.currentTimeMillis() + CONFIRMATION_TIMEOUT_MS);
 
         event.replyEmbeds(embed.build())
-                .addActionRow(
+                .addComponents(ActionRow.of(
                         Button.danger(BUTTON_CONFIRM + ":" + userId, "Confirm Deletion")
                                 .withEmoji(net.dv8tion.jda.api.entities.emoji.Emoji.fromFormatted(CustomEmojis.TRASH)),
                         Button.secondary(BUTTON_CANCEL + ":" + userId, "Cancel")
-                )
+                ))
                 .setEphemeral(true)
                 .queue();
     }

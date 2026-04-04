@@ -11,7 +11,8 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 
 import java.awt.*;
 import java.util.*;
@@ -76,11 +77,11 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
         EmbedBuilder embed = createGameEmbed(game);
         
         event.replyEmbeds(embed.build())
-             .addActionRow(
+             .addComponents(ActionRow.of(
                  Button.primary("poker_hold", "Hold Current Hand"),
                  Button.secondary("poker_discard", "Discard & Draw"),
                  Button.danger("poker_fold", "Fold")
-             )
+             ))
              .queue();
 
         // Schedule game cleanup after 5 minutes
@@ -158,10 +159,10 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
                            "You can now **Hold** or **Fold** your final hand.");
 
         event.editMessageEmbeds(embed.build())
-             .setActionRow(
+             .setComponents(ActionRow.of(
                  Button.primary("poker_hold", "Hold Current Hand"),
                  Button.danger("poker_fold", "Fold")
-             )
+             ))
              .queue();
     }
 

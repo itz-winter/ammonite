@@ -16,7 +16,8 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jda.version>5.0.0-beta.18</jda.version>
+        <jda.version>6.4.1</jda.version>
+        <libdave.version>0.1.2</libdave.version>
         <slf4j.version>2.0.9</slf4j.version>
         <logback.version>1.4.11</logback.version>
         <gson.version>2.10.1</gson.version>
@@ -52,6 +53,25 @@
             <groupId>dev.lavalink.youtube</groupId>
             <artifactId>v2</artifactId>
             <version>1.18.0</version>
+        </dependency>
+
+        <!-- DAVE Protocol (Discord Audio & Video E2EE) - Required since March 1, 2026 -->
+        <!-- libdave-jvm: JNI-based implementation, works with Java 8+ (unlike JDAVE which needs Java 25) -->
+        <dependency>
+            <groupId>moe.kyokobot.libdave</groupId>
+            <artifactId>adapter-jda</artifactId>
+            <version>${libdave.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>moe.kyokobot.libdave</groupId>
+            <artifactId>impl-jni</artifactId>
+            <version>${libdave.version}</version>
+        </dependency>
+        <!-- Native library for the server's platform (Linux x86-64) -->
+        <dependency>
+            <groupId>moe.kyokobot.libdave</groupId>
+            <artifactId>natives-linux-x86-64</artifactId>
+            <version>${libdave.version}</version>
         </dependency>
 
         <!-- Logging -->
@@ -115,7 +135,18 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.serverbot.ServerBot</mainClass>
                                 </transformer>
+                                <!-- Merge META-INF/services files (required for tink, libdave JNI, etc.) -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
+                            <filters>
+                                <!-- Keep native libraries from libdave intact -->
+                                <filter>
+                                    <artifact>moe.kyokobot.libdave:*</artifact>
+                                    <includes>
+                                        <include>**</include>
+                                    </includes>
+                                </filter>
+                            </filters>
                         </configuration>
                     </execution>
                 </executions>

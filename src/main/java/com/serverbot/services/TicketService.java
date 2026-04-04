@@ -11,7 +11,8 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 
 
 import java.awt.*;
@@ -434,7 +435,7 @@ public class TicketService {
             .withEmoji(Emoji.fromUnicode("🔒"));
         
         channel.sendMessageEmbeds(embed.build())
-            .setActionRow(closeButton)
+            .addComponents(ActionRow.of(closeButton))
             .queue();
     }
     
@@ -456,7 +457,7 @@ public class TicketService {
             .withEmoji(Emoji.fromUnicode("📦"));
         
         channel.sendMessageEmbeds(embed.build())
-            .setActionRow(archiveButton)
+            .addComponents(ActionRow.of(archiveButton))
             .queue();
     }
     
@@ -753,7 +754,7 @@ public class TicketService {
                     .withEmoji(Emoji.fromUnicode("➕"));
                 
                 Message message = channel.sendMessageEmbeds(embed.build())
-                    .setActionRow(createButton)
+                    .addComponents(ActionRow.of(createButton))
                     .complete();
                 
                 // Save kiosk data

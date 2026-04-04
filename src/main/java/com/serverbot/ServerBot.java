@@ -32,12 +32,16 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.audio.AudioModuleConfig;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
 import java.util.List;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import moe.kyokobot.libdave.DaveFactory;
+import moe.kyokobot.libdave.NativeDaveFactory;
+import moe.kyokobot.libdave.jda.LDJDADaveSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,11 +127,17 @@ public class ServerBot {
                 throw e;
             }
             
+            // Initialize DAVE Protocol (Discord Audio & Video E2EE) - Required since March 1, 2026
+            DaveFactory daveFactory = new NativeDaveFactory();
+            LDJDADaveSessionFactory daveSessionFactory = new LDJDADaveSessionFactory(daveFactory);
+
             // Build JDA instance
             jda = JDABuilder.createDefault(config.getBotToken())
                     .setChunkingFilter(ChunkingFilter.ALL)
                     .setMemberCachePolicy(MemberCachePolicy.ALL)
                     .enableCache(CacheFlag.VOICE_STATE)
+                    .setAudioModuleConfig(new AudioModuleConfig()
+                            .withDaveSessionFactory(daveSessionFactory))
                     .enableIntents(
                             // Required for: role persistence (tracking member join/leave), suspicious account
                             // detection (member screening), welcome messages, and member cache for moderation

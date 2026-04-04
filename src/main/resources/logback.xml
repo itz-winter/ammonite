@@ -22,6 +22,10 @@
 
     <logger name="com.serverbot" level="DEBUG"/>
     <logger name="net.dv8tion" level="INFO"/>
+    <!-- Temporarily enable DEBUG for JDA's audio WebSocket to expose the exact
+         exception causing ERROR_LOST_CONNECTION during authentication -->
+    <logger name="net.dv8tion.jda.internal.audio" level="DEBUG"/>
+    <logger name="net.dv8tion.jda.internal.managers.AudioManagerImpl" level="DEBUG"/>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>

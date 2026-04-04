@@ -1,19 +1,19 @@
 package com.serverbot.listeners;
 
-import com.serverbot.music.MusicManager;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Listens for voice state changes to clean up music state when the bot is
- * disconnected from a voice channel by Discord (kicked, channel deleted, etc.)
+ * Logs bot voice state changes for diagnostics.
  *
- * Without this, stale GuildMusicManager state causes JDA to attempt to
- * re-open the audio connection on every future API call, producing a
- * rapid join/leave loop.
+ * Music state cleanup is handled by {@link com.serverbot.music.GuildAudioConnectionListener},
+ * which listens to JDA's internal ConnectionStatus and uses
+ * {@link net.dv8tion.jda.api.audio.hooks.ConnectionStatus#shouldReconnect()} to distinguish
+ * transient reconnects from genuine permanent disconnects. Do NOT add cleanup logic here —
+ * GuildVoiceUpdateEvent fires for every auto-reconnect attempt and cannot reliably
+ * distinguish "bot was kicked" from "bot is reconnecting to a new voice server".
  */
 public class VoiceStateListener extends ListenerAdapter {
 
@@ -21,18 +21,21 @@ public class VoiceStateListener extends ListenerAdapter {
 
     @Override
     public void onGuildVoiceUpdate(GuildVoiceUpdateEvent event) {
-        // Only care about the bot's own voice state changes
+        // Only log the bot's own voice state changes
         if (!event.getMember().getUser().equals(event.getJDA().getSelfUser())) {
             return;
         }
 
-        Guild guild = event.getGuild();
-
-        // Bot left a channel (channelLeft != null means it was in one before)
-        if (event.getChannelLeft() != null && event.getChannelJoined() == null) {
-            logger.info("Bot was disconnected from voice channel '{}' in guild '{}' — cleaning up music state",
-                    event.getChannelLeft().getName(), guild.getName());
-            MusicManager.getInstance().cleanupGuild(guild);
+        if (event.getChannelJoined() != null && event.getChannelLeft() == null) {
+            logger.debug("Bot joined voice channel '{}' in '{}'",
+                    event.getChannelJoined().getName(), event.getGuild().getName());
+        } else if (event.getChannelLeft() != null && event.getChannelJoined() == null) {
+            logger.debug("Bot left voice channel '{}' in '{}'",
+                    event.getChannelLeft().getName(), event.getGuild().getName());
+        } else if (event.getChannelLeft() != null && event.getChannelJoined() != null) {
+            logger.debug("Bot moved from '{}' to '{}' in '{}'",
+                    event.getChannelLeft().getName(), event.getChannelJoined().getName(),
+                    event.getGuild().getName());
         }
     }
 }

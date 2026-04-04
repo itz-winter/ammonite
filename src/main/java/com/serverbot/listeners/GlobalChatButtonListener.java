@@ -10,6 +10,8 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,9 +67,9 @@ public class GlobalChatButtonListener extends ListenerAdapter {
                                     .setTitle(CustomEmojis.WARN + " Channel Deletion Request")
                                     .setDescription("Co-owner <@" + userId + "> wants to delete **" + gc.getName() + "** (`" + channelId + "`).\nDo you approve?")
                                     .setColor(EmbedUtils.WARNING_COLOR).setTimestamp(Instant.now()).build())
-                                    .addActionRow(
-                                            net.dv8tion.jda.api.interactions.components.buttons.Button.danger("gc_confirm_delete:" + channelId, "Confirm Delete"),
-                                            net.dv8tion.jda.api.interactions.components.buttons.Button.secondary("gc_cancel_delete:" + channelId, "Cancel"))
+                                    .addComponents(ActionRow.of(
+                                            net.dv8tion.jda.api.components.buttons.Button.danger("gc_confirm_delete:" + channelId, "Confirm Delete"),
+                                            net.dv8tion.jda.api.components.buttons.Button.secondary("gc_cancel_delete:" + channelId, "Cancel")))
                                     .queue(s -> {}, err -> {});
                         }, err -> {});
                     }, err -> {});

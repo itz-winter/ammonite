@@ -52,18 +52,12 @@ public class PlayCommand implements SlashCommand {
             return;
         }
 
-        // Join the voice channel if not already connected
         MusicManager musicManager = MusicManager.getInstance();
-        if (!musicManager.isConnected(event.getGuild())) {
-            if (!musicManager.joinChannel(channel)) {
-                event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Connection Failed",
-                    "Failed to join your voice channel. Check bot permissions."
-                )).setEphemeral(true).queue();
-                return;
-            }
-        }
 
+        // Defer the reply immediately — track loading can take several seconds.
+        // We intentionally do NOT join the voice channel yet: joining before we know
+        // a track exists means the bot sits in the channel with no audio, which
+        // causes Discord to close the voice WebSocket almost immediately.
         event.deferReply().queue();
 
         // Check if index range is specified — use range loading for playlists
@@ -73,6 +67,10 @@ public class PlayCommand implements SlashCommand {
                 new MusicManager.MusicLoadCallback() {
                     @Override
                     public void onTrackLoaded(AudioTrack track) {
+                        // Track is ready — join first, then the scheduler will start playing
+                        if (!joinBeforePlay(musicManager, channel, event)) return;
+                        GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+                        gmm.getScheduler().queue(track);
                         EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
                                 .setTitle("🎵 Added to Queue")
                                 .setDescription(MusicUtils.formatTrack(track));
@@ -81,7 +79,7 @@ public class PlayCommand implements SlashCommand {
 
                     @Override
                     public void onPlaylistLoaded(AudioPlaylist playlist) {
-                        // Shouldn't happen with range loading, but handle it
+                        if (!joinBeforePlay(musicManager, channel, event)) return;
                         GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
                         List<AudioTrack> tracks = playlist.getTracks();
                         for (AudioTrack track : tracks) {
@@ -96,6 +94,11 @@ public class PlayCommand implements SlashCommand {
 
                     @Override
                     public void onPlaylistRangeLoaded(String playlistName, List<AudioTrack> tracks, int start, int end, int total) {
+                        if (!joinBeforePlay(musicManager, channel, event)) return;
+                        GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+                        for (AudioTrack track : tracks) {
+                            gmm.getScheduler().queue(track);
+                        }
                         EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
                                 .setTitle("🎵 Playlist Added (Range)")
                                 .setDescription("**" + playlistName + "**")
@@ -124,8 +127,11 @@ public class PlayCommand implements SlashCommand {
                 new MusicManager.MusicLoadCallback() {
                     @Override
                     public void onTrackLoaded(AudioTrack track) {
+                        // Join voice only now that we know the track resolved successfully
+                        if (!joinBeforePlay(musicManager, channel, event)) return;
                         GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
                         int position = gmm.getScheduler().getQueueSize();
+                        gmm.getScheduler().queue(track);
                         EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
                                 .setTitle("🎵 Added to Queue")
                                 .setDescription(MusicUtils.formatTrack(track));
@@ -139,6 +145,7 @@ public class PlayCommand implements SlashCommand {
 
                     @Override
                     public void onPlaylistLoaded(AudioPlaylist playlist) {
+                        if (!joinBeforePlay(musicManager, channel, event)) return;
                         GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
                         List<AudioTrack> tracks = playlist.getTracks();
                         for (AudioTrack track : tracks) {
@@ -167,6 +174,31 @@ public class PlayCommand implements SlashCommand {
                     }
                 });
         }
+    }
+
+    /**
+     * Join the voice channel only if not already connected.
+     * Called from inside a successful load callback so we only join when we have audio to play.
+     * @return true if connected (or already was), false if join failed (error reply already sent)
+     */
+    private boolean joinBeforePlay(MusicManager musicManager, AudioChannel channel, SlashCommandInteractionEvent event) {
+        if (!musicManager.isConnected(event.getGuild())) {
+            if (!musicManager.joinChannel(channel)) {
+                event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Connection Failed",
+                    "Failed to join your voice channel. Check bot permissions."
+                )).queue();
+                return false;
+            }
+        } else {
+            // Already connected — make sure we're in the caller's channel
+            AudioChannel connected = musicManager.getConnectedChannel(event.getGuild());
+            if (connected != null && !connected.getId().equals(channel.getId())) {
+                // Move to the requester's channel
+                event.getGuild().getAudioManager().openAudioConnection(channel);
+            }
+        }
+        return true;
     }
 
     public static CommandData getCommandData() {

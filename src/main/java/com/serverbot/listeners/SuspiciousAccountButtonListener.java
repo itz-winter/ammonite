@@ -14,9 +14,10 @@ import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.components.text.TextInput;
-import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
-import net.dv8tion.jda.api.interactions.modals.Modal;
+import net.dv8tion.jda.api.components.label.Label;
+import net.dv8tion.jda.api.components.textinput.TextInput;
+import net.dv8tion.jda.api.components.textinput.TextInputStyle;
+import net.dv8tion.jda.api.modals.Modal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -508,14 +509,14 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
      */
     private void handleAddNote(ButtonInteractionEvent event, String userId, String guildId) {
         // Create modal for note input
-        TextInput noteInput = TextInput.create("suspicious_note", "Note", TextInputStyle.PARAGRAPH)
+        TextInput noteInput = TextInput.create("suspicious_note", TextInputStyle.PARAGRAPH)
             .setPlaceholder("Add a note about this suspicious account...")
             .setMinLength(1)
             .setMaxLength(1000)
             .setRequired(true)
             .build();
         
-        TextInput actionInput = TextInput.create("suspicious_action", "Suggested Action (Optional)", TextInputStyle.SHORT)
+        TextInput actionInput = TextInput.create("suspicious_action", TextInputStyle.SHORT)
             .setPlaceholder("e.g., Ban immediately, Monitor closely, etc.")
             .setMaxLength(200)
             .setRequired(false)
@@ -523,8 +524,8 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
         
         Modal modal = Modal.create("suspicious_note_submit:" + userId + ":" + guildId, 
                 "Add Note to Suspicious Report")
-            .addActionRow(noteInput)
-            .addActionRow(actionInput)
+            .addComponents(Label.of("Note", noteInput))
+            .addComponents(Label.of("Suggested Action (Optional)", actionInput))
             .build();
         
         event.replyModal(modal).queue();
