@@ -28,7 +28,7 @@ public class StopCommand implements SlashCommand {
         gmm.getScheduler().clearQueue();
         gmm.getPlayer().stopTrack();
 
-        event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+        event.replyEmbeds(EmbedUtils.createMusicEmbed(
             "⏹️ Stopped", "Stopped playing and cleared the queue."
         )).queue();
     }

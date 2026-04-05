@@ -112,6 +112,19 @@ public class EmbedUtils {
                 .setTimestamp(Instant.now())
                 .build();
     }
+
+    /**
+     * Creates a music embed (success color, no emoji prefix).
+     * Use this for music commands that already include an emoji in the title.
+     */
+    public static MessageEmbed createMusicEmbed(String title, String description) {
+        return new EmbedBuilder()
+                .setColor(SUCCESS_COLOR)
+                .setTitle(title)
+                .setDescription(description)
+                .setTimestamp(Instant.now())
+                .build();
+    }
     
     /**
      * Creates a moderation action embed

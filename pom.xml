@@ -30,6 +30,12 @@
             <id>lavalink</id>
             <url>https://maven.lavalink.dev/releases</url>
         </repository>
+        <!-- Topi314 repository for LavaSrc (Spotify, Apple Music, etc.) -->
+        <repository>
+            <id>TopiWTF-releases</id>
+            <name>Topis Maven Repo</name>
+            <url>https://maven.topi.wtf/releases</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -53,6 +59,13 @@
             <groupId>dev.lavalink.youtube</groupId>
             <artifactId>v2</artifactId>
             <version>1.18.0</version>
+        </dependency>
+
+        <!-- LavaSrc - Spotify, Apple Music, and other source managers for LavaPlayer -->
+        <dependency>
+            <groupId>com.github.topi314.lavasrc</groupId>
+            <artifactId>lavasrc</artifactId>
+            <version>4.8.1</version>
         </dependency>
 
         <!-- DAVE Protocol (Discord Audio & Video E2EE) - Required since March 1, 2026 -->

@@ -46,6 +46,15 @@ public class BotConfig {
     @SerializedName("hide_owner_commands")
     private boolean hideOwnerCommands = false;
     
+    @SerializedName("spotify_client_id")
+    private String spotifyClientId = "";
+    
+    @SerializedName("spotify_client_secret")
+    private String spotifyClientSecret = "";
+    
+    @SerializedName("spotify_country_code")
+    private String spotifyCountryCode = "US";
+    
     public String getBotToken() {
         return botToken;
     }
@@ -174,5 +183,29 @@ public class BotConfig {
     
     public void setHideOwnerCommands(boolean hideOwnerCommands) {
         this.hideOwnerCommands = hideOwnerCommands;
+    }
+    
+    public String getSpotifyClientId() {
+        return spotifyClientId;
+    }
+    
+    public void setSpotifyClientId(String spotifyClientId) {
+        this.spotifyClientId = spotifyClientId;
+    }
+    
+    public String getSpotifyClientSecret() {
+        return spotifyClientSecret;
+    }
+    
+    public void setSpotifyClientSecret(String spotifyClientSecret) {
+        this.spotifyClientSecret = spotifyClientSecret;
+    }
+    
+    public String getSpotifyCountryCode() {
+        return spotifyCountryCode;
+    }
+    
+    public void setSpotifyCountryCode(String spotifyCountryCode) {
+        this.spotifyCountryCode = spotifyCountryCode;
     }
 }

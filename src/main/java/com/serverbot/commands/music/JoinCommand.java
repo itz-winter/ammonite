@@ -45,7 +45,7 @@ public class JoinCommand implements SlashCommand {
         }
 
         if (musicManager.joinChannel(channel)) {
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+            event.replyEmbeds(EmbedUtils.createMusicEmbed(
                 "🔊 Joined",
                 "Connected to **" + channel.getName() + "**"
             )).queue();

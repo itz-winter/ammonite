@@ -7,6 +7,7 @@ import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import com.github.topi314.lavasrc.spotify.SpotifySourceManager;
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
@@ -46,6 +47,48 @@ public class MusicManager {
         );
         playerManager.registerSourceManager(ytSourceManager);
         logger.info("Registered youtube-source plugin (dev.lavalink.youtube) with search enabled");
+
+        // Register Spotify source if credentials are configured.
+        // Spotify is a "mirroring" source — it resolves track metadata from Spotify's API,
+        // then searches YouTube (or other registered sources) to find the actual audio.
+        // The providers array tells the resolver HOW to find audio: first try YouTube ISRC
+        // lookup (exact match by International Standard Recording Code), then fall back to
+        // a YouTube search by track title + artist.
+        try {
+            com.serverbot.utils.BotConfig config = com.serverbot.ServerBot.getConfigManager().getConfig();
+            String clientId = config.getSpotifyClientId();
+            String clientSecret = config.getSpotifyClientSecret();
+            String countryCode = config.getSpotifyCountryCode();
+            if (clientId != null && !clientId.isEmpty() && clientSecret != null && !clientSecret.isEmpty()) {
+                String[] providers = new String[]{
+                        "ytsearch:\"%ISRC%\"",
+                        "ytsearch:%QUERY%"
+                };
+                SpotifySourceManager spotifySource = new SpotifySourceManager(
+                        providers, clientId, clientSecret, countryCode, playerManager
+                );
+                // Do NOT prefer anonymous tokens — Spotify regularly changes their web
+                // player's token endpoint, causing "Failed to retrieve secret" errors.
+                // Client credentials tokens work for most content (tracks, albums, normal
+                // playlists). Auto-generated playlists (IDs starting with "37i9dQZ") are
+                // automatically resolved with anonymous tokens by LavaSrc regardless of
+                // this setting, so they may fail until a customTokenEndpoint is configured.
+                playerManager.registerSourceManager(spotifySource);
+                logger.info("Registered Spotify source manager (LavaSrc) with country code: {} and {} providers",
+                        countryCode, providers.length);
+            } else {
+                logger.warn("Spotify credentials not configured in config.json — Spotify links will not work. " +
+                        "Set spotify_client_id and spotify_client_secret to enable Spotify support.");
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to register Spotify source manager: {}", e.getMessage(), e);
+        }
+
+        // Register Newgrounds audio source.
+        // Handles URLs like: https://www.newgrounds.com/audio/listen/489111
+        // Scrapes the NG page for metadata and streams the MP3 from their CDN.
+        playerManager.registerSourceManager(new NewgroundsAudioSourceManager());
+        logger.info("Registered Newgrounds audio source manager");
 
         // Register all other remote sources EXCEPT the broken built-in YouTube source.
         // This keeps SoundCloud, Bandcamp, Vimeo, Twitch, and HTTP sources working.
@@ -100,9 +143,9 @@ public class MusicManager {
             // a close-and-reconnect instruction (code 4014/4015) during the initial
             // handshake, telling the client to reconnect to a different voice server.
             // With auto-reconnect disabled, JDA would give up on the first close,
-            // causing the bot to immediately leave after joining. Our silence-frame
-            // AudioPlayerSendHandler keeps the UDP stream alive, so a reconnect loop
-            // will NOT occur even with auto-reconnect on.
+            // causing the bot to immediately leave after joining. Our AudioPlayerSendHandler
+            // continuously sends silence frames when idle, keeping the UDP stream alive
+            // so a reconnect loop will NOT occur even with auto-reconnect on.
             audioManager.setAutoReconnect(true);
             // Use JDA's ConnectionListener to detect permanent disconnects (kicked,
             // channel deleted, etc.) rather than watching GuildVoiceUpdateEvents.
@@ -153,6 +196,80 @@ public class MusicManager {
      */
     public AudioChannel getConnectedChannel(Guild guild) {
         return guild.getAudioManager().getConnectedChannel();
+    }
+
+    /**
+     * Load search results for a text query and return multiple results for selection.
+     * @param query search query text (not a URL)
+     * @param guild the guild to play in
+     * @param callback callback for search results
+     */
+    public void loadSearchResults(String query, Guild guild, SearchResultsCallback callback) {
+        GuildMusicManager musicManager = getGuildMusicManager(guild);
+        String identifier = "ytsearch:" + query;
+
+        logger.info("Loading search results for: {}", query);
+
+        playerManager.loadItemOrdered(musicManager, identifier, new AudioLoadResultHandler() {
+            @Override
+            public void trackLoaded(AudioTrack track) {
+                callback.onSearchResults(List.of(track));
+            }
+
+            @Override
+            public void playlistLoaded(AudioPlaylist playlist) {
+                if (playlist.isSearchResult()) {
+                    List<AudioTrack> tracks = playlist.getTracks();
+                    if (tracks.isEmpty()) {
+                        // YouTube found nothing, try SoundCloud
+                        loadSoundCloudFallback(query, musicManager, callback);
+                        return;
+                    }
+                    // Return up to 5 results
+                    int limit = Math.min(tracks.size(), 5);
+                    callback.onSearchResults(tracks.subList(0, limit));
+                } else {
+                    callback.onSearchResults(playlist.getTracks());
+                }
+            }
+
+            @Override
+            public void noMatches() {
+                loadSoundCloudFallback(query, musicManager, callback);
+            }
+
+            @Override
+            public void loadFailed(FriendlyException exception) {
+                loadSoundCloudFallback(query, musicManager, callback);
+            }
+        });
+    }
+
+    private void loadSoundCloudFallback(String query, GuildMusicManager musicManager, SearchResultsCallback callback) {
+        String scIdentifier = "scsearch:" + query;
+        playerManager.loadItemOrdered(musicManager, scIdentifier, new AudioLoadResultHandler() {
+            @Override
+            public void trackLoaded(AudioTrack track) {
+                callback.onSearchResults(List.of(track));
+            }
+            @Override
+            public void playlistLoaded(AudioPlaylist playlist) {
+                if (playlist.isSearchResult() && !playlist.getTracks().isEmpty()) {
+                    int limit = Math.min(playlist.getTracks().size(), 5);
+                    callback.onSearchResults(playlist.getTracks().subList(0, limit));
+                } else {
+                    callback.onNoResults();
+                }
+            }
+            @Override
+            public void noMatches() {
+                callback.onNoResults();
+            }
+            @Override
+            public void loadFailed(FriendlyException exception) {
+                callback.onNoResults();
+            }
+        });
     }
 
     /**
@@ -352,5 +469,13 @@ public class MusicManager {
         }
         void onNoMatches();
         void onLoadFailed(String message);
+    }
+
+    /**
+     * Callback interface for search results (multiple tracks for user selection).
+     */
+    public interface SearchResultsCallback {
+        void onSearchResults(List<AudioTrack> tracks);
+        void onNoResults();
     }
 }

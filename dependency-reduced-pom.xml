@@ -51,6 +51,11 @@
       <id>lavalink</id>
       <url>https://maven.lavalink.dev/releases</url>
     </repository>
+    <repository>
+      <id>TopiWTF-releases</id>
+      <name>Topis Maven Repo</name>
+      <url>https://maven.topi.wtf/releases</url>
+    </repository>
   </repositories>
   <properties>
     <maven.compiler.source>17</maven.compiler.source>

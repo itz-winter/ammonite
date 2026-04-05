@@ -30,12 +30,12 @@ public class RepeatCommand implements SlashCommand {
         gmm.getScheduler().setRepeating(newState);
 
         if (newState) {
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+            event.replyEmbeds(EmbedUtils.createMusicEmbed(
                 "🔁 Repeat Enabled",
                 "The current track will now repeat."
             )).queue();
         } else {
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+            event.replyEmbeds(EmbedUtils.createMusicEmbed(
                 "🔁 Repeat Disabled",
                 "Repeat mode has been turned off."
             )).queue();

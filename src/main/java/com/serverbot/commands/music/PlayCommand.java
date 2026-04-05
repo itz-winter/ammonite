@@ -9,6 +9,8 @@ import com.serverbot.utils.EmbedUtils;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.entities.GuildVoiceState;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
@@ -19,12 +21,32 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Play command - searches and plays music from YouTube, SoundCloud, and direct URLs.
+ * Play command - searches and plays music from YouTube, SoundCloud, Spotify, and direct URLs.
+ * For text queries, shows a selection menu with up to 5 results.
+ * For direct URLs (YouTube, Spotify, etc.), plays immediately.
  * Supports playlists with index range selection (e.g. "4:10", "5:", ":9").
  */
 public class PlayCommand implements SlashCommand {
+
+    // Store pending search results keyed by "guildId:userId" for the select menu callback
+    private static final Map<String, PendingSearch> pendingSearchResults = new ConcurrentHashMap<>();
+
+    /**
+     * Pending search data: the list of result tracks + the voice channel the user was in.
+     */
+    public record PendingSearch(List<AudioTrack> tracks, AudioChannel channel) {}
+
+    /**
+     * Get and remove a pending search result for a given key.
+     */
+    public static PendingSearch consumeSearchResults(String key) {
+        return pendingSearchResults.remove(key);
+    }
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
@@ -53,6 +75,7 @@ public class PlayCommand implements SlashCommand {
         }
 
         MusicManager musicManager = MusicManager.getInstance();
+        boolean isUrl = query.startsWith("http://") || query.startsWith("https://");
 
         // Defer the reply immediately — track loading can take several seconds.
         // We intentionally do NOT join the voice channel yet: joining before we know
@@ -70,10 +93,15 @@ public class PlayCommand implements SlashCommand {
                         // Track is ready — join first, then the scheduler will start playing
                         if (!joinBeforePlay(musicManager, channel, event)) return;
                         GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
-                        gmm.getScheduler().queue(track);
+                        boolean startedPlaying = gmm.getScheduler().queue(track);
                         EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
                                 .setTitle("🎵 Added to Queue")
                                 .setDescription(MusicUtils.formatTrack(track));
+                        if (startedPlaying) {
+                            embed.addField("Status", "Now playing", true);
+                        } else {
+                            embed.addField("Position", "#" + gmm.getScheduler().getQueueSize() + " in queue", true);
+                        }
                         event.getHook().sendMessageEmbeds(embed.build()).queue();
                     }
 
@@ -121,8 +149,8 @@ public class PlayCommand implements SlashCommand {
                         )).queue();
                     }
                 });
-        } else {
-            // Normal load — single track or full playlist
+        } else if (isUrl) {
+            // Direct URL — load immediately (YouTube, Spotify, SoundCloud, etc.)
             musicManager.loadAndPlay(query, event.getGuild(),
                 new MusicManager.MusicLoadCallback() {
                     @Override
@@ -130,15 +158,14 @@ public class PlayCommand implements SlashCommand {
                         // Join voice only now that we know the track resolved successfully
                         if (!joinBeforePlay(musicManager, channel, event)) return;
                         GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
-                        int position = gmm.getScheduler().getQueueSize();
-                        gmm.getScheduler().queue(track);
+                        boolean startedPlaying = gmm.getScheduler().queue(track);
                         EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
                                 .setTitle("🎵 Added to Queue")
                                 .setDescription(MusicUtils.formatTrack(track));
-                        if (position > 0) {
-                            embed.addField("Position", "#" + (position + 1) + " in queue", true);
-                        } else {
+                        if (startedPlaying) {
                             embed.addField("Status", "Now playing", true);
+                        } else {
+                            embed.addField("Position", "#" + (gmm.getScheduler().getQueueSize()) + " in queue", true);
                         }
                         event.getHook().sendMessageEmbeds(embed.build()).queue();
                     }
@@ -170,6 +197,85 @@ public class PlayCommand implements SlashCommand {
                     public void onLoadFailed(String message) {
                         event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
                             "Load Failed", "Failed to load track: " + message
+                        )).queue();
+                    }
+                });
+        } else {
+            // Text search query — show a selection menu with up to 5 results
+            musicManager.loadSearchResults(query, event.getGuild(),
+                new MusicManager.SearchResultsCallback() {
+                    @Override
+                    public void onSearchResults(List<AudioTrack> tracks) {
+                        if (tracks.isEmpty()) {
+                            event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                                "No Results", "No matches found for: `" + query + "`"
+                            )).queue();
+                            return;
+                        }
+
+                        // If only 1 result, play it directly
+                        if (tracks.size() == 1) {
+                            AudioTrack track = tracks.get(0);
+                            if (!joinBeforePlay(musicManager, channel, event)) return;
+                            GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+                            boolean startedPlaying = gmm.getScheduler().queue(track);
+                            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
+                                    .setTitle("🎵 Added to Queue")
+                                    .setDescription(MusicUtils.formatTrack(track));
+                            if (startedPlaying) {
+                                embed.addField("Status", "Now playing", true);
+                            } else {
+                                embed.addField("Position", "#" + (gmm.getScheduler().getQueueSize()) + " in queue", true);
+                            }
+                            event.getHook().sendMessageEmbeds(embed.build()).queue();
+                            return;
+                        }
+
+                        // Store search results + voice channel for the select menu callback
+                        String key = event.getGuild().getId() + ":" + event.getUser().getId();
+                        pendingSearchResults.put(key, new PendingSearch(tracks, channel));
+
+                        // Build the select menu
+                        StringSelectMenu.Builder menuBuilder = StringSelectMenu.create("play_search_select")
+                                .setPlaceholder("Choose a song to play")
+                                .setRequiredRange(1, 1);
+
+                        StringBuilder description = new StringBuilder("**Search results for:** `" + query + "`\n\n");
+                        for (int i = 0; i < tracks.size(); i++) {
+                            AudioTrack track = tracks.get(i);
+                            String title = track.getInfo().title;
+                            String author = track.getInfo().author;
+                            String duration = MusicUtils.formatDuration(track.getDuration());
+                            // Truncate label to 100 chars (Discord limit)
+                            String label = (i + 1) + ". " + title;
+                            if (label.length() > 100) label = label.substring(0, 97) + "...";
+                            String desc = author + " [" + duration + "]";
+                            if (desc.length() > 100) desc = desc.substring(0, 97) + "...";
+
+                            menuBuilder.addOption(label, String.valueOf(i), desc);
+                            description.append("`").append(i + 1).append(".` **").append(title).append("** — ")
+                                    .append(author).append(" `[").append(duration).append("]`\n");
+                        }
+
+                        EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
+                                .setTitle("🔎 Search Results")
+                                .setDescription(description.toString())
+                                .setFooter("Select a song from the dropdown below • Expires in 30 seconds");
+
+                        event.getHook().sendMessageEmbeds(embed.build())
+                                .addComponents(ActionRow.of(menuBuilder.build()))
+                                .queue(msg -> {
+                                    // Auto-expire the search results after 30 seconds
+                                    msg.editMessageComponents().queueAfter(30, TimeUnit.SECONDS,
+                                        success -> pendingSearchResults.remove(key),
+                                        error -> pendingSearchResults.remove(key));
+                                });
+                    }
+
+                    @Override
+                    public void onNoResults() {
+                        event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                            "No Results", "No matches found for: `" + query + "`"
                         )).queue();
                     }
                 });

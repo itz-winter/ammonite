@@ -2,8 +2,11 @@ package com.serverbot.music;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,6 +19,8 @@ import java.util.Queue;
  * Handles queue operations, repeat modes, and shuffle functionality.
  */
 public class TrackScheduler extends AudioEventAdapter {
+
+    private static final Logger logger = LoggerFactory.getLogger(TrackScheduler.class);
 
     private final AudioPlayer player;
     private final Queue<AudioTrack> queue;
@@ -30,12 +35,15 @@ public class TrackScheduler extends AudioEventAdapter {
 
     /**
      * Add a track to the queue, or start playing if nothing is currently playing.
+     * @return true if the track started playing immediately, false if it was queued
      */
-    public void queue(AudioTrack track) {
+    public boolean queue(AudioTrack track) {
         if (!player.startTrack(track, true)) {
             queue.offer(track);
+            return false;
         } else {
             currentTrack = track;
+            return true;
         }
     }
 
@@ -79,6 +87,8 @@ public class TrackScheduler extends AudioEventAdapter {
 
     @Override
     public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
+        logger.debug("Track ended: {} | Reason: {} | mayStartNext: {}",
+                track.getInfo().title, endReason, endReason.mayStartNext);
         if (endReason.mayStartNext) {
             if (repeating) {
                 player.startTrack(track.makeClone(), false);
@@ -87,6 +97,19 @@ public class TrackScheduler extends AudioEventAdapter {
                 nextTrack();
             }
         }
+    }
+
+    @Override
+    public void onTrackException(AudioPlayer player, AudioTrack track, FriendlyException exception) {
+        logger.error("Track exception for '{}': {} (severity: {})",
+                track.getInfo().title, exception.getMessage(), exception.severity, exception);
+    }
+
+    @Override
+    public void onTrackStuck(AudioPlayer player, AudioTrack track, long thresholdMs) {
+        logger.warn("Track stuck for '{}' (threshold: {}ms), skipping to next",
+                track.getInfo().title, thresholdMs);
+        nextTrack();
     }
 
     /**

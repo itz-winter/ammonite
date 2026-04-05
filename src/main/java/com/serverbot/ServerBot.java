@@ -20,6 +20,7 @@ import com.serverbot.listeners.BlackjackButtonListener;
 import com.serverbot.listeners.GlobalChatListener;
 import com.serverbot.listeners.GlobalChatButtonListener;
 import com.serverbot.listeners.AutoConfigListener;
+import com.serverbot.listeners.MusicSearchSelectionListener;
 import com.serverbot.services.CommandManager;
 import com.serverbot.services.ConfigManager;
 import com.serverbot.services.SchedulerService;
@@ -181,6 +182,7 @@ public class ServerBot {
                             new GlobalChatListener(),
                             new GlobalChatButtonListener(),
                             new AutoConfigListener(),
+                            new MusicSearchSelectionListener(),
                             new com.serverbot.commands.games.PokerCommand(),
                             new com.serverbot.commands.utility.DeleteDataCommand()
                     )

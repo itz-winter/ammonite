@@ -10,5 +10,8 @@
   "default_online_status": "online",
   "default_rpc_type": "watching",
   "default_rpc_text": "for commands",
-  "hide_owner_commands": false
+  "hide_owner_commands": false,
+  "spotify_client_id": "",
+  "spotify_client_secret": "",
+  "spotify_country_code": "US"
 }

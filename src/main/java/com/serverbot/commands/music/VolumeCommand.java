@@ -34,7 +34,7 @@ public class VolumeCommand implements SlashCommand {
         if (newVolume == null) {
             // Just show current volume
             String volumeBar = createVolumeBar(currentVolume);
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+            event.replyEmbeds(EmbedUtils.createMusicEmbed(
                 "🔊 Volume",
                 "Current volume: **" + currentVolume + "%**\n" + volumeBar
             )).queue();
@@ -46,7 +46,7 @@ public class VolumeCommand implements SlashCommand {
 
         String emoji = newVolume == 0 ? "🔇" : newVolume <= 50 ? "🔉" : "🔊";
         String volumeBar = createVolumeBar(newVolume);
-        event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+        event.replyEmbeds(EmbedUtils.createMusicEmbed(
             emoji + " Volume Set",
             "Volume set to **" + newVolume + "%**\n" + volumeBar
         )).queue();

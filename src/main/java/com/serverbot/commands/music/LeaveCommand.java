@@ -27,7 +27,7 @@ public class LeaveCommand implements SlashCommand {
 
         musicManager.leaveChannel(event.getGuild());
 
-        event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+        event.replyEmbeds(EmbedUtils.createMusicEmbed(
             "👋 Disconnected",
             "Left the voice channel and cleared the queue."
         )).queue();

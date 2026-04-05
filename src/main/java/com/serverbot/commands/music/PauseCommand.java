@@ -30,11 +30,11 @@ public class PauseCommand implements SlashCommand {
         gmm.getPlayer().setPaused(!isPaused);
 
         if (isPaused) {
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+            event.replyEmbeds(EmbedUtils.createMusicEmbed(
                 "▶️ Resumed", "Music playback has been resumed."
             )).queue();
         } else {
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+            event.replyEmbeds(EmbedUtils.createMusicEmbed(
                 "⏸️ Paused", "Music playback has been paused."
             )).queue();
         }

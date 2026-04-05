@@ -45,7 +45,7 @@ public class SkipCommand implements SlashCommand {
                 ? "Now playing: **" + currentTrack.getInfo().title + "**"
                 : "Queue is now empty.";
 
-        event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+        event.replyEmbeds(EmbedUtils.createMusicEmbed(
             "⏭️ Skipped",
             "Skipped **" + skipped + "** track" + (skipped != 1 ? "s" : "") + ".\n" + nowPlaying
         )).queue();

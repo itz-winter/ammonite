@@ -30,12 +30,12 @@ public class ShuffleCommand implements SlashCommand {
         gmm.getScheduler().setShuffling(newState);
 
         if (newState) {
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+            event.replyEmbeds(EmbedUtils.createMusicEmbed(
                 "🔀 Shuffle Enabled",
                 "The queue will now be shuffled."
             )).queue();
         } else {
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+            event.replyEmbeds(EmbedUtils.createMusicEmbed(
                 "🔀 Shuffle Disabled",
                 "Shuffle mode has been turned off."
             )).queue();
