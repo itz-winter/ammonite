@@ -30,11 +30,24 @@ public class PrefixCommandListener extends ListenerAdapter {
             return;
         }
         
-        // Check if message starts with the guild's configured prefix or the default "!"
         String content = event.getMessage().getContentRaw();
-        String guildPrefix = ServerBot.getStorageManager().getPrefix(event.getGuild().getId());
-        
-        if (content.startsWith(guildPrefix) || content.startsWith("!") || content.startsWith("px;")) {
+
+        // Check all active guild prefixes, the hardcoded default "!", and the proxy prefix.
+        // Using getPrefixes() (all active prefixes) instead of getPrefix() (primary only)
+        // ensures custom prefixes added via /prefix add are recognised here too.
+        java.util.List<String> guildPrefixes = ServerBot.getStorageManager().getPrefixes(event.getGuild().getId());
+
+        boolean matches = content.startsWith("!") || content.startsWith("px;");
+        if (!matches) {
+            for (String p : guildPrefixes) {
+                if (content.startsWith(p)) {
+                    matches = true;
+                    break;
+                }
+            }
+        }
+
+        if (matches) {
             prefixCommandService.handlePrefixCommand(event);
         }
     }

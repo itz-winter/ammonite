@@ -792,6 +792,16 @@ public class PrefixCommandService {
             
             // Get guild settings to determine work rewards
             Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
+
+            // Respect the economy enabled/disabled toggle
+            Boolean economyEnabled = (Boolean) guildSettings.get("enableEconomy");
+            if (economyEnabled != null && !economyEnabled) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Economy Disabled",
+                    "The economy system is disabled on this server."
+                )).queue();
+                return;
+            }
             int minReward = (Integer) guildSettings.getOrDefault("economy.workRewardMin", 10);
             int maxReward = (Integer) guildSettings.getOrDefault("economy.workRewardMax", 50);
             
@@ -5954,17 +5964,13 @@ public class PrefixCommandService {
             return;
         }
 
-        net.dv8tion.jda.api.entities.channel.middleman.AudioChannel channel = voiceState.getChannel();
+        final net.dv8tion.jda.api.entities.channel.middleman.AudioChannel channel = voiceState.getChannel();
         com.serverbot.music.MusicManager musicManager = com.serverbot.music.MusicManager.getInstance();
 
-        if (!musicManager.isConnected(event.getGuild())) {
-            if (!musicManager.joinChannel(channel)) {
-                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                    "Connection Failed", "Failed to join your voice channel."
-                )).queue();
-                return;
-            }
-        }
+        // Join voice INSIDE the load callback (after we know a track exists) to avoid
+        // the bot sitting idle in the channel when nothing loads — mirrors the slash /play
+        // behaviour.  We still check the channel early so we can fail fast if the user
+        // is not in a voice channel, but we do NOT open the connection yet.
 
         final String finalQuery = query;
 
@@ -5974,13 +5980,19 @@ public class PrefixCommandService {
                 new com.serverbot.music.MusicManager.MusicLoadCallback() {
                     @Override
                     public void onTrackLoaded(com.sedmelluq.discord.lavaplayer.track.AudioTrack track) {
+                        if (!joinBeforePlay(musicManager, channel, event)) return;
+                        com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+                        boolean startedPlaying = gmm.getScheduler().queue(track);
+                        int position = gmm.getScheduler().getQueueSize();
                         EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
-                                .setTitle("🎵 Added to Queue")
+                                .setTitle("🎵 " + (startedPlaying ? "Now Playing" : "Added to Queue"))
                                 .setDescription(com.serverbot.music.MusicUtils.formatTrack(track));
+                        if (!startedPlaying) embed.setFooter("Position #" + position + " in queue");
                         event.getChannel().sendMessageEmbeds(embed.build()).queue();
                     }
                     @Override
                     public void onPlaylistLoaded(com.sedmelluq.discord.lavaplayer.track.AudioPlaylist playlist) {
+                        if (!joinBeforePlay(musicManager, channel, event)) return;
                         com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
                         for (com.sedmelluq.discord.lavaplayer.track.AudioTrack track : playlist.getTracks()) {
                             gmm.getScheduler().queue(track);
@@ -5992,6 +6004,11 @@ public class PrefixCommandService {
                     }
                     @Override
                     public void onPlaylistRangeLoaded(String name, java.util.List<com.sedmelluq.discord.lavaplayer.track.AudioTrack> tracks, int start, int end, int total) {
+                        if (!joinBeforePlay(musicManager, channel, event)) return;
+                        com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+                        for (com.sedmelluq.discord.lavaplayer.track.AudioTrack track : tracks) {
+                            gmm.getScheduler().queue(track);
+                        }
                         EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
                                 .setTitle("🎵 Playlist Added (Range)")
                                 .setDescription("**" + name + "**")
@@ -6017,20 +6034,23 @@ public class PrefixCommandService {
                 new com.serverbot.music.MusicManager.MusicLoadCallback() {
                     @Override
                     public void onTrackLoaded(com.sedmelluq.discord.lavaplayer.track.AudioTrack track) {
+                        if (!joinBeforePlay(musicManager, channel, event)) return;
                         com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+                        boolean startedPlaying = gmm.getScheduler().queue(track);
                         int position = gmm.getScheduler().getQueueSize();
                         EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
                                 .setTitle("🎵 Added to Queue")
                                 .setDescription(com.serverbot.music.MusicUtils.formatTrack(track));
-                        if (position > 0) {
-                            embed.addField("Position", "#" + (position + 1) + " in queue", true);
-                        } else {
+                        if (startedPlaying) {
                             embed.addField("Status", "Now playing", true);
+                        } else {
+                            embed.addField("Position", "#" + position + " in queue", true);
                         }
                         event.getChannel().sendMessageEmbeds(embed.build()).queue();
                     }
                     @Override
                     public void onPlaylistLoaded(com.sedmelluq.discord.lavaplayer.track.AudioPlaylist playlist) {
+                        if (!joinBeforePlay(musicManager, channel, event)) return;
                         com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
                         for (com.sedmelluq.discord.lavaplayer.track.AudioTrack track : playlist.getTracks()) {
                             gmm.getScheduler().queue(track);
@@ -6057,6 +6077,32 @@ public class PrefixCommandService {
                     }
                 });
         }
+    }
+
+    /**
+     * Join the voice channel only if not already connected.
+     * Called from inside a successful load callback so we only join when we have audio.
+     * @return true if connected (or already was), false if join failed (error reply already sent)
+     */
+    private boolean joinBeforePlay(com.serverbot.music.MusicManager musicManager,
+                                   net.dv8tion.jda.api.entities.channel.middleman.AudioChannel channel,
+                                   MessageReceivedEvent event) {
+        if (!musicManager.isConnected(event.getGuild())) {
+            if (!musicManager.joinChannel(channel)) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Connection Failed", "Failed to join your voice channel."
+                )).queue();
+                return false;
+            }
+        } else {
+            // Already connected — move to the requester's channel if different
+            net.dv8tion.jda.api.entities.channel.middleman.AudioChannel connected =
+                    musicManager.getConnectedChannel(event.getGuild());
+            if (connected != null && !connected.getId().equals(channel.getId())) {
+                event.getGuild().getAudioManager().openAudioConnection(channel);
+            }
+        }
+        return true;
     }
 
     private void handleSkipCommand(MessageReceivedEvent event, Map<String, String> options) {

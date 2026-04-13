@@ -349,17 +349,25 @@ public class ServerBot {
             return Activity.customStatus(statusMessage);
         }
         
-        // Otherwise build RPC activity from type + text
+        // Otherwise build RPC activity from type + text.
+        // If both fields are blank, return null → no activity shown.
         String rpcText = config.getDefaultRpcText();
-        if (rpcText == null || rpcText.isEmpty()) {
+        String rpcType = config.getDefaultRpcType();
+
+        boolean rpcTextBlank = rpcText == null || rpcText.isEmpty();
+        boolean rpcTypeBlank = rpcType == null || rpcType.isEmpty();
+
+        if (rpcTextBlank && rpcTypeBlank) {
+            return null;
+        }
+
+        if (rpcTextBlank) {
             rpcText = "for commands";
         }
-        
-        String rpcType = config.getDefaultRpcType();
-        if (rpcType == null || rpcType.isEmpty()) {
+        if (rpcTypeBlank) {
             rpcType = "watching";
         }
-        
+
         switch (rpcType.toLowerCase()) {
             case "playing":
                 return Activity.playing(rpcText);
