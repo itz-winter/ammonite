@@ -5,11 +5,13 @@ import com.serverbot.commands.SlashCommand;
 import com.serverbot.utils.EmbedUtils;
 import com.serverbot.utils.PermissionManager;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 /**
  * Echo command for sending messages to channels
@@ -44,9 +46,9 @@ public class EchoCommand implements SlashCommand {
             return;
         }
         
-        TextChannel targetChannel = event.getOption("channel") != null ? 
-                event.getOption("channel").getAsChannel().asTextChannel() : 
-                event.getChannel().asTextChannel();
+        GuildMessageChannel targetChannel = event.getOption("channel") != null ? 
+                (GuildMessageChannel) event.getOption("channel").getAsChannel() : 
+                (GuildMessageChannel) event.getChannel();
 
         // Check if bot can send messages in target channel
         if (!targetChannel.canTalk()) {
@@ -82,7 +84,8 @@ public class EchoCommand implements SlashCommand {
     public static CommandData getCommandData() {
         return Commands.slash("echo", "Send a message to a channel")
                 .addOption(OptionType.STRING, "message", "Message to send", true)
-                .addOption(OptionType.CHANNEL, "channel", "Channel to send message to (defaults to current)", false);
+                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "Channel to send message to (defaults to current)", false)
+                        .setChannelTypes(ChannelType.TEXT, ChannelType.NEWS));
     }
 
     @Override

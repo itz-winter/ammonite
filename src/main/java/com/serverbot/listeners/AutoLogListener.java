@@ -14,7 +14,9 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateTimeOutEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
+import net.dv8tion.jda.api.events.message.MessageBulkDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.slf4j.Logger;
@@ -25,19 +27,39 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
+// Explicit import to resolve ambiguity with java.awt.List
+import java.util.List;
+import java.util.ArrayList;
 /**
  * Handles automatic logging of Discord events to configured log channels
  */
 public class AutoLogListener extends ListenerAdapter {
     
     private static final Logger logger = LoggerFactory.getLogger(AutoLogListener.class);
-    
+
+    // ── Message cache (Vencord-style: cache on receive, read on delete/edit) ─────
+
+    /** Cached metadata for a recently received message, used for delete/edit logging. */
+    private record CachedMessage(String content, String authorMention, String authorId, String authorTag) {}
+
+    /** Lightweight info collected at deletion time (IDs only available in bulk-delete). */
+    private record DeletedMessageInfo(String id, String authorMention, String authorTag, String content) {}
+
+    private static final int MSG_CACHE_SIZE = 10_000;
+    @SuppressWarnings("serial")
+    private static final Map<String, CachedMessage> messageCache = Collections.synchronizedMap(
+        new LinkedHashMap<>(256, 0.75f, true) {
+            @Override protected boolean removeEldestEntry(Map.Entry<String, CachedMessage> eldest) {
+                return size() > MSG_CACHE_SIZE;
+            }
+        }
+    );
+
     // Track message IDs that are sent by the bot to log channels to avoid logging their deletions
     private static final Set<String> logMessageIds = ConcurrentHashMap.newKeySet();
-    
-    // Track the content hash of recently sent messages to detect embed-only updates
-    private static final Map<String, Integer> messageContentHashes = new ConcurrentHashMap<>();
+
+    // Suppress individual MessageDeleteEvents for messages being batch-purged by the bot
+    private static final Set<String> suppressedDeleteIds = ConcurrentHashMap.newKeySet();
     
     /**
      * Track a log message ID to prevent logging its deletion.
@@ -57,63 +79,97 @@ public class AutoLogListener extends ListenerAdapter {
             }
         }
     }
+
+    /**
+     * Tell the listener to silently suppress individual MessageDeleteEvents for these
+     * message IDs.  Called by PurgeCommand before doing one-by-one deletion of old
+     * messages so they don't each create a separate delete log entry.
+     */
+    public static void suppressBatchDelete(Collection<String> messageIds) {
+        suppressedDeleteIds.addAll(messageIds);
+        // Safety cap to prevent memory leak if callers never drain the set
+        if (suppressedDeleteIds.size() > 50_000) {
+            Iterator<String> it = suppressedDeleteIds.iterator();
+            for (int i = 0; i < 10_000 && it.hasNext(); i++) { it.next(); it.remove(); }
+        }
+    }
+
+    // ── Message caching ───────────────────────────────────────────────────────────
+
+    @Override
+    public void onMessageReceived(MessageReceivedEvent event) {
+        if (!event.isFromGuild()) return;
+        Message msg = event.getMessage();
+        User author = msg.getAuthor();
+        messageCache.put(msg.getId(), new CachedMessage(
+            msg.getContentRaw(),
+            author.getAsMention(),
+            author.getId(),
+            author.getName()
+        ));
+    }
     
     @Override
     public void onMessageUpdate(MessageUpdateEvent event) {
         if (!event.isFromGuild() || event.getAuthor().isBot()) {
             return;
         }
-        
+
         Message message = event.getMessage();
         String messageId = message.getId();
-        String contentRaw = message.getContentRaw();
-        
-        // Calculate hash of current content
-        int currentHash = contentRaw.hashCode();
-        
-        // Check if we've seen this message before
-        Integer previousHash = messageContentHashes.get(messageId);
-        
-        if (previousHash != null && previousHash == currentHash) {
-            // Content hasn't changed - this is just an embed update, pin, or flag change
+        String newContent = message.getContentRaw();
+
+        // Look up the baseline content we captured when the message was first received
+        CachedMessage cached = messageCache.get(messageId);
+        String previousContent = (cached != null) ? cached.content() : null;
+
+        // Content is identical → embed unfurl, pin, or flag change — not a real edit
+        if (newContent.equals(previousContent)) return;
+
+        if (previousContent == null) {
+            // No baseline in cache (bot restarted, message pre-dates session).
+            // We can't produce a before/after diff, so just store the current content
+            // and wait for the next genuine edit before logging.
+            messageCache.put(messageId, new CachedMessage(
+                newContent,
+                event.getAuthor().getAsMention(),
+                event.getAuthor().getId(),
+                event.getAuthor().getName()
+            ));
             return;
         }
-        
-        // Update the hash for future comparisons
-        messageContentHashes.put(messageId, currentHash);
-        
-        // Clean up old entries (keep only last 1000)
-        if (messageContentHashes.size() > 1000) {
-            // Remove oldest entries
-            Iterator<String> iterator = messageContentHashes.keySet().iterator();
-            for (int i = 0; i < 100 && iterator.hasNext(); i++) {
-                iterator.next();
-                iterator.remove();
-            }
-        }
-        
+
+        // Update the cache with the new content
+        messageCache.put(messageId, new CachedMessage(
+            newContent, cached.authorMention(), cached.authorId(), cached.authorTag()
+        ));
+
         String guildId = event.getGuild().getId();
         if (!isAutoLogEnabled(guildId, "message", "edits")) {
             return;
         }
-        
+
         TextChannel logChannel = getLogChannel(event.getGuild(), "message");
         if (logChannel == null) return;
-        
+
+        String jumpLink = "https://discord.com/channels/"
+                + event.getGuild().getId() + "/" + event.getChannel().getId() + "/" + messageId;
+
         EmbedBuilder embed = new EmbedBuilder()
                 .setColor(Color.ORANGE)
                 .setTitle(CustomEmojis.NOTE + " Message Edited")
+                .setUrl(jumpLink) // clicking the title jumps to the message
                 .addField("User", event.getAuthor().getAsMention(), true)
                 .addField("Channel", event.getChannel().getAsMention(), true)
-                .addField("Message ID", event.getMessageId(), true)
-                .addField("New Content", 
-                    contentRaw.isEmpty() ? "*No text content*" : 
-                    truncateText(contentRaw, 1024), false)
-                .setFooter("User ID: " + event.getAuthor().getId())
+                .addField("Before",
+                        previousContent.isEmpty() ? "*[No text content]*" : truncateText(previousContent, 1024), false)
+                .addField("After",
+                        newContent.isEmpty() ? "*[No text content]*" : truncateText(newContent, 1024), false)
+                .setFooter("User ID: " + event.getAuthor().getId() + " | Message ID: " + messageId)
                 .setTimestamp(OffsetDateTime.now());
-        
+
         SafeRestAction.queue(
-            logChannel.sendMessageEmbeds(embed.build()), 
+            logChannel.sendMessageEmbeds(embed.build()),
             "log message edit event",
             success -> trackLogMessage(success.getId())
         );
@@ -124,37 +180,58 @@ public class AutoLogListener extends ListenerAdapter {
         if (!event.isFromGuild()) {
             return;
         }
-        
+
         String messageId = event.getMessageId();
-        
-        // Check if this was a log message sent by the bot - don't log deletion of our own log messages
+
+        // Don't log deletion of the bot's own log messages
         if (logMessageIds.remove(messageId)) {
-            return; // This was a log message, don't log its deletion
-        }
-        
-        // Check if this was a proxy system deletion
-        // If the message is being tracked by ProxyService as an original message, don't log it
-        if (ServerBot.getProxyService().isOriginalMessageBeingProxied(messageId)) {
-            return; // This is a proxy deletion, don't log it
-        }
-        
-        String guildId = event.getGuild().getId();
-        if (!isAutoLogEnabled(guildId, "message", "deletes")) {
             return;
         }
-        
+
+        // Don't log proxy system deletions
+        if (ServerBot.getProxyService().isOriginalMessageBeingProxied(messageId)) {
+            return;
+        }
+
+        // Part of a bot-initiated batch purge — will be logged as a group instead
+        if (suppressedDeleteIds.remove(messageId)) {
+            messageCache.remove(messageId);
+            return;
+        }
+
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "message", "deletes")) {
+            messageCache.remove(messageId);
+            return;
+        }
+
         TextChannel logChannel = getLogChannel(event.getGuild(), "message");
-        if (logChannel == null) return;
-        
+        if (logChannel == null) {
+            messageCache.remove(messageId);
+            return;
+        }
+
+        CachedMessage cached = messageCache.remove(messageId);
+
         EmbedBuilder embed = new EmbedBuilder()
                 .setColor(Color.RED)
                 .setTitle(CustomEmojis.TRASH + " Message Deleted")
                 .addField("Channel", event.getChannel().getAsMention(), true)
-                .addField("Message ID", messageId, true)
-                .setFooter("Deleted at")
-                .setTimestamp(OffsetDateTime.now());
-        
-        // Try to get cached message info from audit logs
+                .addField("Message ID", messageId, true);
+
+        if (cached != null) {
+            embed.addField("Author", cached.authorMention(), true);
+            String content = cached.content();
+            embed.addField("Content",
+                    content.isEmpty() ? "*[No text content]*" : truncateText(content, 1024), false);
+            embed.setFooter("Author ID: " + cached.authorId());
+        } else {
+            embed.setFooter("Content unavailable (not cached)");
+        }
+
+        embed.setTimestamp(OffsetDateTime.now());
+
+        // Enrich with audit log to show who deleted the message (if it was someone else)
         SafeRestAction.queue(
             event.getGuild().retrieveAuditLogs().type(ActionType.MESSAGE_DELETE).limit(1),
             "retrieve audit logs for message delete",
@@ -163,17 +240,64 @@ public class AutoLogListener extends ListenerAdapter {
                     AuditLogEntry entry = auditLogs.get(0);
                     if (entry.getTargetIdLong() == event.getMessageIdLong()) {
                         User deletedBy = entry.getUser();
-                        if (deletedBy != null) {
+                        if (deletedBy != null && (cached == null || !deletedBy.getId().equals(cached.authorId()))) {
                             embed.addField("Deleted by", deletedBy.getAsMention(), true);
-                            embed.setFooter("Deleted by " + deletedBy.getName() + " | User ID: " + deletedBy.getId());
                         }
                     }
                 }
                 SafeRestAction.queue(
                     logChannel.sendMessageEmbeds(embed.build()),
-                    "log message delete with moderator",
+                    "log message delete",
                     success -> trackLogMessage(success.getId())
                 );
+            }
+        );
+    }
+
+    @Override
+    public void onMessageBulkDelete(MessageBulkDeleteEvent event) {
+        // MessageBulkDeleteEvent always originates from a guild channel
+
+        List<String> ids = event.getMessageIds();
+
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "message", "deletes")) {
+            ids.forEach(messageCache::remove);
+            return;
+        }
+
+        TextChannel logChannel = getLogChannel(event.getGuild(), "message");
+        if (logChannel == null) {
+            ids.forEach(messageCache::remove);
+            return;
+        }
+
+        // Collect cached info for each deleted message
+        List<DeletedMessageInfo> infos = new ArrayList<>();
+        for (String id : ids) {
+            CachedMessage cached = messageCache.remove(id);
+            infos.add(new DeletedMessageInfo(
+                id,
+                cached != null ? cached.authorMention() : null,
+                cached != null ? cached.authorTag()     : null,
+                cached != null ? cached.content()       : null
+            ));
+        }
+
+        // Try to identify who triggered the bulk delete via audit log
+        SafeRestAction.queue(
+            event.getGuild().retrieveAuditLogs().type(ActionType.MESSAGE_BULK_DELETE).limit(1),
+            "retrieve audit logs for bulk delete",
+            auditLogs -> {
+                User executor = null;
+                if (!auditLogs.isEmpty()) {
+                    AuditLogEntry entry = auditLogs.get(0);
+                    // For MESSAGE_BULK_DELETE, target_id is the channel
+                    if (entry.getTargetIdLong() == event.getChannel().getIdLong()) {
+                        executor = entry.getUser();
+                    }
+                }
+                sendGroupedDeleteLog(logChannel, event.getChannel().getAsMention(), infos, executor);
             }
         );
     }
@@ -470,7 +594,7 @@ public class AutoLogListener extends ListenerAdapter {
     /**
      * Checks if auto-logging is enabled for a specific event type
      */
-    private boolean isAutoLogEnabled(String guildId, String action, String actionType) {
+    private static boolean isAutoLogEnabled(String guildId, String action, String actionType) {
         try {
             Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
             
@@ -507,7 +631,7 @@ public class AutoLogListener extends ListenerAdapter {
     /**
      * Gets the configured log channel for a guild and specific log type
      */
-    private TextChannel getLogChannel(Guild guild, String logType) {
+    private static TextChannel getLogChannel(Guild guild, String logType) {
         try {
             Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guild.getId());
             
@@ -544,9 +668,98 @@ public class AutoLogListener extends ListenerAdapter {
     /**
      * Truncates text to a maximum length for embed fields
      */
-    private String truncateText(String text, int maxLength) {
+    private static String truncateText(String text, int maxLength) {
         if (text == null) return "";
         if (text.length() <= maxLength) return text;
         return text.substring(0, maxLength - 3) + "...";
+    }
+
+    // ── Grouped delete log (shared by onMessageBulkDelete and logOldMessagePurge) ─
+
+    /**
+     * Logs a batch of deleted messages as a paginated multi-embed entry.
+     * The first Discord message contains a header embed + up to 9 content pages (10 messages
+     * per page); further pages spill into additional messages automatically.
+     */
+    private static void sendGroupedDeleteLog(TextChannel logChannel,
+                                             String channelMention,
+                                             List<DeletedMessageInfo> messages,
+                                             User executor) {
+        int total = messages.size();
+
+        EmbedBuilder header = new EmbedBuilder()
+                .setColor(new Color(0x9B59B6))
+                .setTitle("🗑️ Bulk Message Delete")
+                .addField("Channel", channelMention, true)
+                .addField("Messages Deleted", String.valueOf(total), true);
+
+        if (executor != null) {
+            header.addField("Deleted by", executor.getAsMention(), true);
+            header.setFooter("Deleted by " + executor.getName() + " | ID: " + executor.getId());
+        } else {
+            header.setFooter("Bulk delete");
+        }
+        header.setTimestamp(OffsetDateTime.now());
+
+        // Build one embed per page of up to 10 messages
+        List<EmbedBuilder> pages = new ArrayList<>();
+        EmbedBuilder page = null;
+        for (int i = 0; i < messages.size(); i++) {
+            if (i % 10 == 0) {
+                if (page != null) pages.add(page);
+                page = new EmbedBuilder().setColor(new Color(0x9B59B6));
+            }
+            DeletedMessageInfo info = messages.get(i);
+            String fieldName = (info.authorTag() != null) ? "by " + info.authorTag() : "Message #" + (i + 1);
+            String content   = (info.content() != null && !info.content().isEmpty())
+                    ? truncateText(info.content(), 200)
+                    : "*[content unavailable]*";
+            page.addField(fieldName, content + "\n`" + info.id() + "`", false);
+        }
+        if (page != null) pages.add(page);
+
+        sendEmbedBatch(logChannel, header, pages, 0);
+    }
+
+    /** Sends up to 10 embeds (header on first call + content pages) per Discord message. */
+    private static void sendEmbedBatch(TextChannel logChannel, EmbedBuilder header,
+                                       List<EmbedBuilder> pages, int pageOffset) {
+        List<net.dv8tion.jda.api.entities.MessageEmbed> batch = new ArrayList<>();
+        if (pageOffset == 0) batch.add(header.build());
+        int limit = pageOffset == 0 ? 9 : 10; // header takes one slot in first message
+        int end   = Math.min(pageOffset + limit, pages.size());
+        for (int i = pageOffset; i < end; i++) batch.add(pages.get(i).build());
+        if (batch.isEmpty()) return;
+        SafeRestAction.queue(
+            logChannel.sendMessageEmbeds(batch),
+            "log grouped delete embeds",
+            success -> {
+                trackLogMessage(success.getId());
+                if (end < pages.size()) sendEmbedBatch(logChannel, header, pages, end);
+            }
+        );
+    }
+
+    /**
+     * Log a set of messages that were individually deleted as part of a bot-initiated purge
+     * (old messages that could not be bulk-deleted).  Called by PurgeCommand after all
+     * individual deletions finish.
+     */
+    public static void logOldMessagePurge(Guild guild, String channelMention,
+                                          List<Message> messages, User executor) {
+        if (!isAutoLogEnabled(guild.getId(), "message", "deletes")) return;
+        TextChannel logChannel = getLogChannel(guild, "message");
+        if (logChannel == null) return;
+
+        List<DeletedMessageInfo> infos = new ArrayList<>();
+        for (Message m : messages) {
+            infos.add(new DeletedMessageInfo(
+                m.getId(),
+                m.getAuthor().getAsMention(),
+                m.getAuthor().getName(),
+                m.getContentRaw()
+            ));
+        }
+        sendGroupedDeleteLog(logChannel, channelMention, infos, executor);
     }
 }
