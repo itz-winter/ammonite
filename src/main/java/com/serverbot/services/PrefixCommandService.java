@@ -211,26 +211,18 @@ public class PrefixCommandService {
                 )).queue();
                 return;
             }
-            
-            // Check if this specific command is disabled
-            if (!ServerBot.getStorageManager().isPrefixCommandEnabled(guildId, commandName)) {
-                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                    "Command Disabled",
-                    "The prefix command `" + prefix + commandName + "` is disabled for this server.\n" +
-                    "You can still use the slash command version: `/" + commandName + "`"
-                )).queue();
-                return;
-            }
         }
         
         // Get the corresponding slash command
         SlashCommand slashCommand = commandManager.getCommand(commandName);
         if (slashCommand == null) {
-            // Command not found
-            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                "Unknown Command",
-                "The command `" + prefix + commandName + "` was not found. Use `" + prefix + "help` to see available commands."
-            )).queue();
+            // Only respond if the typed word resembles a real command (avoids flagging e.g. "!!!")
+            if (isSimilarToKnownCommand(commandName)) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Unknown Command",
+                    "The command `" + prefix + commandName + "` was not found. Use `" + prefix + "help` to see available commands."
+                )).queue();
+            }
             return;
         }
         
@@ -441,16 +433,48 @@ public class PrefixCommandService {
                 handleShuffleCommand(event);
                 break;
             default:
-                // For commands not specifically implemented yet
+                // Command is registered as a slash command but has no prefix implementation
                 event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                    "Command Not Implemented",
-                    String.format("The prefix command `!%s` is not yet implemented for prefix usage.\nPlease use `/%s` instead.", 
-                        commandName, commandName)
+                    "Not Available via Prefix",
+                    "The prefix version of `" + commandName + "` is not available. Please use `/" + commandName + "` instead."
                 )).queue();
                 break;
         }
     }
-    
+
+    /**
+     * Returns true if the typed command name is similar (Levenshtein distance ≤ 2)
+     * to any known command name or alias, so we only show "Unknown Command" when it
+     * looks like a genuine typo rather than just any message starting with the prefix
+     * (e.g. "!!!" would give commandName "!!" which has no close match and is ignored).
+     */
+    private boolean isSimilarToKnownCommand(String input) {
+        if (input == null || input.isBlank()) return false;
+        // Build set of all known command names + aliases
+        Set<String> known = new java.util.HashSet<>(COMMAND_ALIASES.keySet());
+        known.addAll(COMMAND_ALIASES.values());
+        for (String cmd : known) {
+            if (levenshtein(input, cmd) <= 2) return true;
+        }
+        return false;
+    }
+
+    /** Standard iterative Levenshtein distance between two strings. */
+    private static int levenshtein(String a, String b) {
+        int la = a.length(), lb = b.length();
+        int[] prev = new int[lb + 1], curr = new int[lb + 1];
+        for (int j = 0; j <= lb; j++) prev[j] = j;
+        for (int i = 1; i <= la; i++) {
+            curr[0] = i;
+            for (int j = 1; j <= lb; j++) {
+                int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+                curr[j] = Math.min(Math.min(curr[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+            }
+            int[] tmp = prev; prev = curr; curr = tmp;
+        }
+        return prev[lb];
+    }
+
     /**
      * Parse prefix command arguments into a map
      */

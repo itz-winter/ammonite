@@ -190,15 +190,15 @@ public class TicketService {
                     return "820"; // Channel not found
                 }
                 
-                // Generate transcript
-                String transcriptUrl = generateTranscript(channel, ticket);
+                // Generate and upload transcript (async — done after channel move/save)
+                String transcriptUrl = null; // no longer a URL; handled by generateAndUploadTranscript
                 
                 // Update ticket status
                 ticket.setStatus(TicketStatus.CLOSED);
                 ticket.setClosedBy(closedBy.getId());
                 ticket.setClosedAt(Instant.now());
                 ticket.setCloseReason(reason);
-                ticket.setTranscriptUrl(transcriptUrl);
+                ticket.setTranscriptUrl(null);
                 
                 // Move to Closed Tickets category
                 Category closedCategory = findOrCreateClosedTicketsCategory(guild);
@@ -207,8 +207,8 @@ public class TicketService {
                 // Save data
                 saveTicketData();
                 
-                // Send closing message
-                sendTicketClosedMessage(channel, closedBy, reason, transcriptUrl);
+                // Send closing message with transcript as JSON file attachment (async)
+                generateAndUploadTranscript(channel, ticket, closedBy, reason);
                 
                 return "SUCCESS";
                 
@@ -439,7 +439,7 @@ public class TicketService {
             .queue();
     }
     
-    private void sendTicketClosedMessage(TextChannel channel, User closedBy, String reason, String transcriptUrl) {
+    private void sendTicketClosedMessage(TextChannel channel, User closedBy, String reason, String transcriptNote) {
         EmbedBuilder embed = new EmbedBuilder()
             .setTitle("🔒 Ticket Closed")
             .setDescription("This ticket has been closed and moved to the Closed Tickets category.\n\n" +
@@ -448,33 +448,70 @@ public class TicketService {
             .addField("Reason", reason != null ? reason : "No reason provided", false)
             .setColor(Color.RED)
             .setTimestamp(Instant.now());
-        
-        if (transcriptUrl != null) {
-            embed.addField("Transcript", "[View Transcript](" + transcriptUrl + ")", false);
+
+        if (transcriptNote != null) {
+            embed.addField("Transcript", transcriptNote, false);
         }
-        
+
         Button archiveButton = Button.primary("ticket_archive", "Archive Ticket")
             .withEmoji(Emoji.fromUnicode("📦"));
-        
+
         channel.sendMessageEmbeds(embed.build())
             .addComponents(ActionRow.of(archiveButton))
             .queue();
     }
-    
-    private String generateTranscript(TextChannel channel, TicketData ticket) {
-        // Simple transcript generation - in a real implementation, 
-        // you'd want to save this to a file service or database
-        StringBuilder transcript = new StringBuilder();
-        transcript.append("Ticket Transcript\n");
-        transcript.append("==================\n");
-        transcript.append("Ticket ID: ").append(ticket.getTicketId()).append("\n");
-        transcript.append("Created: ").append(ticket.getCreatedAt().toString()).append("\n");
-        transcript.append("Creator: ").append(ticket.getCreatorId()).append("\n");
-        transcript.append("Channel: ").append(channel.getName()).append("\n");
-        transcript.append("==================\n\n");
-        
-        // For demo purposes, return a placeholder URL
-        return "https://example.com/transcripts/" + ticket.getTicketId();
+
+    /**
+     * Fetch the channel history, serialise it to JSON, upload as a file attachment,
+     * then send the closed-ticket embed.
+     */
+    private void generateAndUploadTranscript(TextChannel channel, TicketData ticket, User closedBy, String reason) {
+        channel.getIterableHistory().takeAsync(500).thenAccept(messages -> {
+            try {
+                // Build JSON array (oldest-first)
+                com.google.gson.JsonArray array = new com.google.gson.JsonArray();
+                for (int i = messages.size() - 1; i >= 0; i--) {
+                    net.dv8tion.jda.api.entities.Message msg = messages.get(i);
+                    com.google.gson.JsonObject obj = new com.google.gson.JsonObject();
+                    obj.addProperty("id", msg.getId());
+                    obj.addProperty("author", msg.getAuthor().getName());
+                    obj.addProperty("authorId", msg.getAuthor().getId());
+                    obj.addProperty("content", msg.getContentRaw());
+                    obj.addProperty("timestamp", msg.getTimeCreated().toInstant().toString());
+                    com.google.gson.JsonArray attachments = new com.google.gson.JsonArray();
+                    for (net.dv8tion.jda.api.entities.Message.Attachment a : msg.getAttachments()) {
+                        attachments.add(a.getUrl());
+                    }
+                    obj.add("attachments", attachments);
+                    array.add(obj);
+                }
+
+                String json = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(array);
+                byte[] bytes = json.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                String filename = "ticket-" + ticket.getTicketId() + ".json";
+
+                channel.sendMessageEmbeds(new EmbedBuilder()
+                    .setTitle("🔒 Ticket Closed")
+                    .setDescription("This ticket has been closed and moved to the Closed Tickets category.\n\n" +
+                                  "**The ticket will be automatically deleted in 14 days unless archived.**")
+                    .addField("Closed by", closedBy.getAsMention(), true)
+                    .addField("Reason", reason != null ? reason : "No reason provided", false)
+                    .addField("Transcript", "See attached JSON file.", false)
+                    .setColor(Color.RED)
+                    .setTimestamp(Instant.now())
+                    .build())
+                    .addComponents(ActionRow.of(Button.primary("ticket_archive", "Archive Ticket").withEmoji(Emoji.fromUnicode("📦"))))
+                    .addFiles(net.dv8tion.jda.api.utils.FileUpload.fromData(bytes, filename))
+                    .queue();
+            } catch (Exception e) {
+                ServerBot.getLogger().error("Failed to generate ticket transcript: " + e.getMessage(), e);
+                sendTicketClosedMessage(channel, closedBy, reason, null);
+            }
+        }).exceptionally(ex -> {
+            ServerBot.getLogger().error("Failed to fetch ticket history: " + ex.getMessage(), ex);
+            sendTicketClosedMessage(channel, closedBy, reason, null);
+            return null;
+        });
     }
     
     // Data persistence methods

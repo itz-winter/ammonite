@@ -116,6 +116,7 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.config.PunishmentDMCommand());
         registerCommand(new com.serverbot.commands.config.SuspiciousNotifyCommand());
         registerCommand(new com.serverbot.commands.config.PrefixCommand());
+        registerCommand(new com.serverbot.commands.config.ServerMessagesCommand());
         registerCommand(new com.serverbot.commands.utility.SuspiciousListCommand());
         
         // Support commands
@@ -130,6 +131,9 @@ public class CommandManager {
         
         // Global chat commands
         registerCommand(new com.serverbot.commands.utility.GlobalChatCommand());
+        
+        // Music playlist management
+        registerCommand(new com.serverbot.commands.music.PlaylistCommand());
         
         // Auto config command
         registerCommand(new com.serverbot.commands.config.AutoConfigCommand());

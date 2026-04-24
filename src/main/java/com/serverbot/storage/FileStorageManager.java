@@ -47,12 +47,40 @@ public class FileStorageManager {
     private final Map<String, Map<String, String>> pendingReportMessagesCache = new ConcurrentHashMap<>();
     private final File pendingReportMessagesFile;
 
+    // User playlists cache: userId -> List<UserPlaylist>
+    private final Map<String, List<UserPlaylist>> userPlaylistsCache = new ConcurrentHashMap<>();
+    private final File userPlaylistsFile;
+
+    /** A single entry in a user-created playlist. */
+    public static class PlaylistEntry {
+        public String url;
+        public String title;
+        public String author;
+        public long duration; // millis, 0 if unknown
+        public PlaylistEntry(String url, String title, String author, long duration) {
+            this.url = url; this.title = title; this.author = author; this.duration = duration;
+        }
+    }
+
+    /** A user-created playlist stored in the bot. */
+    public static class UserPlaylist {
+        public String name;
+        public String description;
+        public List<PlaylistEntry> entries;
+        public long createdAt;
+        public UserPlaylist(String name, String description) {
+            this.name = name; this.description = description;
+            this.entries = new ArrayList<>(); this.createdAt = System.currentTimeMillis();
+        }
+    }
+
     public FileStorageManager(String dataDirectory) {
         this.dataDir = new File(DATA_DIR);
         this.tempPunishmentsFile = new File(dataDir, "temp_punishments.json");
         this.moderationLogsFile = new File(dataDir, "moderation_logs.json");
         this.suspiciousUsersFile = new File(dataDir, "suspicious_users.json");
         this.pendingReportMessagesFile = new File(dataDir, "pending_report_messages.json");
+        this.userPlaylistsFile = new File(dataDir, "user_playlists.json");
         this.gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .registerTypeAdapter(java.time.Instant.class, new com.serverbot.utils.InstantTypeAdapter())
@@ -82,6 +110,7 @@ public class FileStorageManager {
         loadModerationLogs();
         loadSuspiciousUsers();
         loadPendingReportMessages();
+        loadUserPlaylists();
         logger.info("All data loaded from files");
     }
     
@@ -355,6 +384,60 @@ public class FileStorageManager {
         }
     }
     
+    // ─── Custom guild messages (configurable per-server) ─────────────────────
+
+    private String messageKey(String type) { return "customMessages." + type; }
+
+    /**
+     * Get custom messages for a given type (e.g. "work", "daily").
+     * Returns null if no custom list is set, so callers can fall back to defaults.
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> getCustomGuildMessages(String guildId, String type) {
+        Object val = guildSettingsCache.getOrDefault(guildId, new HashMap<>()).get(messageKey(type));
+        if (val instanceof List<?> list && !list.isEmpty()) {
+            return new ArrayList<>((List<String>) list);
+        }
+        return null;
+    }
+
+    /** Set the full custom message list for a type. Passing null or empty resets to defaults. */
+    public void setCustomGuildMessages(String guildId, String type, List<String> messages) {
+        if (messages == null || messages.isEmpty()) {
+            removeGuildSetting(guildId, messageKey(type));
+        } else {
+            updateGuildSettings(guildId, messageKey(type), new ArrayList<>(messages));
+        }
+    }
+
+    /** Add one message to a custom list. Returns the new size. */
+    @SuppressWarnings("unchecked")
+    public int addCustomGuildMessage(String guildId, String type, String message) {
+        Map<String, Object> settings = guildSettingsCache.computeIfAbsent(guildId, k -> getDefaultGuildSettings());
+        Object val = settings.get(messageKey(type));
+        List<String> list = (val instanceof List<?> l) ? new ArrayList<>((List<String>) l) : new ArrayList<>();
+        list.add(message);
+        settings.put(messageKey(type), list);
+        saveGuildSettings();
+        return list.size();
+    }
+
+    /** Remove message at 0-based index. Returns false if index out of range. */
+    @SuppressWarnings("unchecked")
+    public boolean removeCustomGuildMessage(String guildId, String type, int index) {
+        Map<String, Object> settings = guildSettingsCache.get(guildId);
+        if (settings == null) return false;
+        Object val = settings.get(messageKey(type));
+        if (!(val instanceof List<?> l)) return false;
+        List<String> list = new ArrayList<>((List<String>) l);
+        if (index < 0 || index >= list.size()) return false;
+        list.remove(index);
+        if (list.isEmpty()) settings.remove(messageKey(type));
+        else settings.put(messageKey(type), list);
+        saveGuildSettings();
+        return true;
+    }
+
     // New methods for getting specific settings
     public long getXpPerMessage(String guildId) {
         Map<String, Object> settings = getGuildSettings(guildId);
@@ -963,6 +1046,76 @@ public class FileStorageManager {
      */
     public void disableAllPrefixCommands(String guildId) {
         setPrefixCommandsEnabled(guildId, false);
+    }
+
+    // ─── User Playlist methods ────────────────────────────────────────────────
+
+    private void loadUserPlaylists() {
+        try {
+            if (userPlaylistsFile.exists()) {
+                Type type = new TypeToken<Map<String, List<UserPlaylist>>>(){}.getType();
+                Map<String, List<UserPlaylist>> loaded = gson.fromJson(new FileReader(userPlaylistsFile), type);
+                if (loaded != null) userPlaylistsCache.putAll(loaded);
+            }
+        } catch (IOException e) {
+            logger.warn("Failed to load user playlists", e);
+        }
+    }
+
+    private void saveUserPlaylists() {
+        try (FileWriter writer = new FileWriter(userPlaylistsFile)) {
+            gson.toJson(userPlaylistsCache, writer);
+        } catch (IOException e) {
+            logger.error("Failed to save user playlists", e);
+        }
+    }
+
+    /** Get all playlists for a user (read-only copy). */
+    public List<UserPlaylist> getUserPlaylists(String userId) {
+        return new ArrayList<>(userPlaylistsCache.getOrDefault(userId, new ArrayList<>()));
+    }
+
+    /** Get a specific playlist by name (case-insensitive), or null. */
+    public UserPlaylist getUserPlaylist(String userId, String name) {
+        return userPlaylistsCache.getOrDefault(userId, new ArrayList<>()).stream()
+            .filter(p -> p.name.equalsIgnoreCase(name))
+            .findFirst().orElse(null);
+    }
+
+    /** Create a new playlist. Returns false if name already exists. */
+    public boolean createUserPlaylist(String userId, String name, String description) {
+        List<UserPlaylist> list = userPlaylistsCache.computeIfAbsent(userId, k -> new ArrayList<>());
+        if (list.stream().anyMatch(p -> p.name.equalsIgnoreCase(name))) return false;
+        list.add(new UserPlaylist(name, description));
+        saveUserPlaylists();
+        return true;
+    }
+
+    /** Delete a playlist by name. Returns false if not found. */
+    public boolean deleteUserPlaylist(String userId, String name) {
+        List<UserPlaylist> list = userPlaylistsCache.get(userId);
+        if (list == null) return false;
+        boolean removed = list.removeIf(p -> p.name.equalsIgnoreCase(name));
+        if (removed) saveUserPlaylists();
+        return removed;
+    }
+
+    /** Add a track to a playlist. Returns false if playlist not found. */
+    public boolean addTrackToPlaylist(String userId, String playlistName, PlaylistEntry entry) {
+        UserPlaylist pl = getUserPlaylist(userId, playlistName);
+        if (pl == null) return false;
+        pl.entries.add(entry);
+        saveUserPlaylists();
+        return true;
+    }
+
+    /** Remove a track by 0-based index. Returns false if index out of range or playlist not found. */
+    public boolean removeTrackFromPlaylist(String userId, String playlistName, int index) {
+        UserPlaylist pl = getUserPlaylist(userId, playlistName);
+        if (pl == null || index < 0 || index >= pl.entries.size()) return false;
+        pl.entries.remove(index);
+        saveUserPlaylists();
+        return true;
     }
 
     public void close() {

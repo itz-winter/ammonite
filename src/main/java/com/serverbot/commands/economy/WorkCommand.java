@@ -92,8 +92,12 @@ public class WorkCommand implements SlashCommand {
             int variation = (int) (baseWorkReward * 0.25); // 25% variation
             int workReward = baseWorkReward + RANDOM.nextInt(variation * 2 + 1) - variation;
             
-            // Random work scenario
-            String workScenario = WORK_JOBS[RANDOM.nextInt(WORK_JOBS.length)];
+            // Random work scenario — use custom messages if configured
+            java.util.List<String> customJobs = ServerBot.getStorageManager().getCustomGuildMessages(guildId, "work");
+            String[] jobPool = (customJobs != null && !customJobs.isEmpty())
+                ? customJobs.toArray(String[]::new)
+                : WORK_JOBS;
+            String workScenario = jobPool[RANDOM.nextInt(jobPool.length)];
             
             // Add the reward
             ServerBot.getStorageManager().addBalance(guildId, userId, workReward);
