@@ -1118,6 +1118,29 @@ public class FileStorageManager {
         return true;
     }
 
+    /** Rename a playlist. Returns false if not found or newName already taken. */
+    public boolean renameUserPlaylist(String userId, String oldName, String newName) {
+        List<UserPlaylist> list = userPlaylistsCache.get(userId);
+        if (list == null) return false;
+        UserPlaylist pl = list.stream().filter(p -> p.name.equalsIgnoreCase(oldName)).findFirst().orElse(null);
+        if (pl == null) return false;
+        if (list.stream().anyMatch(p -> p.name.equalsIgnoreCase(newName) && !p.name.equalsIgnoreCase(oldName))) return false;
+        pl.name = newName;
+        saveUserPlaylists();
+        return true;
+    }
+
+    /** Move a track from one 0-based index to another. Returns false on invalid indices or playlist not found. */
+    public boolean reorderTrackInPlaylist(String userId, String playlistName, int fromIdx, int toIdx) {
+        UserPlaylist pl = getUserPlaylist(userId, playlistName);
+        if (pl == null || fromIdx < 0 || fromIdx >= pl.entries.size()
+                || toIdx < 0 || toIdx >= pl.entries.size()) return false;
+        PlaylistEntry entry = pl.entries.remove(fromIdx);
+        pl.entries.add(toIdx, entry);
+        saveUserPlaylists();
+        return true;
+    }
+
     public void close() {
         saveAllData();
         logger.info("File storage manager closed");

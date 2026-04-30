@@ -450,6 +450,10 @@ public class PrefixCommandService {
      */
     private boolean isSimilarToKnownCommand(String input) {
         if (input == null || input.isBlank()) return false;
+        // Reject inputs that contain no letters or digits (e.g. "!!", "!?", "!!!")
+        // Single-char aliases like "h", "p", "s" are within Levenshtein ≤2 of any 1-3 char
+        // punctuation string, so we must guard against purely symbolic inputs first.
+        if (!input.chars().anyMatch(Character::isLetterOrDigit)) return false;
         // Build set of all known command names + aliases
         Set<String> known = new java.util.HashSet<>(COMMAND_ALIASES.keySet());
         known.addAll(COMMAND_ALIASES.values());
@@ -5376,29 +5380,27 @@ public class PrefixCommandService {
         String message = options.get("message");
 
         if (message == null || message.isBlank()) {
-            // Clear status
             try {
                 event.getJDA().getPresence().setActivity(null);
-                event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
-                    "Status Cleared", "Bot status has been cleared."
-                )).queue();
+                event.getChannel().sendMessageEmbeds(
+                    EmbedUtils.createSuccessEmbed("Status Cleared", "Bot status has been cleared.")
+                ).queue();
             } catch (Exception e) {
-                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                    "Status Clear Failed", "Failed to clear bot status: " + e.getMessage()
-                )).queue();
+                event.getChannel().sendMessageEmbeds(
+                    EmbedUtils.createErrorEmbed("Status Clear Failed", "Failed to clear bot status: " + e.getMessage())
+                ).queue();
             }
         } else {
-            // Set status
             try {
                 net.dv8tion.jda.api.entities.Activity activity = net.dv8tion.jda.api.entities.Activity.customStatus(message);
                 event.getJDA().getPresence().setActivity(activity);
-                event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
-                    "Status Updated", "Bot status has been set to:\n**" + message + "**"
-                )).queue();
+                event.getChannel().sendMessageEmbeds(
+                    EmbedUtils.createSuccessEmbed("Status Updated", "Bot status has been set to:\n**" + message + "**")
+                ).queue();
             } catch (Exception e) {
-                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                    "Status Update Failed", "Failed to update bot status: " + e.getMessage()
-                )).queue();
+                event.getChannel().sendMessageEmbeds(
+                    EmbedUtils.createErrorEmbed("Status Update Failed", "Failed to update bot status: " + e.getMessage())
+                ).queue();
             }
         }
     }
@@ -5450,11 +5452,11 @@ public class PrefixCommandService {
 
         String action = options.get("action");
         if (action == null) {
-            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Action",
-                "Usage: `!rpc <set|remove> [type] [text]`\n" +
-                "Types: `playing`, `watching`, `listening`, `streaming`, `competing`"
-            )).queue();
+            event.getChannel().sendMessageEmbeds(
+                EmbedUtils.createErrorEmbed("Missing Action",
+                    "Usage: `!rpc <set|remove> [type] [text]`\n" +
+                    "Types: `playing`, `watching`, `listening`, `streaming`, `competing`")
+            ).queue();
             return;
         }
 
@@ -5464,10 +5466,10 @@ public class PrefixCommandService {
                 String activityType = options.getOrDefault("type", "playing");
 
                 if (presenceText == null || presenceText.trim().isEmpty()) {
-                    event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                        "Missing Text", "Please provide presence text when using `set`.\n" +
-                        "Usage: `!rpc set [type] <text>`"
-                    )).queue();
+                    event.getChannel().sendMessageEmbeds(
+                        EmbedUtils.createErrorEmbed("Missing Text", "Please provide presence text when using `set`.\n" +
+                        "Usage: `!rpc set [type] <text>`")
+                    ).queue();
                     return;
                 }
 
@@ -5482,14 +5484,14 @@ public class PrefixCommandService {
                     };
 
                     event.getJDA().getPresence().setActivity(activity);
-                    event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
-                        "Presence Updated",
-                        "Bot presence has been set to: **" + activityType.substring(0, 1).toUpperCase() + activityType.substring(1) + " " + presenceText + "**"
-                    )).queue();
+                    event.getChannel().sendMessageEmbeds(
+                        EmbedUtils.createSuccessEmbed("Presence Updated",
+                            "Bot presence has been set to: **" + activityType.substring(0, 1).toUpperCase() + activityType.substring(1) + " " + presenceText + "**")
+                    ).queue();
                 } catch (Exception e) {
-                    event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                        "Presence Update Failed", "Failed to update bot presence: " + e.getMessage()
-                    )).queue();
+                    event.getChannel().sendMessageEmbeds(
+                        EmbedUtils.createErrorEmbed("Presence Update Failed", "Failed to update bot presence: " + e.getMessage())
+                    ).queue();
                 }
                 break;
 
@@ -5497,20 +5499,20 @@ public class PrefixCommandService {
             case "clear":
                 try {
                     event.getJDA().getPresence().setActivity(null);
-                    event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
-                        "Presence Cleared", "Bot presence has been cleared."
-                    )).queue();
+                    event.getChannel().sendMessageEmbeds(
+                        EmbedUtils.createSuccessEmbed("Presence Cleared", "Bot presence has been cleared.")
+                    ).queue();
                 } catch (Exception e) {
-                    event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                        "Presence Clear Failed", "Failed to clear bot presence: " + e.getMessage()
-                    )).queue();
+                    event.getChannel().sendMessageEmbeds(
+                        EmbedUtils.createErrorEmbed("Presence Clear Failed", "Failed to clear bot presence: " + e.getMessage())
+                    ).queue();
                 }
                 break;
 
             default:
-                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Action", "Available actions: `set`, `remove`"
-                )).queue();
+                event.getChannel().sendMessageEmbeds(
+                    EmbedUtils.createErrorEmbed("Invalid Action", "Available actions: `set`, `remove`")
+                ).queue();
                 break;
         }
     }
@@ -5530,10 +5532,9 @@ public class PrefixCommandService {
 
         String statusType = options.get("status");
         if (statusType == null) {
-            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Status",
-                "Usage: `!appearance <online|dnd|idle|offline>`"
-            )).queue();
+            event.getChannel().sendMessageEmbeds(
+                EmbedUtils.createErrorEmbed("Missing Status", "Usage: `!appearance <online|dnd|idle|offline>`")
+            ).queue();
             return;
         }
 
@@ -5560,21 +5561,21 @@ public class PrefixCommandService {
                 statusText = "Offline " + CustomEmojis.OFFLINE;
                 break;
             default:
-                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Status", "Valid statuses are: `online`, `dnd`, `idle`, `offline`"
-                )).queue();
+                event.getChannel().sendMessageEmbeds(
+                    EmbedUtils.createErrorEmbed("Invalid Status", "Valid statuses are: `online`, `dnd`, `idle`, `offline`")
+                ).queue();
                 return;
         }
 
         try {
             event.getJDA().getPresence().setStatus(status);
-            event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
-                "Appearance Updated", "Bot appearance has been set to: **" + statusText + "**"
-            )).queue();
+            event.getChannel().sendMessageEmbeds(
+                EmbedUtils.createSuccessEmbed("Appearance Updated", "Bot appearance has been set to: **" + statusText + "**")
+            ).queue();
         } catch (Exception e) {
-            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                "Appearance Update Failed", "Failed to update bot appearance: " + e.getMessage()
-            )).queue();
+            event.getChannel().sendMessageEmbeds(
+                EmbedUtils.createErrorEmbed("Appearance Update Failed", "Failed to update bot appearance: " + e.getMessage())
+            ).queue();
         }
     }
 

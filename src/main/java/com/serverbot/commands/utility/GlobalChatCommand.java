@@ -46,7 +46,7 @@ public class GlobalChatCommand implements SlashCommand {
     public CommandCategory getCategory() { return CommandCategory.GLOBAL_CHAT; }
 
     @Override
-    public boolean isGuildOnly() { return false; } // manage subcommand works in DMs
+    public boolean isGuildOnly() { return true; } // all subcommands require a guild context; manage sends a DM panel but is invoked from a guild
 
     public static CommandData getCommandData() {
         return Commands.slash("globalchat", "Manage cross-server global chat channels")

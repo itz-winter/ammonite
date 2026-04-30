@@ -61,12 +61,10 @@ public class PresenceCommand implements SlashCommand {
             };
             
             event.getJDA().getPresence().setActivity(activity);
-            
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                 "Presence Updated", 
                 "Bot presence has been set to: **" + activityType.substring(0, 1).toUpperCase() + activityType.substring(1) + " " + presenceText + "**"
             )).setEphemeral(true).queue();
-            
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                 "Presence Update Failed", "Failed to update bot presence: " + e.getMessage()
@@ -77,11 +75,9 @@ public class PresenceCommand implements SlashCommand {
     private void removePresence(SlashCommandInteractionEvent event) {
         try {
             event.getJDA().getPresence().setActivity(null);
-            
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                 "Presence Cleared", "Bot presence has been cleared."
             )).setEphemeral(true).queue();
-            
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                 "Presence Clear Failed", "Failed to clear bot presence: " + e.getMessage()

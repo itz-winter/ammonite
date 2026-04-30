@@ -59,11 +59,9 @@ public class AppearanceCommand implements SlashCommand {
 
         try {
             event.getJDA().getPresence().setStatus(status);
-            
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                 "Appearance Updated", "Bot appearance has been set to: **" + statusText + "**"
             )).setEphemeral(true).queue();
-            
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                 "Appearance Update Failed", "Failed to update bot appearance: " + e.getMessage()

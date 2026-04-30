@@ -56,6 +56,8 @@ public class GlobalChatListener extends ListenerAdapter {
 
         // Check if source server is muted
         if (gc.isServerMuted(event.getGuild().getId())) {
+            event.getMessage().reply("🔇 This server is currently muted from the **" + gc.getName() + "** global chat and cannot send messages.")
+                    .queue(null, err -> {});
             return;
         }
 
@@ -64,7 +66,10 @@ public class GlobalChatListener extends ListenerAdapter {
         long now = System.currentTimeMillis();
         Long lastSend = userCooldowns.get(userId);
         if (lastSend != null && (now - lastSend) < COOLDOWN_MS) {
-            return; // silently drop — user is sending too fast
+            long remainingSeconds = (COOLDOWN_MS - (now - lastSend) + 999) / 1000;
+            event.getMessage().reply("⏳ You're sending messages too fast! Please wait **" + remainingSeconds + "** second(s) before sending another global chat message.")
+                    .queue(null, err -> {});
+            return;
         }
         userCooldowns.put(userId, now);
 

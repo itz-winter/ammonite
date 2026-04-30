@@ -272,6 +272,7 @@ public class CommandManager {
         if (!hideOwner) {
             commandDataList.add(com.serverbot.commands.configuration.ConfigCommand.getCommandData());
             commandDataList.add(com.serverbot.commands.config.BackupCommand.getCommandData());
+            commandDataList.add(com.serverbot.commands.config.ServerMessagesCommand.getCommandData());
         }
         
         // New comprehensive config commands
@@ -307,6 +308,7 @@ public class CommandManager {
         commandDataList.add(com.serverbot.commands.utility.DeleteDataCommand.getCommandData());
         
         // Music commands
+        commandDataList.add(com.serverbot.commands.music.PlaylistCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.music.PlayCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.music.SkipCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.music.JoinCommand.getCommandData());

@@ -38,17 +38,13 @@ public class StatusCommand implements SlashCommand {
 
         try {
             Activity activity = Activity.customStatus(statusMessage);
-            
             event.getJDA().getPresence().setActivity(activity);
-            
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                 "Status Updated", "Bot status has been set to:\n**" + statusMessage + "**"
             )).setEphemeral(true).queue();
-            
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Status Update Failed", 
-                "Failed to update bot status: " + e.getMessage()
+                "Status Update Failed", "Failed to update bot status: " + e.getMessage()
             )).setEphemeral(true).queue();
         }
     }
@@ -56,11 +52,9 @@ public class StatusCommand implements SlashCommand {
     private void handleClearStatus(SlashCommandInteractionEvent event) {
         try {
             event.getJDA().getPresence().setActivity(null);
-            
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                 "Status Cleared", "Bot status has been cleared."
             )).setEphemeral(true).queue();
-            
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                 "Status Clear Failed", "Failed to clear bot status: " + e.getMessage()

@@ -49,6 +49,9 @@ public class ServerMessagesCommand implements SlashCommand {
     public CommandCategory getCategory() { return CommandCategory.CONFIGURATION; }
 
     @Override
+    public boolean isOwnerOnly() { return true; }
+
+    @Override
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
