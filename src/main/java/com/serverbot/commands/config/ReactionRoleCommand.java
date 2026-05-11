@@ -24,7 +24,7 @@ public class ReactionRoleCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
+                "Server Only", "This command can only be used in servers."
             )).setEphemeral(true).queue();
             return;
         }
@@ -32,295 +32,245 @@ public class ReactionRoleCommand implements SlashCommand {
         Member member = event.getMember();
         if (!PermissionManager.hasPermission(member, "admin.reactionroles")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions [200]", 
-                "You need the `admin.reactionroles` permission to manage reaction roles.\n" +
-                "Error Code: **200** - Permission Denied\n" +
-                "Use `/error category:2` for full documentation."
+                "Missing Permissions",
+                "You need the `admin.reactionroles` permission to manage reaction roles."
             )).setEphemeral(true).queue();
             return;
         }
 
         String subcommand = event.getSubcommandName();
-        
+        if (subcommand == null) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                "Invalid Usage", "Please specify a subcommand."
+            )).setEphemeral(true).queue();
+            return;
+        }
+
         switch (subcommand) {
             case "create" -> handleCreate(event);
-            case "add" -> handleAdd(event);
-            case "attach" -> handleAttach(event);
+            case "add"    -> handleAdd(event);
             case "remove" -> handleRemove(event);
-            case "list" -> handleList(event);
+            case "list"   -> handleList(event);
             case "delete" -> handleDelete(event);
             default -> event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Subcommand [101]", 
-                "Unknown subcommand: " + subcommand + "\n" +
-                "Error Code: **101** - Invalid Value\n" +
-                "Use `/error category:1` for full documentation."
+                "Unknown Subcommand", "Unknown subcommand: `" + subcommand + "`."
             )).setEphemeral(true).queue();
         }
     }
 
     private void handleCreate(SlashCommandInteractionEvent event) {
         OptionMapping channelOption = event.getOption("channel");
-        OptionMapping titleOption = event.getOption("title");
-        OptionMapping descriptionOption = event.getOption("description");
+        OptionMapping titleOption   = event.getOption("title");
+        OptionMapping descOption    = event.getOption("description");
 
         if (channelOption == null || titleOption == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameters [100]",
-                "Please specify both channel and title for the reaction role message.\n" +
-                "Error Code: **100** - Missing Parameter\n" +
-                "Use `/error category:1` for full documentation."
+                "Missing Options", "Please provide both a **channel** and a **title**."
             )).setEphemeral(true).queue();
             return;
         }
 
         TextChannel channel = channelOption.getAsChannel().asTextChannel();
-        String title = titleOption.getAsString();
-        String description = descriptionOption != null ? descriptionOption.getAsString() : 
-            "React with the emoji below to get the corresponding role!";
+        String title        = titleOption.getAsString();
+        String description  = descOption != null ? descOption.getAsString()
+                : "React with an emoji below to receive the corresponding role!";
+
+        event.deferReply().queue();
 
         try {
-            // Create the reaction role message
-            String messageId = ReactionRoleService.getInstance().createReactionRoleMessage(
-                channel, title, description, event.getMember());
+            String messageId = ReactionRoleService.getInstance()
+                    .createReactionRoleMessage(channel, title, description, event.getMember());
 
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Reactionrole Created",
+            event.getHook().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                "Reaction Role Created",
                 String.format(
-                    "Created reaction role message in %s\n\n" +
-                    "**Message ID:** `%s`\n" +
-                    "**Next Steps:**\n" +
-                    "• Use `/reactionrole add` to add emoji-role pairs\n" +
-                    "• Use `/reactionrole list` to view all reaction roles",
-                    channel.getAsMention(), messageId
+                    "A reaction role message has been posted in %s.\n\n" +
+                    "**Message ID:** `%s`\n\n" +
+                    "Use `/reactionrole add message-id:%s emoji:<emoji> role:<role>` to add emoji-role pairs.",
+                    channel.getAsMention(), messageId, messageId
                 )
             )).queue();
 
         } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Creation Failed [400]",
-                "Failed to create reaction role message: " + e.getMessage() + "\n" +
-                "Error Code: **400** - Operation Failed\n" +
-                "Use `/error category:4` for full documentation."
+            event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Creation Failed",
+                "Failed to create the reaction role message: " + e.getMessage()
             )).setEphemeral(true).queue();
         }
     }
 
+    /**
+     * Add an emoji-role pair to a message.
+     * If {@code channel} is provided, the message can be any message in that channel (even one not
+     * created by this bot). If {@code channel} is omitted, the message must already be tracked
+     * (i.e. created via /reactionrole create).
+     */
     private void handleAdd(SlashCommandInteractionEvent event) {
         OptionMapping messageIdOption = event.getOption("message-id");
-        OptionMapping emojiOption = event.getOption("emoji");
-        OptionMapping roleOption = event.getOption("role");
+        OptionMapping emojiOption     = event.getOption("emoji");
+        OptionMapping roleOption      = event.getOption("role");
+        OptionMapping channelOption   = event.getOption("channel");   // optional
 
         if (messageIdOption == null || emojiOption == null || roleOption == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameters [100]",
-                "Please specify message ID, emoji, and role for the reaction role.\n" +
-                "Error Code: **100** - Missing Parameter\n" +
-                "Use `/error category:1` for full documentation."
+                "Missing Options", "Please provide a **message-id**, **emoji**, and **role**."
             )).setEphemeral(true).queue();
             return;
         }
 
         String messageId = messageIdOption.getAsString();
-        String emojiStr = emojiOption.getAsString();
-        Role role = roleOption.getAsRole();
+        String emojiStr  = emojiOption.getAsString();
+        Role   role      = roleOption.getAsRole();
 
-        // Validate that the bot can assign this role
         if (!event.getGuild().getSelfMember().canInteract(role)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Role Hierarchy Error [206]",
+                "Role Hierarchy Error",
                 String.format(
-                    "I cannot assign the role %s due to role hierarchy.\n" +
-                    "Please ensure my highest role is above the target role.\n\n" +
-                    "Error Code: **206** - Role Hierarchy Issue\n" +
-                    "Use `/error category:2` for full documentation.",
+                    "I can't assign %s because that role is above my highest role in the hierarchy.\n" +
+                    "Move my role above it and try again.",
                     role.getAsMention()
                 )
             )).setEphemeral(true).queue();
             return;
         }
 
-        try {
-            ReactionRoleService.getInstance().addReactionRole(
-                event.getGuild().getId(), messageId, emojiStr, role.getId());
+        event.deferReply().queue();
 
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Reactionrole Added",
-                String.format(
-                    "Successfully added reaction role:\n" +
-                    "**Emoji:** %s\n" +
-                    "**Role:** %s\n" +
-                    "**Message ID:** `%s`",
-                    emojiStr, role.getAsMention(), messageId
-                )
-            )).queue();
+        if (channelOption != null) {
+            // Arbitrary message path â€” retrieve it first to confirm it exists
+            TextChannel channel = channelOption.getAsChannel().asTextChannel();
+            channel.retrieveMessageById(messageId).queue(
+                message -> {
+                    try {
+                        ReactionRoleService.getInstance().attachReactionRoleToExistingMessage(
+                            event.getGuild().getId(), channel.getId(), messageId,
+                            emojiStr, role.getId(), event.getMember());
 
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Addition Failed [400]",
-                "Failed to add reaction role: " + e.getMessage() + "\n" +
-                "Error Code: **400** - Operation Failed\n" +
-                "Use `/error category:4` for full documentation."
-            )).setEphemeral(true).queue();
+                        event.getHook().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                            "Reaction Role Added",
+                            String.format(
+                                "Added a reaction role to the message in %s.\n\n" +
+                                "**Emoji:** %s\n" +
+                                "**Role:** %s\n" +
+                                "**Message ID:** `%s`\n\n" +
+                                "Members can now react with %s to receive %s.",
+                                channel.getAsMention(), emojiStr, role.getAsMention(),
+                                messageId, emojiStr, role.getAsMention()
+                            )
+                        )).queue();
+                    } catch (Exception e) {
+                        event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                            "Failed to Add Reaction Role",
+                            "Something went wrong while registering the reaction role: " + e.getMessage()
+                        )).setEphemeral(true).queue();
+                    }
+                },
+                error -> event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Message Not Found",
+                    String.format(
+                        "No message with ID `%s` was found in %s.\n" +
+                        "Double-check the message ID and channel.",
+                        messageId, channel.getAsMention()
+                    )
+                )).setEphemeral(true).queue()
+            );
+        } else {
+            // Tracked-message path â€” message must exist in storage
+            try {
+                ReactionRoleService.getInstance().addReactionRole(
+                    event.getGuild().getId(), messageId, emojiStr, role.getId());
+
+                event.getHook().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                    "Reaction Role Added",
+                    String.format(
+                        "Added a reaction role to message `%s`.\n\n" +
+                        "**Emoji:** %s\n" +
+                        "**Role:** %s\n\n" +
+                        "Members can now react with %s to receive %s.",
+                        messageId, emojiStr, role.getAsMention(), emojiStr, role.getAsMention()
+                    )
+                )).queue();
+
+            } catch (IllegalArgumentException e) {
+                event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Message Not Tracked",
+                    String.format(
+                        "No tracked reaction role message found with ID `%s`.\n\n" +
+                        "â€¢ If you created this message with `/reactionrole create`, double-check the ID.\n" +
+                        "â€¢ If this is an **external** message (not created by me), include the `channel` option:\n" +
+                        "  `/reactionrole add channel:#channel message-id:%s emoji:%s role:<role>`",
+                        messageId, messageId, emojiStr
+                    )
+                )).setEphemeral(true).queue();
+            } catch (Exception e) {
+                event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Failed to Add Reaction Role",
+                    "Something went wrong: " + e.getMessage()
+                )).setEphemeral(true).queue();
+            }
         }
     }
 
     private void handleRemove(SlashCommandInteractionEvent event) {
         OptionMapping messageIdOption = event.getOption("message-id");
-        OptionMapping emojiOption = event.getOption("emoji");
+        OptionMapping emojiOption     = event.getOption("emoji");
 
         if (messageIdOption == null || emojiOption == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameters [100]",
-                "Please specify both message ID and emoji to remove.\n" +
-                "Error Code: **100** - Missing Parameter\n" +
-                "Use `/error category:1` for full documentation."
+                "Missing Options", "Please provide both a **message-id** and an **emoji**."
             )).setEphemeral(true).queue();
             return;
         }
 
         String messageId = messageIdOption.getAsString();
-        String emojiStr = emojiOption.getAsString();
+        String emojiStr  = emojiOption.getAsString();
+
+        event.deferReply().queue();
 
         try {
-            boolean removed = ReactionRoleService.getInstance().removeReactionRole(
-                event.getGuild().getId(), messageId, emojiStr);
+            boolean removed = ReactionRoleService.getInstance()
+                    .removeReactionRole(event.getGuild().getId(), messageId, emojiStr);
 
             if (removed) {
-                event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                    "Reactionrole Removed",
+                event.getHook().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                    "Reaction Role Removed",
                     String.format(
-                        "Successfully removed reaction role:\n" +
-                        "**Emoji:** %s\n" +
-                        "**Message ID:** `%s`",
+                        "Removed the %s reaction role from message `%s`.",
                         emojiStr, messageId
                     )
                 )).queue();
             } else {
-                event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Not Found [300]",
-                    "No reaction role found with that emoji and message ID.\n" +
-                    "Error Code: **300** - Resource Not Found\n" +
-                    "Use `/error category:3` for full documentation."
+                event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Not Found",
+                    String.format(
+                        "No reaction role with emoji %s was found on message `%s`.\n" +
+                        "Use `/reactionrole list` to see all active reaction roles.",
+                        emojiStr, messageId
+                    )
                 )).setEphemeral(true).queue();
             }
 
         } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Removal Failed [400]",
-                "Failed to remove reaction role: " + e.getMessage() + "\n" +
-                "Error Code: **400** - Operation Failed\n" +
-                "Use `/error category:4` for full documentation."
+            event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Removal Failed",
+                "Something went wrong while removing the reaction role: " + e.getMessage()
             )).setEphemeral(true).queue();
         }
     }
 
     private void handleList(SlashCommandInteractionEvent event) {
         try {
-            String guildId = event.getGuild().getId();
-            String listInfo = ReactionRoleService.getInstance().getReactionRolesList(guildId);
+            String listInfo = ReactionRoleService.getInstance()
+                    .getReactionRolesList(event.getGuild().getId());
 
             event.replyEmbeds(EmbedUtils.createInfoEmbed(
-                "Reactionrole List", listInfo
+                "Reaction Roles", listInfo
             )).setEphemeral(true).queue();
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "List Failed [400]",
-                "Failed to retrieve reaction roles list: " + e.getMessage() + "\n" +
-                "Error Code: **400** - Operation Failed\n" +
-                "Use `/error category:4` for full documentation."
-            )).setEphemeral(true).queue();
-        }
-    }
-
-    private void handleAttach(SlashCommandInteractionEvent event) {
-        OptionMapping channelOption = event.getOption("channel");
-        OptionMapping messageIdOption = event.getOption("message-id");
-        OptionMapping emojiOption = event.getOption("emoji");
-        OptionMapping roleOption = event.getOption("role");
-
-        if (channelOption == null || messageIdOption == null || emojiOption == null || roleOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameters [100]",
-                "Please specify channel, message ID, emoji, and role to attach a reaction role.\n" +
-                "Error Code: **100** - Missing Parameter\n" +
-                "Use `/error category:1` for full documentation."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        TextChannel channel = channelOption.getAsChannel().asTextChannel();
-        String messageId = messageIdOption.getAsString();
-        String emojiStr = emojiOption.getAsString();
-        Role role = roleOption.getAsRole();
-
-        // Validate that the bot can assign this role
-        if (!event.getGuild().getSelfMember().canInteract(role)) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Role Hierarchy Error [RR05]",
-                String.format(
-                    "I cannot assign the role %s due to role hierarchy.\n" +
-                    "Please ensure my highest role is above the target role.\n\n" +
-                    "Error Code: **RR05** - Role Hierarchy Error\n" +
-                    "Use `/error category:RR` for full RR-series documentation.",
-                    role.getAsMention()
-                )
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        try {
-            // First, try to retrieve the message to ensure it exists
-            channel.retrieveMessageById(messageId).queue(
-                message -> {
-                    try {
-                        // Attach reaction role to existing message
-                        ReactionRoleService.getInstance().attachReactionRoleToExistingMessage(
-                            event.getGuild().getId(), channel.getId(), messageId, emojiStr, role.getId(), event.getMember());
-
-                        event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                            "Reactionrole Attached",
-                            String.format(
-                                "Successfully attached reaction role to existing message:\n" +
-                                "**Channel:** %s\n" +
-                                "**Message ID:** `%s`\n" +
-                                "**Emoji:** %s\n" +
-                                "**Role:** %s\n\n" +
-                                "Users can now react with %s to get the %s role!",
-                                channel.getAsMention(), messageId, emojiStr, 
-                                role.getAsMention(), emojiStr, role.getAsMention()
-                            )
-                        )).queue();
-
-                    } catch (Exception e) {
-                        event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                            "Attachment Failed [400]",
-                            "Failed to attach reaction role: " + e.getMessage() + "\n" +
-                            "Error Code: **400** - Operation Failed\n" +
-                            "Use `/error category:4` for full documentation."
-                        )).setEphemeral(true).queue();
-                    }
-                },
-                error -> {
-                    event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                        "Message Not Found [300]",
-                        String.format(
-                            "Could not find a message with ID `%s` in %s.\n" +
-                            "Please verify the message ID and channel are correct.\n\n" +
-                            "Error Code: **300** - Resource Not Found\n" +
-                            "Use `/error category:3` for full documentation.",
-                            messageId, channel.getAsMention()
-                        )
-                    )).setEphemeral(true).queue();
-                }
-            );
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Attachment Failed [400]",
-                "Failed to attach reaction role: " + e.getMessage() + "\n" +
-                "Error Code: **400** - Operation Failed\n" +
-                "Use `/error category:4` for full documentation."
+                "List Failed",
+                "Failed to retrieve the reaction roles list: " + e.getMessage()
             )).setEphemeral(true).queue();
         }
     }
@@ -330,44 +280,42 @@ public class ReactionRoleCommand implements SlashCommand {
 
         if (messageIdOption == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameters [100]",
-                "Please specify the message ID to delete.\n" +
-                "Error Code: **100** - Missing Parameter\n" +
-                "Use `/error category:1` for full documentation."
+                "Missing Options", "Please provide the **message-id** of the reaction role message to delete."
             )).setEphemeral(true).queue();
             return;
         }
 
         String messageId = messageIdOption.getAsString();
 
+        event.deferReply().queue();
+
         try {
-            boolean deleted = ReactionRoleService.getInstance().deleteReactionRoleMessage(
-                event.getGuild().getId(), messageId);
+            boolean deleted = ReactionRoleService.getInstance()
+                    .deleteReactionRoleMessage(event.getGuild().getId(), messageId);
 
             if (deleted) {
-                event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                    "Reactionrole Deleted",
+                event.getHook().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                    "Reaction Role Deleted",
                     String.format(
-                        "Successfully deleted reaction role message and all associated reactions.\n" +
-                        "**Message ID:** `%s`",
+                        "Successfully deleted the reaction role message `%s` and removed all associated reaction role entries.",
                         messageId
                     )
                 )).queue();
             } else {
-                event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Not Found [300]",
-                    "No reaction role message found with that ID.\n" +
-                    "Error Code: **300** - Resource Not Found\n" +
-                    "Use `/error category:3` for full documentation."
+                event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Not Found",
+                    String.format(
+                        "No tracked reaction role message found with ID `%s`.\n" +
+                        "Use `/reactionrole list` to see all active messages.",
+                        messageId
+                    )
                 )).setEphemeral(true).queue();
             }
 
         } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Deletion Failed [400]",
-                "Failed to delete reaction role message: " + e.getMessage() + "\n" +
-                "Error Code: **400** - Operation Failed\n" +
-                "Use `/error category:4` for full documentation."
+            event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Deletion Failed",
+                "Something went wrong while deleting the reaction role message: " + e.getMessage()
             )).setEphemeral(true).queue();
         }
     }
@@ -375,30 +323,25 @@ public class ReactionRoleCommand implements SlashCommand {
     public static CommandData getCommandData() {
         return Commands.slash("reactionrole", "Manage reaction role systems")
                 .addSubcommands(
-                    new SubcommandData("create", "Create a new reaction role message")
-                        .addOption(OptionType.CHANNEL, "channel", "Channel to send the message", true)
-                        .addOption(OptionType.STRING, "title", "Title for the reaction role embed", true)
-                        .addOption(OptionType.STRING, "description", "Description for the reaction role embed", false),
-                    
-                    new SubcommandData("add", "Add an emoji-role pair to an existing bot message")
-                        .addOption(OptionType.STRING, "message-id", "ID of the reaction role message", true)
-                        .addOption(OptionType.STRING, "emoji", "Emoji to react with", true)
-                        .addOption(OptionType.ROLE, "role", "Role to assign when reacted", true),
-                    
-                    new SubcommandData("attach", "Attach reaction roles to any existing message")
-                        .addOption(OptionType.CHANNEL, "channel", "Channel containing the message", true)
-                        .addOption(OptionType.STRING, "message-id", "ID of the existing message", true)
-                        .addOption(OptionType.STRING, "emoji", "Emoji to react with", true)
-                        .addOption(OptionType.ROLE, "role", "Role to assign when reacted", true),
-                    
+                    new SubcommandData("create", "Create a new reaction role message in a channel")
+                        .addOption(OptionType.CHANNEL, "channel", "Channel to post the message in", true)
+                        .addOption(OptionType.STRING,  "title",   "Title for the embed", true)
+                        .addOption(OptionType.STRING,  "description", "Description for the embed (optional)", false),
+
+                    new SubcommandData("add", "Add an emoji-role pair to a message")
+                        .addOption(OptionType.STRING,  "message-id", "ID of the reaction role message", true)
+                        .addOption(OptionType.STRING,  "emoji",      "Emoji to react with", true)
+                        .addOption(OptionType.ROLE,    "role",       "Role to assign when reacted", true)
+                        .addOption(OptionType.CHANNEL, "channel",    "Required only if the message was NOT created by me", false),
+
                     new SubcommandData("remove", "Remove an emoji-role pair from a message")
                         .addOption(OptionType.STRING, "message-id", "ID of the reaction role message", true)
-                        .addOption(OptionType.STRING, "emoji", "Emoji to remove", true),
-                    
+                        .addOption(OptionType.STRING, "emoji",      "Emoji to remove", true),
+
                     new SubcommandData("list", "List all reaction role messages in this server"),
-                    
-                    new SubcommandData("delete", "Delete a reaction role message entirely")
-                        .addOption(OptionType.STRING, "message-id", "ID of the message to delete", true)
+
+                    new SubcommandData("delete", "Delete a reaction role message and all its entries")
+                        .addOption(OptionType.STRING, "message-id", "ID of the reaction role message to delete", true)
                 );
     }
 

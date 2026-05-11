@@ -33,7 +33,7 @@ public class InfoCommand implements SlashCommand {
         long memoryTotal = runtime.totalMemory() / (1024 * 1024);
         
         EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
-                .setTitle("🤖 Bot Information")
+                .setTitle("🐚 " + jda.getSelfUser().getName())
                 .setThumbnail(jda.getSelfUser().getEffectiveAvatarUrl());
 
         // Bot Stats
@@ -54,20 +54,22 @@ public class InfoCommand implements SlashCommand {
         String version = ServerBot.getConfigManager().getConfig().getBotVersion();
         embed.addField("📋 Version Info",
                 "**Bot Version:** " + version + "\n" +
-                "**JDA Version:** 5.0.0-beta.18\n" +
+                "**JDA Version:** 6.4.1\n" +
                 "**API Version:** " + jda.getGatewayIntents().size() + " intents",
                 true);
 
         // Features
         embed.addField("🎯 Features",
-                "• Advanced Moderation System\n" +
-                "• Economy & Banking System\n" +
-                "• Leveling & XP System\n" +
-                "• Auto-Moderation\n" +
+                "• Moderation & Auto-Moderation\n" +
+                "• Economy & Banking\n" +
+                "• Leveling & XP\n" +
+                "• Music Playback\n" +
+                "• Games (Chess, Poker, Blackjack)\n" +
                 "• Reaction Roles\n" +
-                "• Comprehensive Logging\n" +
-                "• Gambling Games\n" +
-                "• Server Rules Management",
+                "• Proxy System\n" +
+                "• Cross-Server Global Chat\n" +
+                "• Ticket System\n" +
+                "• Comprehensive Logging",
                 false);
 
         // Support

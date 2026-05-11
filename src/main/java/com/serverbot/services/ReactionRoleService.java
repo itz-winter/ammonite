@@ -114,7 +114,10 @@ public class ReactionRoleService {
                         message -> {
                             Emoji emojiObj = parseEmoji(emoji);
                             if (emojiObj != null) {
-                                message.addReaction(emojiObj).queue();
+                                message.addReaction(emojiObj).queue(
+                                    null,
+                                    error -> System.err.println("Failed to add reaction to message " + messageId + ": " + error.getMessage())
+                                );
                             }
                         },
                         new ErrorHandler().ignore(ErrorResponse.UNKNOWN_MESSAGE)
@@ -155,7 +158,10 @@ public class ReactionRoleService {
                             // Add the reaction to the message
                             Emoji emojiObj = parseEmoji(emoji);
                             if (emojiObj != null) {
-                                message.addReaction(emojiObj).queue();
+                                message.addReaction(emojiObj).queue(
+                                    null,
+                                    error -> System.err.println("Failed to add reaction to message " + messageId + ": " + error.getMessage())
+                                );
                             }
                             
                             // Update the embed with the new role list
@@ -398,17 +404,12 @@ public class ReactionRoleService {
     }
     
     private Emoji parseEmoji(String emojiStr) {
-        try {
-            // Try to parse as unicode emoji first
-            return Emoji.fromUnicode(emojiStr);
-        } catch (Exception e) {
-            try {
-                // Try to parse as custom emoji
-                return Emoji.fromFormatted(emojiStr);
-            } catch (Exception e2) {
-                return null;
-            }
+        // Detect custom emoji format: <:name:id> or <a:name:id>
+        if (emojiStr.matches("<a?:[a-zA-Z0-9_]+:\\d+>")) {
+            return Emoji.fromFormatted(emojiStr);
         }
+        // Otherwise treat as a unicode emoji
+        return Emoji.fromUnicode(emojiStr);
     }
     
     private Guild getGuildById(String guildId) {

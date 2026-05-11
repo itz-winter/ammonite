@@ -1,6 +1,7 @@
 package com.serverbot.listeners;
 
 import com.serverbot.services.ReactionRoleService;
+import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionRemoveEvent;
@@ -60,9 +61,10 @@ public class ReactionRoleListener extends ListenerAdapter {
     private String getEmojiString(Emoji emoji) {
         if (emoji.getType() == Emoji.Type.UNICODE) {
             return emoji.getName();
-        } else if (emoji.getType() == Emoji.Type.CUSTOM) {
-            return emoji.getName(); // Custom emoji name
+        } else {
+            // Return formatted string <:name:id> or <a:name:id> to match storage keys
+            CustomEmoji custom = (CustomEmoji) emoji;
+            return "<" + (custom.isAnimated() ? "a" : "") + ":" + custom.getName() + ":" + custom.getId() + ">";
         }
-        return emoji.getName();
     }
 }

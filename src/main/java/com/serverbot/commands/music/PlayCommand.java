@@ -20,10 +20,13 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Collections;
 
 /**
  * Play command - searches and plays music from YouTube, SoundCloud, Spotify, and direct URLs.
@@ -76,6 +79,78 @@ public class PlayCommand implements SlashCommand {
 
         MusicManager musicManager = MusicManager.getInstance();
         boolean isUrl = query.startsWith("http://") || query.startsWith("https://");
+
+        // ── Multi-URL mode ────────────────────────────────────────────────────
+        // If the query contains multiple space-separated URLs, queue them all.
+        String[] tokens = query.trim().split("\\s+");
+        boolean isMultiUrl = tokens.length > 1 &&
+            java.util.Arrays.stream(tokens).allMatch(t -> t.startsWith("http://") || t.startsWith("https://"));
+
+        if (isMultiUrl) {
+            event.deferReply().queue();
+            AtomicInteger pending   = new AtomicInteger(tokens.length);
+            AtomicInteger addedCount  = new AtomicInteger(0);
+            List<String>  failedUrls  = Collections.synchronizedList(new ArrayList<>());
+
+            for (String url : tokens) {
+                musicManager.loadAndPlay(url, event.getGuild(),
+                    new MusicManager.MusicLoadCallback() {
+                        @Override
+                        public void onTrackLoaded(AudioTrack track) {
+                            if (!joinBeforePlay(musicManager, channel, event)) {
+                                failedUrls.add(track.getInfo().uri);
+                            } else {
+                                GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+                                gmm.getScheduler().queue(track);
+                                addedCount.incrementAndGet();
+                            }
+                            checkDone();
+                        }
+
+                        @Override
+                        public void onPlaylistLoaded(AudioPlaylist playlist) {
+                            if (!joinBeforePlay(musicManager, channel, event)) {
+                                failedUrls.add(url);
+                            } else {
+                                GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+                                for (AudioTrack t : playlist.getTracks()) gmm.getScheduler().queue(t);
+                                addedCount.addAndGet(playlist.getTracks().size());
+                            }
+                            checkDone();
+                        }
+
+                        @Override
+                        public void onNoMatches() {
+                            failedUrls.add(url);
+                            checkDone();
+                        }
+
+                        @Override
+                        public void onLoadFailed(String message) {
+                            failedUrls.add(url);
+                            checkDone();
+                        }
+
+                        private void checkDone() {
+                            if (pending.decrementAndGet() == 0) {
+                                int added  = addedCount.get();
+                                int failed = failedUrls.size();
+                                StringBuilder desc = new StringBuilder();
+                                desc.append("**").append(added).append("** track(s) added to the queue.");
+                                if (failed > 0) {
+                                    desc.append("\n**").append(failed).append("** failed to load.");
+                                }
+                                EmbedBuilder embed = EmbedUtils.createEmbedBuilder(
+                                        failed > 0 && added == 0 ? EmbedUtils.ERROR_COLOR : EmbedUtils.SUCCESS_COLOR)
+                                    .setTitle("🎵 Queued " + tokens.length + " URLs")
+                                    .setDescription(desc.toString());
+                                event.getHook().sendMessageEmbeds(embed.build()).queue();
+                            }
+                        }
+                    });
+            }
+            return;
+        }
 
         // Defer the reply immediately — track loading can take several seconds.
         // We intentionally do NOT join the voice channel yet: joining before we know
@@ -309,7 +384,7 @@ public class PlayCommand implements SlashCommand {
 
     public static CommandData getCommandData() {
         return Commands.slash("play", "Search a video/song to play in voicechat.")
-                .addOption(OptionType.STRING, "query", "URL or search query (YouTube, SoundCloud, Spotify, etc.)", true)
+                .addOption(OptionType.STRING, "query", "URL, search query, or multiple space-separated URLs", true)
                 .addOption(OptionType.STRING, "index", "Index range for playlists (e.g. 4:10, 5:, :9)", false);
     }
 
