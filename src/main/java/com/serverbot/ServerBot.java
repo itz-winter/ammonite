@@ -184,7 +184,8 @@ public class ServerBot {
                             new AutoConfigListener(),
                             new MusicSearchSelectionListener(),
                             new com.serverbot.commands.games.PokerCommand(),
-                            new com.serverbot.commands.utility.DeleteDataCommand()
+                            new com.serverbot.commands.utility.DeleteDataCommand(),
+                            new com.serverbot.listeners.EmbedGuiListener()
                     )
                     .build();
             

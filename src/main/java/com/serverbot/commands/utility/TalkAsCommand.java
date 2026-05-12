@@ -2,12 +2,16 @@ package com.serverbot.commands.utility;
 
 import com.serverbot.commands.CommandCategory;
 import com.serverbot.commands.SlashCommand;
+import com.serverbot.utils.EmbedJsonUtils;
 import com.serverbot.utils.EmbedUtils;
 import com.serverbot.utils.PermissionManager;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Webhook;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -20,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -50,39 +55,50 @@ public class TalkAsCommand implements SlashCommand {
         OptionMapping nameOption = event.getOption("name");
         OptionMapping messageOption = event.getOption("message");
         OptionMapping avatarOption = event.getOption("avatar");
-        
-        if (nameOption == null || messageOption == null) {
+        OptionMapping embedJsonOption = event.getOption("embed_json");
+        OptionMapping buttonsOption = event.getOption("buttons");
+
+        if (nameOption == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameters [T01]", 
-                "Both `name` and `message` are required.\n" +
-                "Error Code: **T01** - Missing TalkAs Parameters\n" +
-                "Use `/error category:T` for full T-series documentation."
+                "Missing Parameters [T01]",
+                "The `name` parameter is required.\n" +
+                "Error Code: **T01** - Missing TalkAs Parameters"
             )).setEphemeral(true).queue();
             return;
         }
 
         String name = nameOption.getAsString();
-        String message = messageOption.getAsString();
+        String message = messageOption != null ? messageOption.getAsString() : null;
         String avatarUrl = avatarOption != null ? avatarOption.getAsString() : null;
+        String embedJson = embedJsonOption != null ? embedJsonOption.getAsString() : null;
+        String buttonsJson = buttonsOption != null ? buttonsOption.getAsString() : null;
 
-        // Validate name length
-        if (name.length() < 1 || name.length() > 80) {
+        // Must have at least message or embed
+        if ((message == null || message.isBlank()) && (embedJson == null || embedJson.isBlank())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Name [T02]", 
-                "Name must be between 1 and 80 characters.\n" +
-                "Error Code: **T02** - Invalid TalkAs Name\n" +
-                "Use `/error category:T` for full T-series documentation."
+                "Missing Content [T01]",
+                "You must provide at least a `message` or `embed_json`.\n" +
+                "Use `/embedgui` to build embeds interactively."
             )).setEphemeral(true).queue();
             return;
         }
 
-        // Validate message length
-        if (message.length() < 1 || message.length() > 2000) {
+        // Validate name length
+        if (name.length() < 1 || name.length() > 80) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Message [T03]", 
-                "Message must be between 1 and 2000 characters.\n" +
-                "Error Code: **T03** - Invalid TalkAs Message\n" +
-                "Use `/error category:T` for full T-series documentation."
+                "Invalid Name [T02]",
+                "Name must be between 1 and 80 characters.\n" +
+                "Error Code: **T02** - Invalid TalkAs Name"
+            )).setEphemeral(true).queue();
+            return;
+        }
+
+        // Validate message length if provided
+        if (message != null && message.length() > 2000) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                "Invalid Message [T03]",
+                "Message must be 2000 characters or fewer.\n" +
+                "Error Code: **T03** - Invalid TalkAs Message"
             )).setEphemeral(true).queue();
             return;
         }
@@ -90,49 +106,74 @@ public class TalkAsCommand implements SlashCommand {
         // Validate avatar URL if provided
         if (avatarUrl != null && !isValidImageUrl(avatarUrl)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Avatar URL [T04]", 
+                "Invalid Avatar URL [T04]",
                 "Avatar must be a valid image URL (jpg, jpeg, png, gif, webp).\n" +
-                "Error Code: **T04** - Invalid Avatar URL\n" +
-                "Use `/error category:T` for full T-series documentation."
+                "Error Code: **T04** - Invalid Avatar URL"
             )).setEphemeral(true).queue();
             return;
         }
 
-        // Check for attachment avatar - slash commands don't support attachments
-        // This will be handled via prefix commands only
+        // Parse embed JSON if provided
+        EmbedBuilder parsedEmbed = null;
+        if (embedJson != null && !embedJson.isBlank()) {
+            try {
+                parsedEmbed = EmbedJsonUtils.parseEmbed(embedJson);
+            } catch (Exception e) {
+                event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                    "Invalid Embed JSON [T09]",
+                    "Failed to parse embed JSON: " + e.getMessage() + "\n" +
+                    "Use `/embedgui` to build and export valid embed JSON."
+                )).setEphemeral(true).queue();
+                return;
+            }
+        }
+
+        // Parse buttons JSON if provided
+        List<Button> buttons = new ArrayList<>();
+        if (buttonsJson != null && !buttonsJson.isBlank()) {
+            try {
+                buttons = EmbedJsonUtils.parseButtons(buttonsJson);
+            } catch (Exception e) {
+                event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                    "Invalid Buttons JSON [T10]",
+                    "Failed to parse buttons JSON: " + e.getMessage() + "\n" +
+                    "Use `/embedgui` to build and export valid button JSON."
+                )).setEphemeral(true).queue();
+                return;
+            }
+        }
 
         TextChannel channel = event.getChannel().asTextChannel();
-        
+
         // Send initial response
         event.reply("🔄 Preparing webhook message...").setEphemeral(true).queue();
 
         // Find or create webhook
-        findOrCreateWebhook(channel, name, avatarUrl, message, event);
+        final EmbedBuilder finalEmbed = parsedEmbed;
+        final List<Button> finalButtons = buttons;
+        findOrCreateWebhook(channel, name, avatarUrl, message, finalEmbed, finalButtons, event);
     }
 
-    private void findOrCreateWebhook(TextChannel channel, String name, String avatarUrl, String message, SlashCommandInteractionEvent event) {
+    private void findOrCreateWebhook(TextChannel channel, String name, String avatarUrl, String message, EmbedBuilder embed, List<Button> buttons, SlashCommandInteractionEvent event) {
         channel.retrieveWebhooks().queue(
             webhooks -> {
-                // Look for existing webhook for this bot
                 Webhook webhook = webhooks.stream()
                     .filter(w -> w.getName().equals("ServerBot TalkAs"))
                     .findFirst()
                     .orElse(null);
 
                 if (webhook != null) {
-                    sendWebhookMessage(webhook, name, avatarUrl, message, event);
+                    sendWebhookMessage(webhook, name, avatarUrl, message, embed, buttons, event);
                 } else {
-                    // Create new webhook
                     channel.createWebhook("ServerBot TalkAs")
                         .queue(
-                            newWebhook -> sendWebhookMessage(newWebhook, name, avatarUrl, message, event),
+                            newWebhook -> sendWebhookMessage(newWebhook, name, avatarUrl, message, embed, buttons, event),
                             throwable -> {
                                 logger.warn("Failed to create webhook: {}", throwable.getMessage());
                                 event.getHook().editOriginalEmbeds(EmbedUtils.createErrorEmbed(
-                                    "Webhook Creation Failed [T05]", 
+                                    "Webhook Creation Failed [T05]",
                                     "Failed to create webhook. Make sure I have 'Manage Webhooks' permission.\n" +
-                                    "Error Code: **T05** - Webhook Creation Failed\n" +
-                                    "Use `/error category:T` for full T-series documentation."
+                                    "Error Code: **T05** - Webhook Creation Failed"
                                 )).queue();
                             }
                         );
@@ -141,55 +182,58 @@ public class TalkAsCommand implements SlashCommand {
             throwable -> {
                 logger.warn("Failed to retrieve webhooks: {}", throwable.getMessage());
                 event.getHook().editOriginalEmbeds(EmbedUtils.createErrorEmbed(
-                    "Webhook Access Failed [T06]", 
+                    "Webhook Access Failed [T06]",
                     "Failed to access webhooks. Make sure I have 'Manage Webhooks' permission.\n" +
-                    "Error Code: **T06** - Webhook Access Failed\n" +
-                    "Use `/error category:T` for full T-series documentation."
+                    "Error Code: **T06** - Webhook Access Failed"
                 )).queue();
             }
         );
     }
 
-    private void sendWebhookMessage(Webhook webhook, String name, String avatarUrl, String message, SlashCommandInteractionEvent event) {
+    private void sendWebhookMessage(Webhook webhook, String name, String avatarUrl, String message, EmbedBuilder embed, List<Button> buttons, SlashCommandInteractionEvent event) {
         try {
-            // Create message using MessageCreateBuilder
-            MessageCreateData messageData = new MessageCreateBuilder()
-                .setContent(message)
-                .build();
+            MessageCreateBuilder builder = new MessageCreateBuilder();
+            if (message != null && !message.isBlank()) {
+                builder.setContent(message);
+            }
+            if (embed != null) {
+                builder.setEmbeds(embed.build());
+            }
+            // Add buttons in rows of 5
+            if (!buttons.isEmpty()) {
+                List<ActionRow> rows = new ArrayList<>();
+                for (int i = 0; i < buttons.size(); i += 5) {
+                    rows.add(ActionRow.of(buttons.subList(i, Math.min(i + 5, buttons.size()))));
+                }
+                builder.setComponents(rows);
+            }
+            MessageCreateData messageData = builder.build();
 
-            // Send webhook message with custom name and avatar
-            var messageAction = webhook.sendMessage(messageData)
-                .setUsername(name);
-
+            var messageAction = webhook.sendMessage(messageData).setUsername(name);
             if (avatarUrl != null) {
                 messageAction = messageAction.setAvatarUrl(avatarUrl);
             }
 
             messageAction.queue(
-                success -> {
-                    event.getHook().editOriginalEmbeds(EmbedUtils.createSuccessEmbed(
-                        "Message Sent", 
-                        "✅ Webhook message sent successfully as **" + name + "**!"
-                    )).queue();
-                },
+                success -> event.getHook().editOriginalEmbeds(EmbedUtils.createSuccessEmbed(
+                    "Message Sent",
+                    "✅ Webhook message sent successfully as **" + name + "**!"
+                )).queue(),
                 throwable -> {
                     logger.warn("Failed to send webhook message: {}", throwable.getMessage());
                     event.getHook().editOriginalEmbeds(EmbedUtils.createErrorEmbed(
-                        "Message Send Failed [T07]", 
+                        "Message Send Failed [T07]",
                         "Failed to send webhook message: " + throwable.getMessage() + "\n" +
-                        "Error Code: **T07** - Message Send Failed\n" +
-                        "Use `/error category:T` for full T-series documentation."
+                        "Error Code: **T07** - Message Send Failed"
                     )).queue();
                 }
             );
-
         } catch (Exception e) {
             logger.warn("Error preparing webhook message: {}", e.getMessage());
             event.getHook().editOriginalEmbeds(EmbedUtils.createErrorEmbed(
-                "Message Preparation Failed [T08]", 
+                "Message Preparation Failed [T08]",
                 "Failed to prepare webhook message: " + e.getMessage() + "\n" +
-                "Error Code: **T08** - Message Preparation Failed\n" +
-                "Use `/error category:T` for full T-series documentation."
+                "Error Code: **T08** - Message Preparation Failed"
             )).queue();
         }
     }
@@ -235,7 +279,9 @@ public class TalkAsCommand implements SlashCommand {
         return Commands.slash("talkas", "Send a message as a webhook with custom name and avatar")
                 .addOptions(
                     new OptionData(OptionType.STRING, "name", "The name to display for the webhook message", true),
-                    new OptionData(OptionType.STRING, "message", "The message content to send", true),
+                    new OptionData(OptionType.STRING, "message", "The message content to send (optional if embed_json provided)", false),
+                    new OptionData(OptionType.STRING, "embed_json", "Embed JSON to attach (use /embedgui > Export JSON)", false),
+                    new OptionData(OptionType.STRING, "buttons", "Buttons JSON array (use /embedgui > Export JSON)", false),
                     new OptionData(OptionType.STRING, "avatar", "Avatar URL for the webhook (optional)", false)
                 );
     }

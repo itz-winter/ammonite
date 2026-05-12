@@ -44,6 +44,7 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.utility.AppearanceCommand());
         registerCommand(new com.serverbot.commands.utility.ServerStatsCommand());
         registerCommand(new com.serverbot.commands.utility.EmbedCommand());
+        registerCommand(new com.serverbot.commands.utility.EmbedGuiCommand());
         registerCommand(new com.serverbot.commands.utility.DadJokeCommand());
         registerCommand(new com.serverbot.commands.utility.JokeCommand());
         registerCommand(new com.serverbot.commands.utility.PrideCommand());

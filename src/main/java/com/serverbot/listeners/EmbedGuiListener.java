@@ -1,0 +1,341 @@
+package com.serverbot.listeners;
+
+import com.serverbot.ServerBot;
+import com.serverbot.commands.utility.EmbedGuiCommand;
+import com.serverbot.utils.EmbedGuiSession;
+import com.serverbot.utils.EmbedJsonUtils;
+import com.serverbot.utils.EmbedUtils;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
+import net.dv8tion.jda.api.components.label.Label;
+import net.dv8tion.jda.api.components.textinput.TextInput;
+import net.dv8tion.jda.api.components.textinput.TextInputStyle;
+import net.dv8tion.jda.api.modals.Modal;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Handles all button and modal interactions for the /embedgui builder.
+ *
+ * Button IDs:  egui:<action>:<userId>
+ * Modal IDs:   egm:<action>:<userId>
+ */
+public class EmbedGuiListener extends ListenerAdapter {
+
+    @Override
+    public void onButtonInteraction(ButtonInteractionEvent event) {
+        String id = event.getComponentId();
+        if (!id.startsWith("egui:")) return;
+
+        String[] parts = id.split(":", 3);
+        if (parts.length < 3) return;
+        String action = parts[1];
+        String userId  = parts[2];
+
+        if (!event.getUser().getId().equals(userId)) {
+            event.reply("This embed builder belongs to someone else.").setEphemeral(true).queue();
+            return;
+        }
+
+        EmbedGuiSession session = EmbedGuiSession.get(userId);
+        if (session == null) {
+            event.reply("Your embed builder session has expired. Run `/embedgui` again.").setEphemeral(true).queue();
+            return;
+        }
+        session.touch();
+
+        switch (action) {
+            case "title"   -> event.replyModal(titleModal(userId, session)).queue();
+            case "desc"    -> event.replyModal(descModal(userId, session)).queue();
+            case "color"   -> event.replyModal(colorModal(userId, session)).queue();
+            case "author"  -> event.replyModal(authorModal(userId, session)).queue();
+            case "footer"  -> event.replyModal(footerModal(userId, session)).queue();
+            case "image"   -> event.replyModal(imageModal(userId, session)).queue();
+            case "thumb"   -> event.replyModal(thumbModal(userId, session)).queue();
+            case "field"   -> event.replyModal(fieldModal(userId)).queue();
+            case "addbtn"  -> event.replyModal(btnModal(userId)).queue();
+            case "rmfield" -> {
+                if (!session.fields.isEmpty())
+                    session.fields.remove(session.fields.size() - 1);
+                refreshGui(event, session, userId);
+            }
+            case "rmbtn"   -> {
+                if (!session.buttons.isEmpty())
+                    session.buttons.remove(session.buttons.size() - 1);
+                refreshGui(event, session, userId);
+            }
+            case "ts"      -> {
+                session.timestamp = !session.timestamp;
+                refreshGui(event, session, userId);
+            }
+            case "clear"   -> {
+                session.clear();
+                refreshGui(event, session, userId);
+            }
+            case "export"  -> {
+                String json = EmbedJsonUtils.toJson(session);
+                // Truncate if too long for a message
+                if (json.length() > 1900) json = json.substring(0, 1900) + "\n... (truncated)";
+                event.reply("**📤 Embed JSON Export:**\n```json\n" + json + "\n```")
+                     .setEphemeral(true).queue();
+            }
+            case "send"    -> handleSend(event, session, userId);
+            default        -> event.reply("Unknown action.").setEphemeral(true).queue();
+        }
+    }
+
+    @Override
+    public void onModalInteraction(ModalInteractionEvent event) {
+        String id = event.getModalId();
+        if (!id.startsWith("egm:")) return;
+
+        String[] parts = id.split(":", 3);
+        if (parts.length < 3) return;
+        String action = parts[1];
+        String userId  = parts[2];
+
+        if (!event.getUser().getId().equals(userId)) return;
+
+        EmbedGuiSession session = EmbedGuiSession.get(userId);
+        if (session == null) {
+            event.reply("Your embed builder session has expired. Run `/embedgui` again.").setEphemeral(true).queue();
+            return;
+        }
+        session.touch();
+
+        switch (action) {
+            case "title" -> {
+                session.title    = nb(event.getValue("val").getAsString());
+                session.titleUrl = nb(event.getValue("url").getAsString());
+            }
+            case "desc"   -> session.description = nb(event.getValue("val").getAsString());
+            case "color"  -> session.colorHex    = nb(event.getValue("val").getAsString());
+            case "author" -> {
+                session.authorName    = nb(event.getValue("name").getAsString());
+                session.authorIconUrl = nb(event.getValue("icon").getAsString());
+                session.authorUrl     = nb(event.getValue("url").getAsString());
+            }
+            case "footer" -> {
+                session.footerText    = nb(event.getValue("text").getAsString());
+                session.footerIconUrl = nb(event.getValue("icon").getAsString());
+            }
+            case "image" -> session.imageUrl     = nb(event.getValue("val").getAsString());
+            case "thumb" -> session.thumbnailUrl = nb(event.getValue("val").getAsString());
+            case "field" -> {
+                String name   = event.getValue("name").getAsString().trim();
+                String value  = event.getValue("value").getAsString().trim();
+                String inlineS = event.getValue("inline").getAsString().trim();
+                boolean inline = "yes".equalsIgnoreCase(inlineS) || "true".equalsIgnoreCase(inlineS) || "y".equalsIgnoreCase(inlineS);
+                if (!name.isEmpty() && !value.isEmpty() && session.fields.size() < 25)
+                    session.fields.add(new EmbedGuiSession.FieldEntry(name, value, inline));
+            }
+            case "btn" -> {
+                String label    = event.getValue("label").getAsString().trim();
+                String style    = event.getValue("style").getAsString().trim().toLowerCase();
+                String idOrUrl  = event.getValue("id_url").getAsString().trim();
+                if (!label.isEmpty() && !style.isEmpty() && !idOrUrl.isEmpty() && session.buttons.size() < 25)
+                    session.buttons.add(new EmbedGuiSession.ButtonEntry(label, style, idOrUrl));
+            }
+        }
+
+        // Acknowledge the modal (ephemeral, instantly deleted) then update the GUI via the stored hook.
+        event.deferReply(true).queue(hook -> hook.deleteOriginal().queue());
+
+        TextChannel targetCh = null;
+        if (event.isFromGuild()) {
+            targetCh = event.getGuild().getTextChannelById(session.targetChannelId);
+        }
+
+        if (session.hook != null) {
+            session.hook.editOriginalEmbeds(
+                EmbedGuiCommand.buildPreview(session).build(),
+                EmbedGuiCommand.buildStatus(session, targetCh).build()
+            ).setComponents(EmbedGuiCommand.buildRows(userId)).queue();
+        }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /** Edit the existing GUI message in-place after a button (non-modal) action. */
+    private void refreshGui(ButtonInteractionEvent event, EmbedGuiSession session, String userId) {
+        TextChannel targetCh = null;
+        if (event.isFromGuild()) {
+            targetCh = event.getGuild().getTextChannelById(session.targetChannelId);
+        }
+        event.editMessageEmbeds(
+            EmbedGuiCommand.buildPreview(session).build(),
+            EmbedGuiCommand.buildStatus(session, targetCh).build()
+        ).setComponents(EmbedGuiCommand.buildRows(userId)).queue();
+    }
+
+    /** Send the built embed to the target channel and close the GUI. */
+    private void handleSend(ButtonInteractionEvent event, EmbedGuiSession session, String userId) {
+        EmbedBuilder embed = EmbedJsonUtils.buildEmbed(session);
+        var built = embed.build();
+        if ((built.getTitle() == null || built.getTitle().isBlank())
+                && (built.getDescription() == null || built.getDescription().isBlank())
+                && built.getFields().isEmpty()) {
+            event.reply("❌ Your embed is empty — add at least a title, description, or field before sending.")
+                 .setEphemeral(true).queue();
+            return;
+        }
+
+        if (!event.isFromGuild()) {
+            event.reply("Can only send to guild channels.").setEphemeral(true).queue();
+            return;
+        }
+
+        TextChannel dest = event.getGuild().getTextChannelById(session.targetChannelId);
+        if (dest == null) {
+            event.reply("❌ Target channel not found. It may have been deleted.").setEphemeral(true).queue();
+            return;
+        }
+
+        List<Button> userButtons = EmbedJsonUtils.buildUserButtons(session);
+        var sendAction = dest.sendMessageEmbeds(built);
+        if (!userButtons.isEmpty()) {
+            List<ActionRow> rows = new ArrayList<>();
+            for (int i = 0; i < userButtons.size(); i += 5)
+                rows.add(ActionRow.of(userButtons.subList(i, Math.min(i + 5, userButtons.size()))));
+            sendAction = sendAction.setComponents(rows);
+        }
+
+        sendAction.queue(
+            msg -> {
+                EmbedGuiSession.remove(userId);
+                event.editMessageEmbeds(
+                    EmbedUtils.createSuccessEmbed("Embed Sent",
+                        "✅ Your embed was sent to " + dest.getAsMention() + ".\n" +
+                        "[Jump to message](" + msg.getJumpUrl() + ")")
+                ).setComponents(Collections.emptyList()).queue();
+            },
+            err -> event.reply("❌ Failed to send: " + err.getMessage()).setEphemeral(true).queue()
+        );
+    }
+
+    /** Convert blank strings to null (so unset fields stay blank in the embed). */
+    private static String nb(String s) {
+        return (s == null || s.isBlank()) ? null : s.trim();
+    }
+
+    // ── Modal builders ────────────────────────────────────────────────────────
+
+    private Modal titleModal(String uid, EmbedGuiSession s) {
+        TextInput val = TextInput.create("val", TextInputStyle.SHORT)
+            .setPlaceholder("Embed title (leave blank to clear)")
+            .setValue(s.title != null ? s.title : "")
+            .setMaxLength(256).setRequired(false).build();
+        TextInput url = TextInput.create("url", TextInputStyle.SHORT)
+            .setPlaceholder("Title URL (leave blank for none)")
+            .setValue(s.titleUrl != null ? s.titleUrl : "")
+            .setMaxLength(2048).setRequired(false).build();
+        return Modal.create("egm:title:"+uid, "Set Embed Title")
+            .addComponents(Label.of("Title", val), Label.of("Title URL (optional)", url))
+            .build();
+    }
+
+    private Modal descModal(String uid, EmbedGuiSession s) {
+        TextInput val = TextInput.create("val", TextInputStyle.PARAGRAPH)
+            .setPlaceholder("Embed description (leave blank to clear). Use \\n for newlines.")
+            .setValue(s.description != null ? s.description : "")
+            .setMaxLength(4000).setRequired(false).build();
+        return Modal.create("egm:desc:"+uid, "Set Description")
+            .addComponents(Label.of("Description", val))
+            .build();
+    }
+
+    private Modal colorModal(String uid, EmbedGuiSession s) {
+        TextInput val = TextInput.create("val", TextInputStyle.SHORT)
+            .setPlaceholder("#5865F2  (hex, leave blank for default)")
+            .setValue(s.colorHex != null ? s.colorHex : "")
+            .setMaxLength(7).setRequired(false).build();
+        return Modal.create("egm:color:"+uid, "Set Color")
+            .addComponents(Label.of("Hex Color (#RRGGBB)", val))
+            .build();
+    }
+
+    private Modal authorModal(String uid, EmbedGuiSession s) {
+        TextInput name = TextInput.create("name", TextInputStyle.SHORT)
+            .setPlaceholder("Author name (leave blank to clear)")
+            .setValue(s.authorName != null ? s.authorName : "")
+            .setMaxLength(256).setRequired(false).build();
+        TextInput icon = TextInput.create("icon", TextInputStyle.SHORT)
+            .setPlaceholder("Author icon URL (leave blank for none)")
+            .setValue(s.authorIconUrl != null ? s.authorIconUrl : "")
+            .setMaxLength(2048).setRequired(false).build();
+        TextInput url = TextInput.create("url", TextInputStyle.SHORT)
+            .setPlaceholder("Author link URL (leave blank for none)")
+            .setValue(s.authorUrl != null ? s.authorUrl : "")
+            .setMaxLength(2048).setRequired(false).build();
+        return Modal.create("egm:author:"+uid, "Set Author")
+            .addComponents(Label.of("Author Name", name), Label.of("Icon URL (optional)", icon), Label.of("Link URL (optional)", url))
+            .build();
+    }
+
+    private Modal footerModal(String uid, EmbedGuiSession s) {
+        TextInput text = TextInput.create("text", TextInputStyle.SHORT)
+            .setPlaceholder("Footer text (leave blank to clear)")
+            .setValue(s.footerText != null ? s.footerText : "")
+            .setMaxLength(2048).setRequired(false).build();
+        TextInput icon = TextInput.create("icon", TextInputStyle.SHORT)
+            .setPlaceholder("Footer icon URL (leave blank for none)")
+            .setValue(s.footerIconUrl != null ? s.footerIconUrl : "")
+            .setMaxLength(2048).setRequired(false).build();
+        return Modal.create("egm:footer:"+uid, "Set Footer")
+            .addComponents(Label.of("Footer Text", text), Label.of("Icon URL (optional)", icon))
+            .build();
+    }
+
+    private Modal imageModal(String uid, EmbedGuiSession s) {
+        TextInput val = TextInput.create("val", TextInputStyle.SHORT)
+            .setPlaceholder("Image URL (leave blank to clear)")
+            .setValue(s.imageUrl != null ? s.imageUrl : "")
+            .setMaxLength(2048).setRequired(false).build();
+        return Modal.create("egm:image:"+uid, "Set Image")
+            .addComponents(Label.of("Image URL", val))
+            .build();
+    }
+
+    private Modal thumbModal(String uid, EmbedGuiSession s) {
+        TextInput val = TextInput.create("val", TextInputStyle.SHORT)
+            .setPlaceholder("Thumbnail URL (leave blank to clear)")
+            .setValue(s.thumbnailUrl != null ? s.thumbnailUrl : "")
+            .setMaxLength(2048).setRequired(false).build();
+        return Modal.create("egm:thumb:"+uid, "Set Thumbnail")
+            .addComponents(Label.of("Thumbnail URL", val))
+            .build();
+    }
+
+    private Modal fieldModal(String uid) {
+        TextInput name = TextInput.create("name", TextInputStyle.SHORT)
+            .setPlaceholder("Field name").setMaxLength(256).setRequired(true).build();
+        TextInput value = TextInput.create("value", TextInputStyle.PARAGRAPH)
+            .setPlaceholder("Field value").setMaxLength(1024).setRequired(true).build();
+        TextInput inline = TextInput.create("inline", TextInputStyle.SHORT)
+            .setPlaceholder("Inline? yes / no  (default: no)")
+            .setValue("no").setMaxLength(5).setRequired(false).build();
+        return Modal.create("egm:field:"+uid, "Add Field")
+            .addComponents(Label.of("Field Name", name), Label.of("Field Value", value), Label.of("Inline? (yes/no)", inline))
+            .build();
+    }
+
+    private Modal btnModal(String uid) {
+        TextInput label = TextInput.create("label", TextInputStyle.SHORT)
+            .setPlaceholder("Button label text").setMaxLength(80).setRequired(true).build();
+        TextInput style = TextInput.create("style", TextInputStyle.SHORT)
+            .setPlaceholder("primary | secondary | success | danger | link")
+            .setMaxLength(10).setRequired(true).build();
+        TextInput idUrl = TextInput.create("id_url", TextInputStyle.SHORT)
+            .setPlaceholder("Custom ID (or URL if style is link)").setMaxLength(100).setRequired(true).build();
+        return Modal.create("egm:btn:"+uid, "Add Button")
+            .addComponents(Label.of("Label", label), Label.of("Style", style), Label.of("Custom ID or URL", idUrl))
+            .build();
+    }
+}
