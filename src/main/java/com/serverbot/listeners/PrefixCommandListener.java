@@ -25,20 +25,13 @@ public class PrefixCommandListener extends ListenerAdapter {
             return;
         }
         
-        // Only process messages from guilds
-        if (!event.isFromGuild()) {
-            return;
-        }
-        
         String content = event.getMessage().getContentRaw();
 
-        // Check all active guild prefixes, the hardcoded default "!", and the proxy prefix.
-        // Using getPrefixes() (all active prefixes) instead of getPrefix() (primary only)
-        // ensures custom prefixes added via /prefix add are recognised here too.
-        java.util.List<String> guildPrefixes = ServerBot.getStorageManager().getPrefixes(event.getGuild().getId());
-
+        // Check the hardcoded default "!" and proxy prefix first, then any guild-specific
+        // prefixes (guild-only; falls back to just "!" in DMs).
         boolean matches = content.startsWith("!") || content.startsWith("px;");
-        if (!matches) {
+        if (!matches && event.isFromGuild()) {
+            java.util.List<String> guildPrefixes = ServerBot.getStorageManager().getPrefixes(event.getGuild().getId());
             for (String p : guildPrefixes) {
                 if (content.startsWith(p)) {
                     matches = true;

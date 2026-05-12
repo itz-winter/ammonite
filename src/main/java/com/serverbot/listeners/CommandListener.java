@@ -4,6 +4,7 @@ import com.serverbot.services.CommandManager;
 import com.serverbot.commands.SlashCommand;
 import com.serverbot.utils.EmbedUtils;
 import com.serverbot.utils.SafeRestAction;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.slf4j.Logger;
@@ -111,6 +112,14 @@ public class CommandListener extends ListenerAdapter {
                     "send follow-up command error"
                 );
             }
+        }
+    }
+
+    @Override
+    public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event) {
+        SlashCommand command = commandManager.getCommand(event.getName());
+        if (command != null) {
+            command.handleAutoComplete(event);
         }
     }
 }

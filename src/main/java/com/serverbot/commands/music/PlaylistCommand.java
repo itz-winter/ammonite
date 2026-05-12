@@ -14,12 +14,15 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.GuildVoiceState;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.InteractionContextType;
+import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
@@ -469,34 +472,56 @@ public class PlaylistCommand implements SlashCommand {
         }
     }
 
+    // ─── autocomplete ─────────────────────────────────────────────────────────
+
+    @Override
+    public void handleAutoComplete(CommandAutoCompleteInteractionEvent event) {
+        if (!"name".equals(event.getFocusedOption().getName())) {
+            event.replyChoices().queue();
+            return;
+        }
+        String typed = event.getFocusedOption().getValue().toLowerCase();
+        String userId = event.getUser().getId();
+        List<Command.Choice> choices = ServerBot.getStorageManager()
+            .getUserPlaylists(userId).stream()
+            .filter(pl -> pl.name.toLowerCase().startsWith(typed))
+            .limit(25)
+            .map(pl -> new Command.Choice(pl.name, pl.name))
+            .collect(Collectors.toList());
+        event.replyChoices(choices).queue();
+    }
+
     // ─── command data ─────────────────────────────────────────────────────────
 
     public static CommandData getCommandData() {
+        OptionData nameAutocomplete = new OptionData(OptionType.STRING, "name", "Playlist name", true)
+            .setAutoComplete(true);
+
         return Commands.slash("playlist", "Create, manage, and play your custom playlists.")
             .addSubcommands(
                 new SubcommandData("create", "Create a new playlist")
                     .addOption(OptionType.STRING, "name", "Playlist name (max 50 chars)", true)
                     .addOption(OptionType.STRING, "description", "Optional description", false),
                 new SubcommandData("delete", "Delete one of your playlists (requires confirmation)")
-                    .addOption(OptionType.STRING, "name", "Playlist name", true),
+                    .addOptions(nameAutocomplete),
                 new SubcommandData("rename", "Rename one of your playlists")
-                    .addOption(OptionType.STRING, "name", "Current playlist name", true)
+                    .addOptions(nameAutocomplete)
                     .addOption(OptionType.STRING, "newname", "New playlist name (max 50 chars)", true),
                 new SubcommandData("add", "Add one or more URLs to a playlist (space-separated)")
-                    .addOption(OptionType.STRING, "name", "Playlist name", true)
+                    .addOptions(nameAutocomplete)
                     .addOption(OptionType.STRING, "urls", "One or more YouTube/direct URLs (space-separated)", true),
                 new SubcommandData("remove", "Remove a track from a playlist by position")
-                    .addOption(OptionType.STRING, "name", "Playlist name", true)
+                    .addOptions(nameAutocomplete)
                     .addOption(OptionType.INTEGER, "position", "1-based position of the track to remove", true),
                 new SubcommandData("reorder", "Move a track to a different position in a playlist")
-                    .addOption(OptionType.STRING, "name", "Playlist name", true)
+                    .addOptions(nameAutocomplete)
                     .addOption(OptionType.INTEGER, "from", "Current 1-based position of the track", true)
                     .addOption(OptionType.INTEGER, "to", "New 1-based position for the track", true),
                 new SubcommandData("list", "List all your playlists"),
                 new SubcommandData("show", "Show all tracks in a playlist")
-                    .addOption(OptionType.STRING, "name", "Playlist name", true),
+                    .addOptions(nameAutocomplete),
                 new SubcommandData("play", "Queue a saved playlist in your voice channel")
-                    .addOption(OptionType.STRING, "name", "Playlist name", true)
+                    .addOptions(nameAutocomplete)
                     .addOption(OptionType.INTEGER, "position", "Start from this track position (default: 1)", false)
             )
             .setContexts(InteractionContextType.GUILD);

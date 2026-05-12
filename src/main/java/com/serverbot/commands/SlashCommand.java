@@ -1,5 +1,6 @@
 package com.serverbot.commands;
 
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 /**
@@ -54,5 +55,13 @@ public interface SlashCommand {
      */
     default boolean isOwnerOnly() {
         return false;
+    }
+
+    /**
+     * Handle autocomplete interactions for this command.
+     * Override in commands that have options marked with setAutoComplete(true).
+     */
+    default void handleAutoComplete(CommandAutoCompleteInteractionEvent event) {
+        event.replyChoices().queue();
     }
 }
