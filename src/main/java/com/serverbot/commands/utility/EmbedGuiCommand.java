@@ -63,14 +63,13 @@ public class EmbedGuiCommand implements SlashCommand {
         // can edit this original ephemeral message.
         event.deferReply(true).queue(hook -> {
             session.hook = hook;
-            // Controls message = the original deferred reply (has buttons, status only)
-            hook.editOriginalEmbeds(buildStatus(session, target).build())
-                .setComponents(buildRows(userId))
-                .queue();
-            // Preview message = separate ephemeral follow-up (no buttons, just the embed preview)
-            hook.sendMessageEmbeds(buildPreview(session).build())
+            // Original reply = preview embed (no buttons, updates via editOriginalEmbeds)
+            hook.editOriginalEmbeds(buildPreview(session).build()).queue();
+            // Follow-up = controls (status embed + buttons), ID stored so modals can update it
+            hook.sendMessageEmbeds(buildStatus(session, target).build())
                 .setEphemeral(true)
-                .queue(msg -> session.previewMessageId = msg.getId());
+                .setComponents(buildRows(userId))
+                .queue(msg -> session.controlsMessageId = msg.getId());
         });
     }
 

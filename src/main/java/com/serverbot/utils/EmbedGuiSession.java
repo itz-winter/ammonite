@@ -50,8 +50,8 @@ public class EmbedGuiSession {
     /** Reference to the original slash-command hook so we can edit the GUI message after modals. */
     public InteractionHook hook;
 
-    /** Message ID of the ephemeral preview follow-up message, so it can be updated. */
-    public String previewMessageId;
+    /** Message ID of the ephemeral controls follow-up message (has the buttons), so it can be updated. */
+    public String controlsMessageId;
 
     // Embed fields
     public String title;

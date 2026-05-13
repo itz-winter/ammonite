@@ -50,13 +50,10 @@ public class EmbedCommand implements SlashCommand {
             return;
         }
         List<Button> buttons = new ArrayList<>();
-        String buttonsJson = event.getOption("buttons", OptionMapping::getAsString);
-        if (buttonsJson != null && !buttonsJson.isBlank()) {
-            try { buttons = EmbedJsonUtils.parseButtons(buttonsJson); }
-            catch (IllegalArgumentException e) {
-                event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Buttons JSON",e.getMessage())).setEphemeral(true).queue();
-                return;
-            }
+        try { buttons = EmbedJsonUtils.parseButtonsFromJson(jsonRaw); }
+        catch (IllegalArgumentException e) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Buttons JSON",e.getMessage())).setEphemeral(true).queue();
+            return;
         }
         GuildMessageChannel target = event.getChannel().asGuildMessageChannel();
         OptionMapping channelOption = event.getOption("channel");
@@ -92,8 +89,7 @@ public class EmbedCommand implements SlashCommand {
     public static CommandData getCommandData() {
         return Commands.slash("embed","Send a custom embed using JSON. Use /embedgui for an interactive builder.")
             .addOptions(
-                new OptionData(OptionType.STRING,"json","Embed JSON (use /embedgui then Export JSON to generate this)",true),
-                new OptionData(OptionType.STRING,"buttons","Buttons JSON array: [{\"label\":\"...\",\"style\":\"primary\",\"id\":\"...\"}]",false),
+                new OptionData(OptionType.STRING,"json","Embed JSON — optionally include a \"buttons\" key for buttons (use /embedgui to generate)",true),
                 new OptionData(OptionType.CHANNEL,"channel","Channel to send to (default: current channel)",false)
             );
     }

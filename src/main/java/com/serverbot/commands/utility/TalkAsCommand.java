@@ -56,7 +56,6 @@ public class TalkAsCommand implements SlashCommand {
         OptionMapping messageOption = event.getOption("message");
         OptionMapping avatarOption = event.getOption("avatar");
         OptionMapping embedJsonOption = event.getOption("embed_json");
-        OptionMapping buttonsOption = event.getOption("buttons");
 
         if (nameOption == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
@@ -71,7 +70,6 @@ public class TalkAsCommand implements SlashCommand {
         String message = messageOption != null ? messageOption.getAsString() : null;
         String avatarUrl = avatarOption != null ? avatarOption.getAsString() : null;
         String embedJson = embedJsonOption != null ? embedJsonOption.getAsString() : null;
-        String buttonsJson = buttonsOption != null ? buttonsOption.getAsString() : null;
 
         // Must have at least message or embed
         if ((message == null || message.isBlank()) && (embedJson == null || embedJson.isBlank())) {
@@ -128,16 +126,16 @@ public class TalkAsCommand implements SlashCommand {
             }
         }
 
-        // Parse buttons JSON if provided
+        // Parse buttons from embed JSON if provided
         List<Button> buttons = new ArrayList<>();
-        if (buttonsJson != null && !buttonsJson.isBlank()) {
+        if (embedJson != null && !embedJson.isBlank()) {
             try {
-                buttons = EmbedJsonUtils.parseButtons(buttonsJson);
+                buttons = EmbedJsonUtils.parseButtonsFromJson(embedJson);
             } catch (Exception e) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Invalid Buttons JSON [T10]",
-                    "Failed to parse buttons JSON: " + e.getMessage() + "\n" +
-                    "Use `/embedgui` to build and export valid button JSON."
+                    "Failed to parse buttons from embed JSON: " + e.getMessage() + "\n" +
+                    "Use `/embedgui` to build and export valid embed JSON."
                 )).setEphemeral(true).queue();
                 return;
             }
@@ -280,8 +278,7 @@ public class TalkAsCommand implements SlashCommand {
                 .addOptions(
                     new OptionData(OptionType.STRING, "name", "The name to display for the webhook message", true),
                     new OptionData(OptionType.STRING, "message", "The message content to send (optional if embed_json provided)", false),
-                    new OptionData(OptionType.STRING, "embed_json", "Embed JSON to attach (use /embedgui > Export JSON)", false),
-                    new OptionData(OptionType.STRING, "buttons", "Buttons JSON array (use /embedgui > Export JSON)", false),
+                    new OptionData(OptionType.STRING, "embed_json", "Embed JSON to attach — optionally include a \"buttons\" key (use /embedgui)", false),
                     new OptionData(OptionType.STRING, "avatar", "Avatar URL for the webhook (optional)", false)
                 );
     }

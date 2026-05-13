@@ -45,21 +45,46 @@ public final class EmbedJsonUtils {
     // ── Embed JSON → EmbedBuilder ─────────────────────────────────────────────
 
     /**
-     * Parse a raw JSON string into a populated EmbedBuilder.
-     * Throws IllegalArgumentException on JSON syntax errors or invalid values.
+     * Parse the raw JSON string and return the root JsonObject.
+     * Accepts a leading '{' at any offset (strips label lines from /embedgui export).
      */
-    public static EmbedBuilder parseEmbed(String json) {
-        JsonObject obj;
+    private static JsonObject parseRootObject(String json) {
+        String trimmed = json.strip();
+        int start = trimmed.indexOf('{');
+        if (start > 0) trimmed = trimmed.substring(start);
         try {
-            // Strip any leading non-JSON label lines (e.g. from /embedgui export)
-            String trimmed = json.strip();
-            int start = trimmed.indexOf('{');
-            if (start > 0) trimmed = trimmed.substring(start);
-            obj = JsonParser.parseString(trimmed).getAsJsonObject();
+            return JsonParser.parseString(trimmed).getAsJsonObject();
         } catch (JsonSyntaxException | IllegalStateException e) {
             throw new IllegalArgumentException("Invalid JSON: " + e.getMessage());
         }
+    }
 
+    /**
+     * Parse a raw JSON string into a populated EmbedBuilder.
+     * The JSON may optionally contain a "buttons" key — it is ignored here.
+     * Use {@link #parseButtonsFromJson(String)} to extract buttons from the same JSON.
+     */
+    public static EmbedBuilder parseEmbed(String json) {
+        return buildEmbedFromObject(parseRootObject(json));
+    }
+
+    /**
+     * Extract buttons from the "buttons" array inside an embed JSON string.
+     * Returns an empty list if the key is absent or the JSON has none.
+     */
+    public static List<Button> parseButtonsFromJson(String json) {
+        JsonObject obj = parseRootObject(json);
+        if (!obj.has("buttons") || !obj.get("buttons").isJsonArray()) return new ArrayList<>();
+        List<Button> result = new ArrayList<>();
+        for (JsonElement el : obj.getAsJsonArray("buttons")) {
+            if (!el.isJsonObject() || result.size() >= 25) continue;
+            Button btn = parseButtonObject(el.getAsJsonObject());
+            if (btn != null) result.add(btn);
+        }
+        return result;
+    }
+
+    private static EmbedBuilder buildEmbedFromObject(JsonObject obj) {
         EmbedBuilder eb = new EmbedBuilder();
 
         // title + url
@@ -123,7 +148,7 @@ public final class EmbedJsonUtils {
         String thumbUrl = resolveUrlField(obj, "thumbnail");
         if (thumbUrl != null) eb.setThumbnail(thumbUrl);
 
-        // fields
+        // fields (skip "buttons" — that's our custom extension key)
         if (obj.has("fields") && obj.get("fields").isJsonArray()) {
             for (JsonElement el : obj.getAsJsonArray("fields")) {
                 if (!el.isJsonObject()) continue;
@@ -143,7 +168,7 @@ public final class EmbedJsonUtils {
     // ── Button JSON → List<Button> ────────────────────────────────────────────
 
     /**
-     * Parse a button JSON array into a list of JDA Buttons.
+     * Parse a standalone button JSON array string into a list of JDA Buttons.
      * Max 25 buttons. Skips malformed entries.
      */
     public static List<Button> parseButtons(String json) {
@@ -249,12 +274,26 @@ public final class EmbedJsonUtils {
         }
 
         if (!s.buttons.isEmpty()) {
-            // Separate "buttons" key for use with /embed buttons:<json>
-            // (not part of the standard embed schema)
-            return "Embed JSON (paste into /embed json:):\n" + GSON.toJson(obj)
-                 + "\n\nButtons JSON (paste into /embed buttons:):\n" + buttonsToJson(s);
+            JsonArray btns = new JsonArray();
+            for (EmbedGuiSession.ButtonEntry be : s.buttons) {
+                JsonObject o = new JsonObject();
+                o.addProperty("label", be.label);
+                o.addProperty("style", be.style);
+                if (be.style.equals("link")) o.addProperty("url", be.customIdOrUrl);
+                else o.addProperty("id", be.customIdOrUrl);
+                btns.add(o);
+            }
+            obj.add("buttons", btns);
         }
         return GSON.toJson(obj);
+    }
+
+    /**
+     * Build the full export message string shown to the user.
+     * A single JSON object (with optional "buttons" key) ready to paste into /embed json:.
+     */
+    public static String buildExportMessage(EmbedGuiSession s) {
+        return "**`/embed json:`**\n```json\n" + toJson(s) + "\n```";
     }
 
     /**
