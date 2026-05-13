@@ -51,7 +51,11 @@ public final class EmbedJsonUtils {
     public static EmbedBuilder parseEmbed(String json) {
         JsonObject obj;
         try {
-            obj = JsonParser.parseString(json).getAsJsonObject();
+            // Strip any leading non-JSON label lines (e.g. from /embedgui export)
+            String trimmed = json.strip();
+            int start = trimmed.indexOf('{');
+            if (start > 0) trimmed = trimmed.substring(start);
+            obj = JsonParser.parseString(trimmed).getAsJsonObject();
         } catch (JsonSyntaxException | IllegalStateException e) {
             throw new IllegalArgumentException("Invalid JSON: " + e.getMessage());
         }
@@ -146,7 +150,10 @@ public final class EmbedJsonUtils {
         List<Button> result = new ArrayList<>();
         JsonArray arr;
         try {
-            arr = JsonParser.parseString(json).getAsJsonArray();
+            String trimmed = json.strip();
+            int start = trimmed.indexOf('[');
+            if (start > 0) trimmed = trimmed.substring(start);
+            arr = JsonParser.parseString(trimmed).getAsJsonArray();
         } catch (JsonSyntaxException | IllegalStateException e) {
             throw new IllegalArgumentException("Buttons must be a JSON array: " + e.getMessage());
         }
@@ -244,8 +251,8 @@ public final class EmbedJsonUtils {
         if (!s.buttons.isEmpty()) {
             // Separate "buttons" key for use with /embed buttons:<json>
             // (not part of the standard embed schema)
-            return "/* embed */\n" + GSON.toJson(obj)
-                 + "\n\n/* buttons */\n" + buttonsToJson(s);
+            return "Embed JSON (paste into /embed json:):\n" + GSON.toJson(obj)
+                 + "\n\nButtons JSON (paste into /embed buttons:):\n" + buttonsToJson(s);
         }
         return GSON.toJson(obj);
     }
