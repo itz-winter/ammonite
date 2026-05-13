@@ -10,7 +10,6 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.components.label.Label;
@@ -149,29 +148,17 @@ public class EmbedGuiListener extends ListenerAdapter {
         if (session.hook != null) {
             TextChannel targetCh = event.isFromGuild()
                 ? event.getGuild().getTextChannelById(session.targetChannelId) : null;
-            // Update preview (original reply)
-            session.hook.editOriginalEmbeds(EmbedGuiCommand.buildPreview(session).build()).queue();
-            // Update controls (follow-up by stored ID)
-            if (session.controlsMessageId != null) {
-                session.hook.editMessageEmbedsById(session.controlsMessageId,
-                    EmbedGuiCommand.buildStatus(session, targetCh).build())
-                    .setComponents(EmbedGuiCommand.buildRows(userId)).queue();
-            }
+            session.hook.editOriginal(EmbedGuiCommand.buildGuiEdit(session, targetCh, userId)).queue();
         }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    /** Edit the existing GUI messages after a button (non-modal) action. */
+    /** Edit the existing GUI message after a button (non-modal) action. */
     private void refreshGui(ButtonInteractionEvent event, EmbedGuiSession session, String userId) {
         TextChannel targetCh = event.isFromGuild()
             ? event.getGuild().getTextChannelById(session.targetChannelId) : null;
-        // The button is ON the controls message — edit it in-place
-        event.editMessageEmbeds(
-            EmbedGuiCommand.buildStatus(session, targetCh).build()
-        ).setComponents(EmbedGuiCommand.buildRows(userId)).queue();
-        // Update the preview (original reply)
-        session.hook.editOriginalEmbeds(EmbedGuiCommand.buildPreview(session).build()).queue();
+        event.editMessage(EmbedGuiCommand.buildGuiEdit(session, targetCh, userId)).queue();
     }
 
     /** Send the built embed to the target channel and close the GUI. */
@@ -208,18 +195,13 @@ public class EmbedGuiListener extends ListenerAdapter {
 
         sendAction.queue(
             msg -> {
-                InteractionHook savedHook = session.hook;
                 EmbedGuiSession.remove(userId);
-                // The button was on the controls message — replace it with success embed
+                // Replace the single GUI message with a success embed
                 event.editMessageEmbeds(
                     EmbedUtils.createSuccessEmbed("Embed Sent",
                         "✅ Your embed was sent to " + dest.getAsMention() + ".\n" +
                         "[Jump to message](" + msg.getJumpUrl() + ")")
                 ).setComponents(Collections.emptyList()).queue();
-                // Delete the original reply (preview message)
-                if (savedHook != null) {
-                    savedHook.deleteOriginal().queue(null, ignored -> {});
-                }
             },
             err -> event.reply("❌ Failed to send: " + err.getMessage()).setEphemeral(true).queue()
         );

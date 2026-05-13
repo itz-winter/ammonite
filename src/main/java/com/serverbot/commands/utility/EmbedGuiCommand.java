@@ -17,6 +17,8 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageEditData;
 
 import java.awt.Color;
 import java.util.Arrays;
@@ -63,17 +65,19 @@ public class EmbedGuiCommand implements SlashCommand {
         // can edit this original ephemeral message.
         event.deferReply(true).queue(hook -> {
             session.hook = hook;
-            // Original reply = preview embed (no buttons, updates via editOriginalEmbeds)
-            hook.editOriginalEmbeds(buildPreview(session).build()).queue();
-            // Follow-up = controls (status embed + buttons), ID stored so modals can update it
-            hook.sendMessageEmbeds(buildStatus(session, target).build())
-                .setEphemeral(true)
-                .setComponents(buildRows(userId))
-                .queue(msg -> session.controlsMessageId = msg.getId());
+            hook.editOriginal(buildGuiEdit(session, target, userId)).queue();
         });
     }
 
     // ── Static helpers used by EmbedGuiListener too ───────────────────────────
+
+    /** Build the single GUI message: preview embed + status embed + control buttons. */
+    public static MessageEditData buildGuiEdit(EmbedGuiSession s, GuildMessageChannel target, String userId) {
+        return new MessageEditBuilder()
+            .setEmbeds(buildPreview(s).build(), buildStatus(s, target).build())
+            .setComponents(buildRows(userId))
+            .build();
+    }
 
     /** The preview embed — exactly what will be sent (or a placeholder if empty). */
     public static EmbedBuilder buildPreview(EmbedGuiSession s) {
