@@ -203,6 +203,7 @@ public class CommandManager {
         commandDataList.add(com.serverbot.commands.utility.AvatarCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.ServerStatsCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.EmbedCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.utility.EmbedGuiCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.DadJokeCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.JokeCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.PrideCommand.getCommandData());
