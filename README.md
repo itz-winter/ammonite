@@ -1,8 +1,8 @@
-# Kelpyyium Discord Bot
+# Ammonite
 
-Kelpyyium is a feature-rich, Java-based Discord bot built with JDA (Java Discord API). It provides a full suite of moderation, economy, leveling, configuration, and utility tools — all manageable through both slash commands and prefix commands.
+Ammonite is a feature-rich, Java-based Discord bot built with JDA (Java Discord API). It provides a full suite of moderation, economy, leveling, configuration, and utility tools — all manageable through both slash commands and prefix commands.
 
-### [Official Website, Guide, Documentation, and more!](https://kelpyyium.pages.dev/)
+### [Official Website, Guide, Documentation, and more!](https://ammonite.kelpw.ing/)
 
 ## Prerequisites
 
@@ -28,7 +28,7 @@ The output JAR will be in the `target` directory.
 
 ```batch
 @echo off
-java -Xmx2G -Xms1G -jar kelpyyium-2.3.014.jar nogui
+java -Xmx2G -Xms1G -jar discord-serverbot-1.0.0.jar nogui
 pause
 ```
 
