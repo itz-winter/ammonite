@@ -9,7 +9,7 @@
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>Kelpyyium Discord Bot</name>
+    <name>Ammonite Discord Bot</name>
     <description>A comprehensive Discord moderation and utility bot</description>
 
     <properties>

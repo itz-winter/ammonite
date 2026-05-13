@@ -1,8 +1,8 @@
-# Kelpyyium Discord Bot
+# Ammonite Discord Bot
 
-Kelpyyium is a feature-rich, Java-based Discord bot built with JDA (Java Discord API). It provides a full suite of moderation, economy, leveling, configuration, and utility tools — all manageable through both slash commands and prefix commands.
+Ammonite is a feature-rich, Java-based Discord bot built with JDA (Java Discord API). It provides a full suite of moderation, economy, leveling, configuration, and utility tools — all manageable through both slash commands and prefix commands.
 
-### [Official Website, Guide, Documentation, and more!](https://kelpyyium.pages.dev/)
+### [Official Website, Guide, Documentation, and more!](https://ammonite.kelpw.ing/)
 
 ## Prerequisites
 
@@ -28,7 +28,7 @@ The output JAR will be in the `target` directory.
 
 ```batch
 @echo off
-java -Xmx2G -Xms1G -jar kelpyyium-2.3.014.jar nogui
+java -Xmx2G -Xms1G -jar Ammonite-2.3.014.jar nogui
 pause
 ```
 
@@ -102,3 +102,17 @@ The bot supports music playback in voice channels via LavaPlayer and YouTube.
 | `!leave` | Disconnect the bot from voice |
 
 > The bot will automatically disconnect when the voice channel is empty or when kicked.
+
+## Contributing
+
+Contributions are welcome! Please fork the repository and submit a pull request with your changes. For major changes, please open an issue first to discuss what you would like to change.
+
+## Bot Discord Profile Bio (short)
+
+...and it's another general-purpose bot-
+
+Heya! I am Ammonite, a powerful, configurable, feature-packed general-purpose bot. I have a ton of features-moderation, economy, leveling, utility, and more! I am the perfect fit for any server. I am always here to help!
+
+Help: `/help [command]`
+Features: https://ammonite.kelpw.ing/features
+Quick reference: https://ammonite.kelpw.ing/commands

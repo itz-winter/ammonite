@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.serverbot</groupId>
   <artifactId>discord-server-bot</artifactId>
-  <name>Kelpyyium Discord Bot</name>
+  <name>Ammonite Discord Bot</name>
   <version>1.0.0</version>
   <description>A comprehensive Discord moderation and utility bot</description>
   <build>
