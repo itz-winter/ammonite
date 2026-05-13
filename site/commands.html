@@ -1,316 +1,87 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Commands — Ammonite</title>
-    <link rel="stylesheet" href="common.css">
-    <style>
-        .page-header {
-            text-align: center;
-            padding: 40px 20px 20px;
-            animation: fadeIn 0.4s ease;
-        }
-        .page-header h1 { color: #ffffff; font-size: 36px; }
-        .page-header p { color: #b0a0cc; font-size: 16px; }
-        .back { padding: 0 20px; max-width: 960px; margin: 0 auto; }
-        .back a { display: inline; color: #9080b0; font-size: 14px; }
-
-        .category-section {
-            max-width: 960px;
-            margin: 24px auto;
-            padding: 0 20px;
-            animation: fadeIn 0.4s ease;
-        }
-        .category-title {
-            color: #ffffff;
-            font-size: 22px;
-            text-align: left;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #1a0a3e;
-        }
-
-        /* Command row */
-        .cmd-row {
-            background: #ffffff;
-            border: 1px solid #d0d0d0;
-            border-radius: 10px;
-            margin-bottom: 8px;
-            overflow: hidden;
-            transition: box-shadow 0.2s ease;
-        }
-        .cmd-row:hover {
-            box-shadow: 0 2px 12px rgba(11, 0, 34, 0.1);
-        }
-        .cmd-summary {
-            display: grid;
-            grid-template-columns: minmax(200px, 1fr) 2fr auto;
-            align-items: center;
-            padding: 12px 16px;
-            cursor: pointer;
-            gap: 12px;
-            user-select: none;
-        }
-        .cmd-summary:hover {
-            background: #f8f6fc;
-        }
-        .cmd-name {
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-weight: bold;
-            color: #0b0022;
-            font-size: 15px;
-        }
-        .cmd-desc {
-            color: #444;
-            font-size: 14px;
-        }
-        .cmd-perm {
-            font-size: 12px;
-            color: #888;
-            font-family: monospace;
-            text-align: right;
-            white-space: nowrap;
-        }
-        .cmd-expand-icon {
-            display: inline-block;
-            transition: transform 0.2s ease;
-            color: #999;
-            font-size: 12px;
-            margin-left: 8px;
-        }
-        .cmd-row.open .cmd-expand-icon {
-            transform: rotate(90deg);
-        }
-
-        /* Expandable detail panel */
-        .cmd-detail {
-            display: none;
-            padding: 0 20px 20px 20px;
-            border-top: 1px solid #e8e4f0;
-            background: #faf8ff;
-            animation: fadeIn 0.2s ease;
-        }
-        .cmd-row.open .cmd-detail {
-            display: block;
-        }
-        .cmd-detail h4 {
-            font-size: 14px;
-            color: #0b0022;
-            margin: 16px 0 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .cmd-detail p, .cmd-detail li {
-            font-size: 14px;
-            color: #333;
-            line-height: 1.6;
-        }
-        .cmd-detail ul {
-            margin: 4px 0;
-            padding-left: 20px;
-        }
-        .cmd-detail code {
-            background: #eee8f5;
-            padding: 2px 7px;
-            border-radius: 4px;
-            font-size: 13px;
-            font-family: 'Consolas', 'Courier New', monospace;
-        }
-        .syntax-block {
-            background: #0b0022;
-            color: #c0b0e0;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 14px;
-            margin: 8px 0;
-            overflow-x: auto;
-        }
-        .syntax-block .required { color: #ff9090; }
-        .syntax-block .optional { color: #80c0ff; }
-        .example-block {
-            background: #f0ecfa;
-            border-left: 4px solid #0b0022;
-            padding: 10px 14px;
-            border-radius: 0 8px 8px 0;
-            margin: 6px 0;
-            font-size: 14px;
-        }
-        .example-block code {
-            background: transparent;
-            padding: 0;
-            color: #0b0022;
-            font-weight: bold;
-        }
-        .param-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 8px 0;
-        }
-        .param-table th {
-            background: #0b0022;
-            color: #fff;
-            text-align: left;
-            padding: 8px 12px;
-            font-size: 13px;
-        }
-        .param-table td {
-            padding: 7px 12px;
-            border-bottom: 1px solid #e8e4f0;
-            font-size: 13px;
-            vertical-align: top;
-        }
-        .param-table tr:last-child td { border-bottom: none; }
-        .param-required {
-            color: #cc0000;
-            font-weight: bold;
-            font-size: 11px;
-        }
-        .param-optional {
-            color: #4488cc;
-            font-size: 11px;
-        }
-        .cmd-screenshot {
-            margin: 12px 0;
-            border-radius: 8px;
-            border: 1px solid #d0d0d0;
-            max-width: 100%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .screenshot-caption {
-            font-size: 12px;
-            color: #888;
-            margin-top: 4px;
-            font-style: italic;
-        }
-        .note-box {
-            background: #fff8e8;
-            border-left: 4px solid #e8a820;
-            padding: 10px 14px;
-            border-radius: 0 8px 8px 0;
-            margin: 8px 0;
-            font-size: 13px;
-            color: #6a5000;
-        }
-
-        /* Search */
-        .search-box {
-            max-width: 960px;
-            margin: 0 auto 20px;
-            padding: 0 20px;
-        }
-        .search-box input {
-            width: 100%;
-            padding: 12px 16px;
-            font-size: 16px;
-            border: 1px solid #6f6f6f;
-            border-radius: 10px;
-            font-family: Calibri, sans-serif;
-            box-sizing: border-box;
-        }
-        .search-box input:focus {
-            outline: none;
-            border-color: #0b0022;
-            box-shadow: 0 0 0 3px rgba(11, 0, 34, 0.1);
-        }
-
-        /* Legend */
-        .legend {
-            max-width: 960px;
-            margin: 0 auto 12px;
-            padding: 0 20px;
-            font-size: 13px;
-            color: #b0a0cc;
-        }
-        .legend span { margin-right: 16px; }
-        .legend .req-dot { color: #ff9090; font-weight: bold; }
-        .legend .opt-dot { color: #80c0ff; font-weight: bold; }
-
-        /* Category jump nav */
-        .cat-nav {
-            max-width: 960px;
-            margin: 0 auto 20px;
-            padding: 0 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .cat-nav a {
-            display: inline-block;
-            background: #1a0a3e;
-            color: #c0b0e0;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            border: 1px solid #2a1a5e;
-            transition: all 0.2s ease;
-        }
-        .cat-nav a:hover {
-            background: #0b0022;
-            color: #fff;
-            transform: translateY(-1px);
-        }
-
-        .no-results {
-            text-align: center;
-            color: #888;
-            padding: 40px 20px;
-            display: none;
-            font-size: 16px;
-        }
-
-        .footer {
-            text-align: center;
-            padding: 40px 20px;
-            color: #6f6f6f;
-            font-size: 13px;
-        }
-        .footer a { display: inline; color: #9080b0; font-size: 13px; }
-
-        @media (max-width: 700px) {
-            .cmd-summary {
-                grid-template-columns: 1fr;
-                gap: 4px;
-            }
-            .cmd-perm { text-align: left; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Commands — Ammonite</title>
+  <link rel="stylesheet" href="common.css">
+  <style>
+    /* ── commands-specific overrides ── */
+    .cmd-controls { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; }
+    .cmd-search { width: 100%; padding: 10px 14px; font-size: 0.95rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-surface); color: var(--text-primary); box-sizing: border-box; }
+    .cmd-search:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px var(--brand-light); }
+    .legend { font-size: 0.8rem; color: var(--text-secondary); display: flex; gap: 1rem; flex-wrap: wrap; }
+    .req-dot { color: #e05050; font-weight: 700; }
+    .opt-dot { color: #4488cc; font-weight: 700; }
+    .cat-nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1.25rem; }
+    .cat-nav a { display: inline-block; background: var(--bg-inline); color: var(--brand-primary); padding: 5px 13px; border-radius: 20px; font-size: 0.8rem; border: 1px solid var(--border); transition: background .15s; }
+    .cat-nav a:hover { background: var(--brand-primary); color: #fff; border-color: var(--brand-primary); }
+    .category-section { margin-bottom: 2rem; }
+    .category-title { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); padding-bottom: 8px; border-bottom: 2px solid var(--border); margin-bottom: 0.75rem; }
+    .cmd-row { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 6px; overflow: hidden; }
+    .cmd-row:hover { box-shadow: 0 2px 8px rgba(124,92,191,.08); }
+    .cmd-summary { display: grid; grid-template-columns: minmax(180px,1fr) 2fr auto; align-items: center; padding: 11px 14px; cursor: pointer; gap: 10px; user-select: none; }
+    .cmd-summary:hover { background: var(--bg-inline); }
+    .cmd-name { font-family: 'Consolas','Courier New',monospace; font-weight: 700; color: var(--brand-primary); font-size: 0.9rem; }
+    .cmd-desc { color: var(--text-secondary); font-size: 0.875rem; }
+    .cmd-perm { font-size: 0.75rem; color: var(--text-secondary); font-family: monospace; text-align: right; white-space: nowrap; }
+    .cmd-expand-icon { display: inline-block; transition: transform .2s; color: var(--text-secondary); font-size: 0.7rem; margin-left: 6px; }
+    .cmd-row.open .cmd-expand-icon { transform: rotate(90deg); }
+    .cmd-detail { display: none; padding: 0 18px 18px; border-top: 1px solid var(--border); background: var(--bg-inline); }
+    .cmd-row.open .cmd-detail { display: block; }
+    .cmd-detail h4 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin: 14px 0 5px; }
+    .cmd-detail p, .cmd-detail li { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; }
+    .cmd-detail ul { margin: 4px 0; padding-left: 20px; }
+    .cmd-detail code { background: var(--bg-surface); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-family: 'Consolas','Courier New',monospace; border: 1px solid var(--border); }
+    .syntax-block { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius); font-family: 'Consolas','Courier New',monospace; font-size: 0.85rem; margin: 6px 0; overflow-x: auto; }
+    .syntax-block .required { color: #e05050; }
+    .syntax-block .optional { color: #4488cc; }
+    .example-block { background: var(--bg-surface); border-left: 3px solid var(--brand-primary); padding: 8px 12px; border-radius: 0 var(--radius) var(--radius) 0; margin: 5px 0; font-size: 0.85rem; }
+    .example-block code { background: transparent; border: none; padding: 0; color: var(--text-primary); font-weight: 600; }
+    .param-table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 0.85rem; }
+    .param-table th { background: var(--bg-page); color: var(--text-primary); text-align: left; padding: 7px 10px; border-bottom: 2px solid var(--border); }
+    .param-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .param-table tr:last-child td { border-bottom: none; }
+    .param-required { color: #cc2222; font-weight: 700; font-size: 0.75rem; }
+    .param-optional { color: #4488cc; font-size: 0.75rem; }
+    .cmd-screenshot { margin: 10px 0; border-radius: var(--radius); border: 1px solid var(--border); max-width: 100%; }
+    .screenshot-caption { font-size: 0.75rem; color: var(--text-secondary); margin-top: 3px; font-style: italic; }
+    .note-box { background: #fffae8; border-left: 3px solid #e8a820; padding: 8px 12px; border-radius: 0 var(--radius) var(--radius) 0; margin: 6px 0; font-size: 0.85rem; color: #6a5000; }
+    .no-results { text-align: center; color: var(--text-secondary); padding: 40px 20px; display: none; font-size: 1rem; }
+    @media (max-width: 600px) {
+      .cmd-summary { grid-template-columns: 1fr; gap: 3px; }
+      .cmd-perm { text-align: left; }
+    }
+  </style>
 </head>
 <body>
+<header class="site-header"><button class="sidebar-toggle">&#9776;</button><a class="site-logo" href="index.html">&#127803; Ammonite</a></header>
+<div class="site-body"><aside class="sidebar"></aside><div class="sidebar-backdrop"></div>
+<main class="content"><div class="content-inner">
+  <div class="breadcrumb"><a href="index.html">Home</a> &#8250; Commands</div>
+  <div class="page-header"><h1>Command Reference</h1><p>All commands use Discord slash command syntax. Click any command to see full details, usage examples, and screenshots.</p></div>
 
-    <div class="back">
-        <a href="index.html">&larr; Back to Home</a>
-    </div>
-
-    <div class="page-header">
-        <h1>Command Reference</h1>
-        <p>All commands use Discord slash command syntax. Click any command to see full details, usage examples, and screenshots.</p>
-    </div>
-
-    <div class="search-box">
-        <input type="text" id="cmdSearch" placeholder="Search commands..." oninput="filterCommands()">
-    </div>
-
+  <div class="cmd-controls">
+    <input type="text" id="cmdSearch" class="cmd-search" placeholder="Search commands..." oninput="filterCommands()">
     <div class="legend">
-        <span><span class="req-dot">&lt;required&gt;</span> = must be provided</span>
-        <span><span class="opt-dot">[optional]</span> = can be omitted</span>
+      <span><span class="req-dot">&lt;required&gt;</span> must be provided</span>
+      <span><span class="opt-dot">[optional]</span> can be omitted</span>
     </div>
-
     <div class="cat-nav">
-        <a href="#cat-moderation">Moderation</a>
-        <a href="#cat-economy">Economy</a>
-        <a href="#cat-leveling">Leveling</a>
-        <a href="#cat-games">Games</a>
-        <a href="#cat-configuration">Configuration</a>
-        <a href="#cat-proxy">Proxy System</a>
-        <a href="#cat-tickets">Tickets</a>
-        <a href="#cat-globalchat">Global Chat</a>
-        <a href="#cat-utility">Utility</a>
-        <a href="#cat-owner">Owner Only</a>
+      <a href="#cat-moderation">Moderation</a>
+      <a href="#cat-economy">Economy</a>
+      <a href="#cat-leveling">Leveling</a>
+      <a href="#cat-games">Games</a>
+      <a href="#cat-configuration">Configuration</a>
+      <a href="#cat-proxy">Proxy System</a>
+      <a href="#cat-tickets">Tickets</a>
+      <a href="#cat-globalchat">Global Chat</a>
+      <a href="#cat-utility">Utility</a>
+      <a href="#cat-owner">Owner Only</a>
     </div>
+  </div>
 
-    <div id="no-results" class="no-results">No commands found matching your search.</div>
+  <div id="no-results" class="no-results">No commands found matching your search.</div>
 
     <!-- ============================================================ -->
     <!-- MODERATION -->
@@ -1730,35 +1501,29 @@
         </div>
     </div>
 
-    <div class="footer">
-        <p>&copy; 2025 Ammonite &bull; <a href="index.html">Home</a> &bull; <a href="features.html">Features</a></p>
-    </div>
-
-    <script>
-        function toggleCmd(el) {
-            const row = el.closest('.cmd-row');
-            row.classList.toggle('open');
-        }
-
-        function filterCommands() {
-            const query = document.getElementById('cmdSearch').value.toLowerCase();
-            let anyVisible = false;
-
-            document.querySelectorAll('.cmd-row').forEach(row => {
-                const text = row.textContent.toLowerCase();
-                const match = text.includes(query);
-                row.style.display = match ? '' : 'none';
-                if (match) anyVisible = true;
-            });
-
-            document.querySelectorAll('.category-section').forEach(section => {
-                const hasVisible = Array.from(section.querySelectorAll('.cmd-row')).some(r => r.style.display !== 'none');
-                section.style.display = hasVisible ? '' : 'none';
-            });
-
-            document.getElementById('no-results').style.display = anyVisible ? 'none' : 'block';
-        }
-    </script>
-
+  <div class="page-nav"></div>
+</div></main></div>
+<script src="site.js"></script>
+<script>AmDoc.init("commands");</script>
+<script>
+function toggleCmd(el) {
+  var row = el.closest('.cmd-row');
+  row.classList.toggle('open');
+}
+function filterCommands() {
+  var query = document.getElementById('cmdSearch').value.toLowerCase();
+  var anyVisible = false;
+  document.querySelectorAll('.cmd-row').forEach(function(row) {
+    var match = row.textContent.toLowerCase().includes(query);
+    row.style.display = match ? '' : 'none';
+    if (match) anyVisible = true;
+  });
+  document.querySelectorAll('.category-section').forEach(function(section) {
+    var hasVisible = Array.from(section.querySelectorAll('.cmd-row')).some(function(r) { return r.style.display !== 'none'; });
+    section.style.display = hasVisible ? '' : 'none';
+  });
+  document.getElementById('no-results').style.display = anyVisible ? 'none' : 'block';
+}
+</script>
 </body>
 </html>

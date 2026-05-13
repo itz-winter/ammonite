@@ -1,386 +1,229 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Features — Ammonite</title>
-    <link rel="stylesheet" href="common.css">
-    <style>
-        .page-header {
-            text-align: center;
-            padding: 40px 20px 20px;
-            animation: fadeIn 0.4s ease;
-        }
-        .page-header h1 { color: #ffffff; font-size: 36px; }
-        .page-header p { color: #b0a0cc; font-size: 16px; }
-        .back { padding: 0 20px; max-width: 900px; margin: 0 auto; }
-        .back a { display: inline; color: #9080b0; font-size: 14px; }
-        .content {
-            max-width: 900px;
-            margin: 24px auto;
-            padding: 0 20px;
-        }
-        .feature-section {
-            background-color: #ffffff;
-            border: 1px solid #6f6f6f;
-            border-radius: 10px;
-            padding: 28px;
-            margin-bottom: 20px;
-            animation: fadeIn 0.4s ease;
-        }
-        .feature-section h2 {
-            text-align: left;
-            color: #0b0022;
-            font-size: 22px;
-            margin-top: 0;
-            margin-bottom: 12px;
-        }
-        .feature-section h3 {
-            color: #0b0022;
-            font-size: 17px;
-            margin-top: 18px;
-            margin-bottom: 8px;
-        }
-        .feature-section p, .feature-section li {
-            color: #333;
-            font-size: 15px;
-            line-height: 1.7;
-        }
-        .feature-section ul {
-            padding-left: 20px;
-        }
-        .feature-section li {
-            margin-bottom: 5px;
-        }
-        code {
-            background-color: #f0f0f0;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .highlight {
-            background-color: #f5f3fa;
-            padding: 12px 16px;
-            border-radius: 8px;
-            border-left: 4px solid #0b0022;
-            margin: 12px 0;
-        }
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-            margin: 16px 0;
-        }
-        .feature-card {
-            background-color: #f5f3fa;
-            padding: 14px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .feature-card strong {
-            display: block;
-            color: #0b0022;
-            margin-bottom: 4px;
-        }
-        .feature-card span {
-            font-size: 13px;
-            color: #666;
-        }
-        .nav-toc {
-            max-width: 900px;
-            margin: 0 auto 24px;
-            padding: 0 20px;
-        }
-        .nav-toc .container {
-            max-width: 100%;
-            padding: 20px 24px;
-        }
-        .nav-toc a {
-            display: inline-block;
-            margin: 4px 8px;
-            font-size: 15px;
-        }
-        .footer {
-            text-align: center;
-            padding: 40px 20px;
-            color: #6f6f6f;
-            font-size: 13px;
-        }
-        .footer a { display: inline; color: #9080b0; font-size: 13px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Features — Ammonite</title>
+  <link rel="stylesheet" href="common.css">
 </head>
 <body>
+<header class="site-header">
+  <button class="sidebar-toggle">&#9776;</button>
+  <a class="site-logo" href="index.html">&#127803; Ammonite</a>
+</header>
+<div class="site-body">
+  <aside class="sidebar"></aside>
+  <div class="sidebar-backdrop"></div>
+  <main class="content">
+    <div class="content-inner">
+      <div class="breadcrumb"><a href="index.html">Home</a> &#8250; Features</div>
+      <div class="page-header"><h1>Features</h1><p>An in-depth look at everything Ammonite can do.</p></div>
+      <div class="highlight"><strong>Jump to:</strong>
+        <a href="#moderation">Moderation</a> &bull; <a href="#economy">Economy</a> &bull; <a href="#leveling">Leveling</a> &bull; <a href="#games">Games</a> &bull; <a href="#proxy">Proxy</a> &bull; <a href="#globalchat">Global Chat</a> &bull; <a href="#tickets">Tickets</a> &bull; <a href="#automod">Auto-Mod</a> &bull; <a href="#logging">Logging</a> &bull; <a href="#welcome">Welcome</a> &bull; <a href="#suspicious">Suspicious</a> &bull; <a href="#misc">More</a>
+      </div>
 
-    <div class="back">
-        <a href="index.html">← Back to Home</a>
+      <div class="doc-section" id="moderation">
+        <h2>Moderation</h2>
+        <p>A full suite of moderation tools for managing your community.</p>
+        <h3>Commands</h3>
+        <ul>
+          <li><code>/ban</code> — Permanent or timed bans</li>
+          <li><code>/kick</code> — Kick members instantly</li>
+          <li><code>/mute</code> — Timed mutes with duration</li>
+          <li><code>/timeout</code> — Discord native timeout</li>
+          <li><code>/warn</code> — Warning system with history</li>
+          <li><code>/purge</code> — Bulk message deletion</li>
+          <li><code>/lockdown</code> — Channel lock/unlock</li>
+          <li><code>/softban</code> — Ban + unban to purge messages</li>
+        </ul>
+        <h3>Moderation History</h3>
+        <p>Every moderation action is logged and reviewable with <code>/hist &lt;user&gt;</code>. Warnings can be viewed with <code>/warns [user]</code> and removed with <code>/unwarn</code>.</p>
+        <h3>Punishment DM Notifications</h3>
+        <p>When enabled via <code>/punishment-dm</code>, users receive a DM when warned, muted, banned, or kicked. Users can also appeal punishments through the built-in appeal system.</p>
+      </div>
+
+      <div class="doc-section" id="economy">
+        <h2>Economy &amp; Banking</h2>
+        <p>A full virtual currency system with earning, spending, gambling, and banking.</p>
+        <h3>Earning</h3>
+        <ul>
+          <li><code>/daily</code> — Claim daily rewards (24h cooldown)</li>
+          <li><code>/work</code> — Work a random job to earn points</li>
+          <li><code>/rob &lt;user&gt;</code> — Risk robbing another user</li>
+        </ul>
+        <h3>Banking</h3>
+        <ul>
+          <li><code>/bank deposit &lt;amount&gt;</code> — Deposit into your bank (protected from robbery)</li>
+          <li><code>/bank withdraw &lt;amount&gt;</code> — Withdraw from your bank</li>
+          <li><code>/bank balance</code> — View bank and wallet balances</li>
+          <li>Loan system with interest and repayment tracking</li>
+        </ul>
+        <h3>Gambling</h3>
+        <ul>
+          <li><code>/blackjack</code> — Full blackjack with hit, stand, double</li>
+          <li><code>/poker</code> — Five-card draw poker</li>
+          <li><code>/flip</code> — Heads or tails coin flip</li>
+          <li><code>/dice</code> — Bet on dice rolls</li>
+          <li><code>/slots</code> — Slot machine with multipliers</li>
+        </ul>
+        <div class="callout callout-note"><strong>Note</strong>All currency is virtual with no real-world value. Economy can be toggled with <code>/points enable/disable</code>.</div>
+      </div>
+
+      <div class="doc-section" id="leveling">
+        <h2>Leveling System</h2>
+        <p>Members earn XP by chatting. XP accumulates and unlocks levels with configurable role rewards.</p>
+        <ul>
+          <li><strong>Automatic XP</strong> — users earn XP for messages (with cooldowns)</li>
+          <li><strong>Level-based roles</strong> — auto-assign roles at specific levels</li>
+          <li><code>/rank [user]</code> — view level, XP, and progress</li>
+          <li><code>/leaderboard</code> / <code>/lb</code> — server XP leaderboard</li>
+          <li><strong>Admin controls</strong> — <code>/xp</code> and <code>/level</code> to manage values</li>
+        </ul>
+        <div class="callout callout-tip"><strong>Tip</strong>Enable/disable with <code>/levels enable/disable</code>. Configure level roles through settings.</div>
+      </div>
+
+      <div class="doc-section" id="games">
+        <h2>Games</h2>
+        <h3>Chess</h3>
+        <ul>
+          <li>Play against another member or the <strong>bot AI</strong></li>
+          <li>Full chess rules with move validation</li>
+          <li>Interactive button-based interface for moves, draws, and resignation</li>
+          <li>Board rendered as text with emoji pieces</li>
+        </ul>
+        <h3>Poker</h3>
+        <ul>
+          <li>Five-card draw poker with betting</li>
+          <li>Hold and discard mechanics via buttons</li>
+          <li>Standard poker hand rankings and payouts</li>
+        </ul>
+      </div>
+
+      <div class="doc-section" id="proxy">
+        <h2>Proxy System</h2>
+        <p>A PluralKit-style proxy system that lets users send messages as different identities using webhooks.</p>
+        <h3>How It Works</h3>
+        <ol>
+          <li>Create a proxy member with <code>/proxy create &lt;name&gt;</code></li>
+          <li>Set proxy tags (prefix/suffix) — e.g., <code>{text}</code> sends as that member</li>
+          <li>Set a custom avatar with <code>/proxy avatar &lt;name&gt; &lt;url&gt;</code></li>
+          <li>Messages matching your tags are automatically proxied via webhooks</li>
+        </ol>
+        <h3>Features</h3>
+        <ul>
+          <li><strong>Multiple members</strong> — create as many proxy identities as you need</li>
+          <li><strong>Groups</strong> — organize members into groups</li>
+          <li><strong>Custom avatars</strong> — each member can have its own avatar</li>
+          <li><strong>Switch system</strong> — <code>/proxysettings switch &lt;member&gt;</code> to auto-proxy all messages</li>
+          <li><strong>Proxy indicator</strong> — servers can enable a <code>[proxied]</code> tag for transparency</li>
+        </ul>
+      </div>
+
+      <div class="doc-section" id="globalchat">
+        <h2>Cross-Server Global Chat</h2>
+        <p>Link channels across multiple servers so messages relay in real-time.</p>
+        <h3>How It Works</h3>
+        <ol>
+          <li>Create a channel with <code>/globalchat create &lt;name&gt;</code></li>
+          <li>Other admins join with <code>/globalchat join &lt;code&gt;</code></li>
+          <li>Messages relay to all linked channels via webhooks</li>
+        </ol>
+        <h3>Safety Features</h3>
+        <ul>
+          <li><strong>Attribution</strong> — relayed messages prefixed with <code>[GC]</code></li>
+          <li><strong>Rate limiting</strong> — 3-second per-user cooldown</li>
+          <li><strong>Content limits</strong> — 2000 chars, max 5 attachments</li>
+          <li><strong>Server muting</strong> — mute specific servers from sending or receiving</li>
+          <li><strong>Moderation</strong> — owners can kick/ban servers</li>
+        </ul>
+      </div>
+
+      <div class="doc-section" id="tickets">
+        <h2>Ticket System</h2>
+        <p>A support ticket system for managing user inquiries and issues.</p>
+        <ul>
+          <li><strong>Ticket panels</strong> — create embed panels with a button to open tickets</li>
+          <li><strong>Auto-creation</strong> — clicking creates a private channel for user and staff</li>
+          <li><strong>Close &amp; archive</strong> — tickets can be closed, archived, or deleted</li>
+          <li><strong>Transcript logging</strong> — ticket conversations can be logged for review</li>
+        </ul>
+      </div>
+
+      <div class="doc-section" id="automod">
+        <h2>Auto-Moderation</h2>
+        <p>Automated message filtering to keep your server clean.</p>
+        <ul>
+          <li><strong>Spam detection</strong> — configurable thresholds for rapid messages</li>
+          <li><strong>Link filtering</strong> — block or whitelist specific domains</li>
+          <li><strong>Mention spam</strong> — limit mass mentions</li>
+          <li><strong>Caps filter</strong> — detect excessive caps</li>
+          <li><strong>Invite blocking</strong> — remove Discord invite links</li>
+          <li><strong>Word blacklist/whitelist</strong> — custom word filtering</li>
+          <li><strong>Bypass permission</strong> — users with <code>automod.bypass</code> are exempt</li>
+        </ul>
+        <p>Configure with <code>/automod config</code> and <code>/antispam</code>.</p>
+      </div>
+
+      <div class="doc-section" id="logging">
+        <h2>Comprehensive Logging</h2>
+        <p>Log server events to designated channels for transparency and record-keeping.</p>
+        <ul>
+          <li><strong>Message logs</strong> — edits, deletions, and bulk deletes</li>
+          <li><strong>Moderation logs</strong> — bans, kicks, mutes, warns</li>
+          <li><strong>Join/leave logs</strong> — member join, leave, and role changes</li>
+          <li><strong>Manual logs</strong> — <code>/log</code> for staff to create manual entries</li>
+          <li><strong>Selective log types</strong> — configure which events go to which channels with <code>/logchannel</code></li>
+        </ul>
+      </div>
+
+      <div class="doc-section" id="welcome">
+        <h2>Welcome System</h2>
+        <ul>
+          <li><strong>Welcome messages</strong> — customizable messages when members join</li>
+          <li><strong>Auto-roles</strong> — automatically assign roles to new members</li>
+          <li><strong>Variable support</strong> — placeholders for user names, server names, member counts</li>
+        </ul>
+        <p>Configure with <code>/welcome</code>.</p>
+      </div>
+
+      <div class="doc-section" id="suspicious">
+        <h2>Suspicious Account Detection</h2>
+        <p>Automated system that analyzes new members and flags potentially suspicious accounts.</p>
+        <ul>
+          <li><strong>Account age analysis</strong> — flags very new accounts</li>
+          <li><strong>Pattern detection</strong> — identifies bot-like username patterns</li>
+          <li><strong>Risk scoring</strong> — multi-factor suspicion level calculation</li>
+          <li><strong>Admin notifications</strong> — alerts sent to designated channels</li>
+          <li><strong>Validate/invalidate</strong> — staff can mark accounts as safe or suspicious</li>
+          <li><strong>Global masterlist</strong> — cross-server suspicious user tracking</li>
+        </ul>
+      </div>
+
+      <div class="doc-section" id="misc">
+        <h2>Role Persistence</h2>
+        <p>When a member leaves and rejoins, their roles are automatically restored. Configurable expiry period. Enable/disable with <code>/rolepersistence</code>.</p>
+        <h2>Reaction Roles</h2>
+        <p>Let members self-assign roles by reacting to messages. Create panels with <code>/reactionrole</code>. Supports custom and Unicode emojis.</p>
+        <h2>Pride &amp; Inclusivity</h2>
+        <ul>
+          <li><code>/pride &lt;flag&gt;</code> — apply pride flag overlays to your avatar</li>
+          <li><code>/flags</code> — list all available pride flags</li>
+          <li><code>/pronouns</code> — set pronoun roles for yourself</li>
+        </ul>
+        <h2>Server Backups</h2>
+        <p>Create and restore snapshots of your server configuration with <code>/backup create</code> and <code>/backup restore</code>.</p>
+        <h2>Privacy &amp; Data</h2>
+        <ul>
+          <li><code>/privacy</code> — view the privacy policy in Discord</li>
+          <li><code>/deletedata</code> — permanently delete all your personal data</li>
+        </ul>
+      </div>
+
+      <div class="page-nav"></div>
     </div>
-
-    <div class="page-header">
-        <h1>Features</h1>
-        <p>An in-depth look at everything Ammonite can do.</p>
-    </div>
-
-    <div class="nav-toc">
-        <div class="container">
-            <strong>Jump to:</strong>
-            <a href="#moderation">Moderation</a>
-            <a href="#economy">Economy</a>
-            <a href="#leveling">Leveling</a>
-            <a href="#games">Games</a>
-            <a href="#proxy">Proxy</a>
-            <a href="#globalchat">Global Chat</a>
-            <a href="#tickets">Tickets</a>
-            <a href="#automod">Auto-Mod</a>
-            <a href="#logging">Logging</a>
-            <a href="#welcome">Welcome</a>
-            <a href="#suspicious">Suspicious Detection</a>
-            <a href="#misc">More</a>
-        </div>
-    </div>
-
-    <div class="content">
-
-        <!-- Moderation -->
-        <div class="feature-section" id="moderation">
-            <h2>Moderation</h2>
-            <p>A full suite of moderation tools for managing your community.</p>
-            <div class="feature-grid">
-                <div class="feature-card"><strong>/ban</strong><span>Permanent or timed bans</span></div>
-                <div class="feature-card"><strong>/kick</strong><span>Kick members instantly</span></div>
-                <div class="feature-card"><strong>/mute</strong><span>Timed mutes with duration</span></div>
-                <div class="feature-card"><strong>/timeout</strong><span>Discord native timeout</span></div>
-                <div class="feature-card"><strong>/warn</strong><span>Warning system with history</span></div>
-                <div class="feature-card"><strong>/purge</strong><span>Bulk message deletion</span></div>
-                <div class="feature-card"><strong>/lockdown</strong><span>Channel lock/unlock</span></div>
-                <div class="feature-card"><strong>/softban</strong><span>Ban + unban to purge msgs</span></div>
-            </div>
-            <h3>Moderation History</h3>
-            <p>Every moderation action is logged and can be reviewed with <code>/hist &lt;user&gt;</code>. Warnings can be viewed with <code>/warns [user]</code> and removed with <code>/unwarn</code>.</p>
-            <h3>Punishment DM Notifications</h3>
-            <p>When enabled via <code>/punishment-dm</code>, users receive a DM notification when they are warned, muted, banned, or kicked — including the reason and duration. Users can also appeal punishments through the built-in appeal system.</p>
-        </div>
-
-        <!-- Economy -->
-        <div class="feature-section" id="economy">
-            <h2>Economy &amp; Banking</h2>
-            <p>A full virtual currency system with earning, spending, gambling, and banking.</p>
-            <h3>Earning</h3>
-            <ul>
-                <li><code>/daily</code> — Claim daily rewards (24h cooldown)</li>
-                <li><code>/work</code> — Work a random job to earn points</li>
-                <li><code>/rob &lt;user&gt;</code> — Risk robbing another user for their points</li>
-            </ul>
-            <h3>Spending &amp; Trading</h3>
-            <ul>
-                <li><code>/pay &lt;user&gt; &lt;amount&gt;</code> — Transfer points to another user</li>
-                <li><code>/chargeback &lt;id&gt; &lt;reason&gt;</code> — Reverse a transaction (admin)</li>
-            </ul>
-            <h3>Banking</h3>
-            <ul>
-                <li><code>/bank deposit &lt;amount&gt;</code> — Deposit into your bank (protected from robbery)</li>
-                <li><code>/bank withdraw &lt;amount&gt;</code> — Withdraw from your bank</li>
-                <li><code>/bank balance</code> — View bank and wallet balances</li>
-                <li>Loan system with interest and repayment tracking</li>
-            </ul>
-            <h3>Gambling</h3>
-            <div class="feature-grid">
-                <div class="feature-card"><strong>/blackjack</strong><span>Full blackjack with hit, stand, double</span></div>
-                <div class="feature-card"><strong>/poker</strong><span>Five-card draw poker</span></div>
-                <div class="feature-card"><strong>/flip</strong><span>Heads or tails coin flip</span></div>
-                <div class="feature-card"><strong>/dice</strong><span>Bet on dice rolls</span></div>
-                <div class="feature-card"><strong>/slots</strong><span>Slot machine with multipliers</span></div>
-                <div class="feature-card"><strong>/gamble</strong><span>Multi-game gambling menu</span></div>
-            </div>
-            <div class="highlight">
-                <strong>Note:</strong> All currency is virtual and has no real-world value. Economy can be enabled/disabled per-server with <code>/points enable/disable</code>.
-            </div>
-        </div>
-
-        <!-- Leveling -->
-        <div class="feature-section" id="leveling">
-            <h2>Leveling System</h2>
-            <p>Members earn XP by chatting. XP accumulates and unlocks levels with configurable role rewards.</p>
-            <ul>
-                <li><strong>Automatic XP</strong> — users earn XP for sending messages (with cooldowns to prevent spam).</li>
-                <li><strong>Level-based roles</strong> — automatically assign roles when users reach specific levels.</li>
-                <li><code>/rank [user]</code> — view your level, XP, and progress to the next level.</li>
-                <li><code>/leaderboard</code> / <code>/lb</code> — see the server's XP leaderboard.</li>
-                <li><strong>Admin controls</strong> — <code>/xp</code> and <code>/level</code> commands to add, subtract, or set values.</li>
-            </ul>
-            <div class="highlight">
-                Enable/disable the leveling system with <code>/levels enable/disable</code>. Configure level roles through the settings.
-            </div>
-        </div>
-
-        <!-- Games -->
-        <div class="feature-section" id="games">
-            <h2>Games</h2>
-            <h3>Chess</h3>
-            <ul>
-                <li>Play against another member or the <strong>bot AI</strong></li>
-                <li>Full chess rules with move validation</li>
-                <li>Interactive button-based interface for making moves, offering draws, and resigning</li>
-                <li>Board rendered as text with emoji pieces</li>
-            </ul>
-            <h3>Poker</h3>
-            <ul>
-                <li>Five-card draw poker with betting</li>
-                <li>Hold and discard mechanics via buttons</li>
-                <li>Standard poker hand rankings and payouts</li>
-            </ul>
-        </div>
-
-        <!-- Proxy System -->
-        <div class="feature-section" id="proxy">
-            <h2>Proxy System</h2>
-            <p>A PluralKit-style proxy system that lets users send messages as different identities using webhooks.</p>
-            <h3>How It Works</h3>
-            <ol>
-                <li>Create a proxy member with <code>/proxy create &lt;name&gt;</code></li>
-                <li>Set proxy tags (prefix/suffix) — e.g., <code>text</code> so typing <code>{Hello!}</code> sends as that member</li>
-                <li>Set a custom avatar with <code>/proxy avatar &lt;name&gt; &lt;url&gt;</code></li>
-                <li>Messages matching your tags are automatically proxied via webhooks</li>
-            </ol>
-            <h3>Features</h3>
-            <ul>
-                <li><strong>Multiple members</strong> — create as many proxy identities as you need</li>
-                <li><strong>Groups</strong> — organize members into groups</li>
-                <li><strong>Custom avatars</strong> — each member can have its own avatar</li>
-                <li><strong>Guild-specific or global</strong> — proxies can work in one server or all</li>
-                <li><strong>Switch system</strong> — <code>/proxysettings switch &lt;member&gt;</code> to auto-proxy all messages</li>
-                <li><strong>Proxy indicator</strong> — servers can enable <code>[proxied]</code> tag for transparency</li>
-            </ul>
-        </div>
-
-        <!-- Global Chat -->
-        <div class="feature-section" id="globalchat">
-            <h2>Cross-Server Global Chat</h2>
-            <p>Link channels across multiple servers so messages relay in real-time.</p>
-            <h3>How It Works</h3>
-            <ol>
-                <li>Create a global chat channel with <code>/globalchat create &lt;name&gt;</code></li>
-                <li>Link servers by having admins join with <code>/globalchat join &lt;code&gt;</code></li>
-                <li>Messages sent in linked channels are relayed to all other linked channels via webhooks</li>
-            </ol>
-            <h3>Safety Features</h3>
-            <ul>
-                <li><strong>Attribution</strong> — relayed messages are prefixed with <code>[GC]</code> in the webhook username for clear distinction from real users</li>
-                <li><strong>Rate limiting</strong> — 3-second per-user cooldown to prevent spam</li>
-                <li><strong>Content limits</strong> — messages capped at 2000 characters, max 5 attachments</li>
-                <li><strong>Server muting</strong> — mute specific servers from sending or receiving</li>
-                <li><strong>Moderation</strong> — global chat owners can kick/ban servers</li>
-                <li><strong>Rules</strong> — set channel-specific rules viewable by all linked servers</li>
-            </ul>
-        </div>
-
-        <!-- Tickets -->
-        <div class="feature-section" id="tickets">
-            <h2>Ticket System</h2>
-            <p>A support ticket system for managing user inquiries and issues.</p>
-            <ul>
-                <li><strong>Ticket panels</strong> — create embed panels with a button to open tickets</li>
-                <li><strong>Auto-creation</strong> — clicking the button creates a private channel for the user and staff</li>
-                <li><strong>Close &amp; archive</strong> — tickets can be closed, archived, or deleted</li>
-                <li><strong>Transcript logging</strong> — ticket conversations can be logged for review</li>
-            </ul>
-        </div>
-
-        <!-- Auto-Moderation -->
-        <div class="feature-section" id="automod">
-            <h2>Auto-Moderation</h2>
-            <p>Automated message filtering to keep your server clean.</p>
-            <ul>
-                <li><strong>Spam detection</strong> — configurable thresholds for rapid message sending</li>
-                <li><strong>Link filtering</strong> — block or whitelist specific domains</li>
-                <li><strong>Mention spam</strong> — limit mass mentions</li>
-                <li><strong>Caps filter</strong> — detect and act on excessive caps</li>
-                <li><strong>Invite blocking</strong> — automatically remove Discord invite links</li>
-                <li><strong>Word blacklist/whitelist</strong> — custom word filtering</li>
-                <li><strong>Bypass permission</strong> — users with <code>automod.bypass</code> are exempt</li>
-            </ul>
-            <p>Configure with <code>/automod config</code> and <code>/antispam</code>.</p>
-        </div>
-
-        <!-- Logging -->
-        <div class="feature-section" id="logging">
-            <h2>Comprehensive Logging</h2>
-            <p>Log server events to designated channels for transparency and record-keeping.</p>
-            <ul>
-                <li><strong>Message logs</strong> — edits, deletions, and bulk deletes</li>
-                <li><strong>Moderation logs</strong> — bans, kicks, mutes, warns, and all mod actions</li>
-                <li><strong>Join/leave logs</strong> — member join, leave, and role changes</li>
-                <li><strong>Auto-logging</strong> — automatically detect and log events</li>
-                <li><strong>Manual logs</strong> — <code>/log</code> for staff to create manual entries</li>
-                <li><strong>Selective log types</strong> — <code>/logchannel</code> to configure which events go to which channels</li>
-            </ul>
-        </div>
-
-        <!-- Welcome -->
-        <div class="feature-section" id="welcome">
-            <h2>Welcome System</h2>
-            <ul>
-                <li><strong>Welcome messages</strong> — customizable messages when members join</li>
-                <li><strong>Auto-roles</strong> — automatically assign roles to new members</li>
-                <li><strong>Configurable channel</strong> — choose which channel receives welcome messages</li>
-                <li><strong>Variable support</strong> — use placeholders for user names, server names, member counts, etc.</li>
-            </ul>
-            <p>Configure with <code>/welcome</code>.</p>
-        </div>
-
-        <!-- Suspicious Account Detection -->
-        <div class="feature-section" id="suspicious">
-            <h2>Suspicious Account Detection</h2>
-            <p>Automated system that analyzes new members and flags potentially suspicious accounts.</p>
-            <ul>
-                <li><strong>Account age analysis</strong> — flags very new accounts</li>
-                <li><strong>Pattern detection</strong> — identifies bot-like username patterns</li>
-                <li><strong>Risk scoring</strong> — multi-factor suspicion level calculation</li>
-                <li><strong>Admin notifications</strong> — alerts sent to designated channels or DMs</li>
-                <li><strong>Validate/invalidate</strong> — staff can mark accounts as safe or suspicious</li>
-                <li><strong>Global masterlist</strong> — bot-owner managed cross-server suspicious user tracking</li>
-            </ul>
-            <p>Configure notifications with <code>/suspiciousnotify</code>. Manage the masterlist with <code>/suspiciouslist</code>.</p>
-        </div>
-
-        <!-- Role Persistence & Reaction Roles -->
-        <div class="feature-section" id="misc">
-            <h2>Role Persistence</h2>
-            <p>When a member leaves and rejoins the server, their roles can be automatically restored.</p>
-            <ul>
-                <li>Configurable expiry period — roles are stored for a set duration</li>
-                <li>Enable/disable with <code>/rolepersistence</code></li>
-            </ul>
-
-            <h2 style="margin-top: 28px;">Reaction Roles</h2>
-            <p>Let members self-assign roles by reacting to messages.</p>
-            <ul>
-                <li>Create reaction role panels with <code>/reactionrole</code></li>
-                <li>Supports custom and Unicode emojis</li>
-                <li>Add or remove roles by clicking reactions</li>
-            </ul>
-
-            <h2 style="margin-top: 28px;">Pride &amp; Inclusivity</h2>
-            <ul>
-                <li><code>/pride &lt;flag&gt;</code> — apply pride flag overlays to your avatar</li>
-                <li><code>/flags</code> — list all available pride flags</li>
-                <li><code>/pronouns</code> — set pronoun roles for yourself</li>
-            </ul>
-
-            <h2 style="margin-top: 28px;">Server Backups</h2>
-            <p>Create and restore snapshots of your server configuration with <code>/backup create</code> and <code>/backup restore</code>. Backups include settings, permissions, logging config, and more.</p>
-
-            <h2 style="margin-top: 28px;">Privacy &amp; Data</h2>
-            <ul>
-                <li><code>/privacy</code> — view the bot's privacy policy directly in Discord</li>
-                <li><code>/deletedata</code> — permanently delete all your personal data with confirmation</li>
-            </ul>
-        </div>
-
-    </div>
-
-    <div class="footer">
-        <p>&copy; 2026 Ammonite &bull; <a href="index.html">Home</a> &bull; <a href="commands.html">Commands</a></p>
-    </div>
-
+  </main>
+</div>
+<script src="site.js"></script>
+<script>AmDoc.init("features");</script>
 </body>
 </html>

@@ -1,386 +1,235 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Permissions — Ammonite</title>
-    <link rel="stylesheet" href="common.css">
-    <style>
-        .page-header {
-            text-align: center;
-            padding: 40px 20px 20px;
-            animation: fadeIn 0.4s ease;
-        }
-        .page-header h1 { color: #ffffff; font-size: 36px; }
-        .page-header p { color: #b0a0cc; font-size: 16px; }
-        .back { padding: 0 20px; max-width: 900px; margin: 0 auto; }
-        .back a { display: inline; color: #9080b0; font-size: 14px; }
-        .content {
-            max-width: 900px;
-            margin: 24px auto;
-            padding: 0 20px;
-        }
-        .section {
-            background-color: #ffffff;
-            border: 1px solid #6f6f6f;
-            border-radius: 10px;
-            padding: 28px;
-            margin-bottom: 20px;
-            animation: fadeIn 0.4s ease;
-        }
-        .section h2 {
-            text-align: left;
-            color: #0b0022;
-            font-size: 22px;
-            margin-top: 0;
-            margin-bottom: 12px;
-        }
-        .section h3 {
-            color: #0b0022;
-            font-size: 18px;
-            margin-top: 20px;
-            margin-bottom: 8px;
-        }
-        .section p, .section li {
-            color: #333;
-            font-size: 15px;
-            line-height: 1.7;
-        }
-        .section ul, .section ol {
-            padding-left: 20px;
-        }
-        .section li {
-            margin-bottom: 4px;
-        }
-        .node-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 12px 0;
-        }
-        .node-table th {
-            background-color: #0b0022;
-            color: #ffffff;
-            text-align: left;
-            padding: 10px 14px;
-            font-size: 14px;
-        }
-        .node-table td {
-            padding: 8px 14px;
-            border-top: 1px solid #e0e0e0;
-            font-size: 14px;
-        }
-        .node-table tr:hover td {
-            background-color: #f5f3fa;
-        }
-        .node-name {
-            font-family: monospace;
-            font-weight: bold;
-            color: #0b0022;
-            white-space: nowrap;
-        }
-        code {
-            background-color: #f0f0f0;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .code-block {
-            background-color: #1a0a3e;
-            color: #e0d8f0;
-            padding: 16px 20px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 14px;
-            line-height: 1.8;
-            overflow-x: auto;
-            margin: 12px 0;
-        }
-        .code-comment { color: #7a6a9a; }
-        .hierarchy-flow {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin: 16px 0;
-        }
-        .hierarchy-box {
-            background-color: #0b0022;
-            color: #ffffff;
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            text-align: center;
-        }
-        .hierarchy-arrow {
-            color: #6f6f6f;
-            font-size: 20px;
-        }
-        .highlight {
-            background-color: #f5f3fa;
-            padding: 12px 16px;
-            border-radius: 8px;
-            border-left: 4px solid #0b0022;
-            margin: 12px 0;
-        }
-        .footer {
-            text-align: center;
-            padding: 40px 20px;
-            color: #6f6f6f;
-            font-size: 13px;
-        }
-        .footer a { display: inline; color: #9080b0; font-size: 13px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Permissions — Ammonite</title>
+  <link rel="stylesheet" href="common.css">
 </head>
 <body>
+<header class="site-header">
+  <button class="sidebar-toggle">&#9776;</button>
+  <a class="site-logo" href="index.html">&#127803; Ammonite</a>
+</header>
+<div class="site-body">
+  <aside class="sidebar"></aside>
+  <div class="sidebar-backdrop"></div>
+  <main class="content">
+    <div class="content-inner">
+      <div class="breadcrumb"><a href="index.html">Home</a> &#8250; Permissions</div>
+      <div class="page-header"><h1>Permission System</h1><p>Fine-grained, node-based permissions with hierarchical checking and wildcard support.</p></div>
 
-    <div class="back">
-        <a href="index.html">← Back to Home</a>
-    </div>
+      <div class="doc-section">
+        <h2>How It Works</h2>
+        <p>Ammonite uses a <strong>node-based permission system</strong> similar to Bukkit/Spigot plugins. Every action is gated behind a permission node (e.g., <code>mod.ban</code>, <code>economy.daily</code>). Admins can grant or deny these nodes at the user, role, or @everyone level.</p>
+        <p>Nodes are organized hierarchically using dot notation. Use <strong>wildcards</strong> to grant entire categories at once (e.g., <code>mod.*</code> grants all moderation permissions).</p>
+      </div>
 
-    <div class="page-header">
-        <h1>Permission System</h1>
-        <p>Fine-grained, node-based permissions with hierarchical checking and wildcard support.</p>
-    </div>
-
-    <div class="content">
-
-        <!-- How It Works -->
-        <div class="section">
-            <h2>How It Works</h2>
-            <p>Ammonite uses a <strong>node-based permission system</strong> similar to Bukkit/Spigot Minecraft plugins. Every action in the bot is gated behind a permission node (e.g., <code>mod.ban</code>, <code>economy.daily</code>). Admins can grant or deny these nodes at the user, role, or @everyone level.</p>
-            <p>Nodes are organized hierarchically using dot notation. You can use <strong>wildcards</strong> to grant entire categories at once (e.g., <code>mod.*</code> grants all moderation permissions).</p>
+      <div class="doc-section">
+        <h2>Permission Hierarchy</h2>
+        <p>Permissions are evaluated in this order (highest priority first):</p>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:1rem 0;">
+          <span style="background:var(--brand-primary);color:#fff;padding:8px 16px;border-radius:var(--radius);font-size:0.85rem;font-weight:700;">1. User-specific</span>
+          <span style="color:var(--text-muted);font-size:1.2rem;">&#8594;</span>
+          <span style="background:var(--brand-primary);color:#fff;padding:8px 16px;border-radius:var(--radius);font-size:0.85rem;font-weight:700;">2. Role permissions</span>
+          <span style="color:var(--text-muted);font-size:1.2rem;">&#8594;</span>
+          <span style="background:var(--brand-primary);color:#fff;padding:8px 16px;border-radius:var(--radius);font-size:0.85rem;font-weight:700;">3. @everyone</span>
+          <span style="color:var(--text-muted);font-size:1.2rem;">&#8594;</span>
+          <span style="background:var(--brand-primary);color:#fff;padding:8px 16px;border-radius:var(--radius);font-size:0.85rem;font-weight:700;">4. Built-in defaults</span>
         </div>
+        <ul>
+          <li><strong>User-specific</strong> — permissions set directly on a user always win.</li>
+          <li><strong>Role</strong> — users inherit from all their roles. If any role grants the permission, it's allowed (unless a user-level override denies it).</li>
+          <li><strong>@everyone</strong> — server-wide defaults for all members.</li>
+          <li><strong>Built-in defaults</strong> — the bot's hardcoded defaults (basic utility allowed, everything else denied).</li>
+        </ul>
+      </div>
 
-        <!-- Permission Hierarchy -->
-        <div class="section">
-            <h2>Permission Hierarchy</h2>
-            <p>When the bot checks a permission, it evaluates in this order (highest priority first):</p>
-            <div class="hierarchy-flow">
-                <div class="hierarchy-box">1. User-specific</div>
-                <span class="hierarchy-arrow">→</span>
-                <div class="hierarchy-box">2. Role permissions</div>
-                <span class="hierarchy-arrow">→</span>
-                <div class="hierarchy-box">3. @everyone</div>
-                <span class="hierarchy-arrow">→</span>
-                <div class="hierarchy-box">4. Built-in defaults</div>
-            </div>
-            <ul>
-                <li><strong>User-specific</strong> — permissions set directly on a user always win.</li>
-                <li><strong>Role</strong> — users inherit from all their roles. If any role grants the permission, it's allowed (unless a user-level override denies it).</li>
-                <li><strong>@everyone</strong> — server-wide defaults for all members.</li>
-                <li><strong>Built-in defaults</strong> — the bot's hardcoded defaults (basic utility commands allowed, everything else denied).</li>
-            </ul>
-        </div>
+      <div class="doc-section">
+        <h2>Wildcard Permissions</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Wildcard</th><th>Effect</th></tr></thead>
+          <tbody>
+            <tr><td><code>*</code></td><td>Grants <strong>all</strong> permissions (use with extreme caution)</td></tr>
+            <tr><td><code>mod.*</code></td><td>Grants all moderation permissions</td></tr>
+            <tr><td><code>economy.*</code></td><td>Grants all economy permissions</td></tr>
+            <tr><td><code>economy.games.*</code></td><td>Grants all gambling game permissions</td></tr>
+            <tr><td><code>leveling.*</code></td><td>Grants all leveling permissions</td></tr>
+            <tr><td><code>leveling.admin.*</code></td><td>Grants all leveling admin permissions</td></tr>
+            <tr><td><code>logging.*</code></td><td>Grants all logging permissions</td></tr>
+            <tr><td><code>automod.*</code></td><td>Grants all auto-moderation permissions</td></tr>
+            <tr><td><code>admin.*</code></td><td>Grants all admin permissions</td></tr>
+          </tbody>
+        </table></div>
+      </div>
 
-        <!-- Wildcard Permissions -->
-        <div class="section">
-            <h2>Wildcard Permissions</h2>
-            <p>Use <code>*</code> at any level to grant all nodes in that category:</p>
-            <table class="node-table">
-                <thead><tr><th>Wildcard</th><th>Effect</th></tr></thead>
-                <tbody>
-                    <tr><td class="node-name">*</td><td>Grants <strong>all</strong> permissions (use with extreme caution)</td></tr>
-                    <tr><td class="node-name">mod.*</td><td>Grants all moderation permissions (ban, kick, warn, etc.)</td></tr>
-                    <tr><td class="node-name">economy.*</td><td>Grants all economy permissions (balance, daily, games, admin)</td></tr>
-                    <tr><td class="node-name">economy.games.*</td><td>Grants all gambling game permissions</td></tr>
-                    <tr><td class="node-name">leveling.*</td><td>Grants all leveling permissions</td></tr>
-                    <tr><td class="node-name">leveling.admin.*</td><td>Grants all leveling admin permissions</td></tr>
-                    <tr><td class="node-name">logging.*</td><td>Grants all logging permissions</td></tr>
-                    <tr><td class="node-name">automod.*</td><td>Grants all auto-moderation permissions</td></tr>
-                    <tr><td class="node-name">admin.*</td><td>Grants all admin permissions</td></tr>
-                </tbody>
-            </table>
-        </div>
+      <div class="doc-section">
+        <h2>All Permission Nodes</h2>
+        <h3>Auto-Moderation (<code>automod.*</code>)</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Node</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>automod.enable</code></td><td>Enable auto-moderation</td></tr>
+            <tr><td><code>automod.disable</code></td><td>Disable auto-moderation</td></tr>
+            <tr><td><code>automod.spam</code></td><td>Configure spam protection</td></tr>
+            <tr><td><code>automod.links</code></td><td>Configure link protection</td></tr>
+            <tr><td><code>automod.mentions</code></td><td>Configure mention protection</td></tr>
+            <tr><td><code>automod.caps</code></td><td>Configure caps protection</td></tr>
+            <tr><td><code>automod.invites</code></td><td>Configure invite protection</td></tr>
+            <tr><td><code>automod.blacklist</code></td><td>Manage blacklisted words</td></tr>
+            <tr><td><code>automod.whitelist</code></td><td>Manage whitelisted words</td></tr>
+            <tr><td><code>automod.bypass</code></td><td>Bypass auto-moderation</td></tr>
+          </tbody>
+        </table></div>
+        <h3>Moderation (<code>mod.*</code>)</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Node</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>mod.kick</code></td><td>Kick members</td></tr>
+            <tr><td><code>mod.ban</code></td><td>Ban members</td></tr>
+            <tr><td><code>mod.unban</code></td><td>Unban members</td></tr>
+            <tr><td><code>mod.warn</code></td><td>Warn members</td></tr>
+            <tr><td><code>mod.unwarn</code></td><td>Remove warnings</td></tr>
+            <tr><td><code>mod.mute</code></td><td>Mute members</td></tr>
+            <tr><td><code>mod.unmute</code></td><td>Unmute members</td></tr>
+            <tr><td><code>mod.purge</code></td><td>Purge messages</td></tr>
+            <tr><td><code>mod.lockdown</code></td><td>Lock/unlock channels</td></tr>
+            <tr><td><code>mod.slowmode</code></td><td>Manage slowmode</td></tr>
+          </tbody>
+        </table></div>
+        <h3>Economy (<code>economy.*</code>)</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Node</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>economy.balance</code></td><td>View balances</td></tr>
+            <tr><td><code>economy.daily</code></td><td>Claim daily rewards</td></tr>
+            <tr><td><code>economy.work</code></td><td>Use work command</td></tr>
+            <tr><td><code>economy.pay</code></td><td>Pay other users</td></tr>
+            <tr><td><code>economy.rob</code></td><td>Rob other users</td></tr>
+            <tr><td><code>economy.baltop</code></td><td>View balance leaderboard</td></tr>
+            <tr><td><code>economy.games.flip</code></td><td>Play coin flip</td></tr>
+            <tr><td><code>economy.games.dice</code></td><td>Play dice game</td></tr>
+            <tr><td><code>economy.games.slots</code></td><td>Play slot machine</td></tr>
+            <tr><td><code>economy.games.blackjack</code></td><td>Play blackjack</td></tr>
+            <tr><td><code>economy.admin.add</code></td><td>Add points to users</td></tr>
+            <tr><td><code>economy.admin.remove</code></td><td>Remove points from users</td></tr>
+            <tr><td><code>economy.admin.set</code></td><td>Set user balances</td></tr>
+          </tbody>
+        </table></div>
+        <h3>Leveling (<code>leveling.*</code>)</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Node</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>leveling.rank</code></td><td>View own rank</td></tr>
+            <tr><td><code>leveling.level</code></td><td>View levels</td></tr>
+            <tr><td><code>leveling.xp</code></td><td>View XP</td></tr>
+            <tr><td><code>leveling.leaderboard</code></td><td>View XP leaderboard</td></tr>
+            <tr><td><code>leveling.admin.add</code></td><td>Add XP to users</td></tr>
+            <tr><td><code>leveling.admin.remove</code></td><td>Remove XP from users</td></tr>
+            <tr><td><code>leveling.admin.set</code></td><td>Set user XP/levels</td></tr>
+          </tbody>
+        </table></div>
+        <h3>Logging (<code>logging.*</code>)</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Node</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>logging.view</code></td><td>View log settings</td></tr>
+            <tr><td><code>logging.channel</code></td><td>Set log channels</td></tr>
+            <tr><td><code>logging.enable</code></td><td>Enable logging</td></tr>
+            <tr><td><code>logging.disable</code></td><td>Disable logging</td></tr>
+            <tr><td><code>logging.events.messages</code></td><td>Configure message logging</td></tr>
+            <tr><td><code>logging.events.joins</code></td><td>Configure join logging</td></tr>
+            <tr><td><code>logging.events.leaves</code></td><td>Configure leave logging</td></tr>
+            <tr><td><code>logging.events.bans</code></td><td>Configure ban logging</td></tr>
+            <tr><td><code>logging.events.roles</code></td><td>Configure role logging</td></tr>
+          </tbody>
+        </table></div>
+        <h3>Utility (<code>utility.*</code>)</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Node</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>utility.ping</code></td><td>Use ping command</td></tr>
+            <tr><td><code>utility.info</code></td><td>View bot info</td></tr>
+            <tr><td><code>utility.help</code></td><td>Access help system</td></tr>
+            <tr><td><code>utility.status</code></td><td>View bot status</td></tr>
+            <tr><td><code>utility.echo</code></td><td>Use echo command</td></tr>
+          </tbody>
+        </table></div>
+        <h3>Rules (<code>rules.*</code>)</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Node</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>rules.view</code></td><td>View server rules</td></tr>
+            <tr><td><code>rules.add</code></td><td>Add new rules</td></tr>
+            <tr><td><code>rules.remove</code></td><td>Remove rules</td></tr>
+            <tr><td><code>rules.edit</code></td><td>Edit existing rules</td></tr>
+            <tr><td><code>rules.list</code></td><td>List all rules</td></tr>
+          </tbody>
+        </table></div>
+        <h3>Admin (<code>admin.*</code>)</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Node</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>admin.restart</code></td><td>Restart bot</td></tr>
+            <tr><td><code>admin.presence</code></td><td>Change bot presence</td></tr>
+            <tr><td><code>admin.appearance</code></td><td>Change bot appearance</td></tr>
+            <tr><td><code>admin.settings</code></td><td>Manage bot settings</td></tr>
+            <tr><td><code>admin.permissions</code></td><td>Manage permissions</td></tr>
+            <tr><td><code>admin.config</code></td><td>Access configuration</td></tr>
+          </tbody>
+        </table></div>
+        <h3>Global Chat (<code>globalchat.*</code>)</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Node</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>globalchat.use</code></td><td>Send messages in global chat channels</td></tr>
+            <tr><td><code>globalchat.manage</code></td><td>Create, delete, and manage global chat channels</td></tr>
+          </tbody>
+        </table></div>
+      </div>
 
-        <!-- Permission Nodes: Automod -->
-        <div class="section">
-            <h2>All Permission Nodes</h2>
-
-            <h3>Auto-Moderation (<code>automod.*</code>)</h3>
-            <table class="node-table">
-                <thead><tr><th>Node</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td class="node-name">automod.enable</td><td>Enable auto-moderation</td></tr>
-                    <tr><td class="node-name">automod.disable</td><td>Disable auto-moderation</td></tr>
-                    <tr><td class="node-name">automod.spam</td><td>Configure spam protection</td></tr>
-                    <tr><td class="node-name">automod.links</td><td>Configure link protection</td></tr>
-                    <tr><td class="node-name">automod.mentions</td><td>Configure mention protection</td></tr>
-                    <tr><td class="node-name">automod.caps</td><td>Configure caps protection</td></tr>
-                    <tr><td class="node-name">automod.invites</td><td>Configure invite protection</td></tr>
-                    <tr><td class="node-name">automod.blacklist</td><td>Manage blacklisted words</td></tr>
-                    <tr><td class="node-name">automod.whitelist</td><td>Manage whitelisted words</td></tr>
-                    <tr><td class="node-name">automod.bypass</td><td>Bypass auto-moderation</td></tr>
-                </tbody>
-            </table>
-
-            <h3>Moderation (<code>mod.*</code>)</h3>
-            <table class="node-table">
-                <thead><tr><th>Node</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td class="node-name">mod.kick</td><td>Kick members</td></tr>
-                    <tr><td class="node-name">mod.ban</td><td>Ban members</td></tr>
-                    <tr><td class="node-name">mod.unban</td><td>Unban members</td></tr>
-                    <tr><td class="node-name">mod.warn</td><td>Warn members</td></tr>
-                    <tr><td class="node-name">mod.unwarn</td><td>Remove warnings</td></tr>
-                    <tr><td class="node-name">mod.mute</td><td>Mute members</td></tr>
-                    <tr><td class="node-name">mod.unmute</td><td>Unmute members</td></tr>
-                    <tr><td class="node-name">mod.purge</td><td>Purge messages</td></tr>
-                    <tr><td class="node-name">mod.lockdown</td><td>Lock/unlock channels</td></tr>
-                    <tr><td class="node-name">mod.slowmode</td><td>Manage slowmode</td></tr>
-                </tbody>
-            </table>
-
-            <h3>Economy (<code>economy.*</code>)</h3>
-            <table class="node-table">
-                <thead><tr><th>Node</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td class="node-name">economy.balance</td><td>View balances</td></tr>
-                    <tr><td class="node-name">economy.daily</td><td>Claim daily rewards</td></tr>
-                    <tr><td class="node-name">economy.work</td><td>Use work command</td></tr>
-                    <tr><td class="node-name">economy.pay</td><td>Pay other users</td></tr>
-                    <tr><td class="node-name">economy.rob</td><td>Rob other users</td></tr>
-                    <tr><td class="node-name">economy.baltop</td><td>View balance leaderboard</td></tr>
-                    <tr><td class="node-name">economy.games.flip</td><td>Play coin flip</td></tr>
-                    <tr><td class="node-name">economy.games.dice</td><td>Play dice game</td></tr>
-                    <tr><td class="node-name">economy.games.slots</td><td>Play slot machine</td></tr>
-                    <tr><td class="node-name">economy.games.blackjack</td><td>Play blackjack</td></tr>
-                    <tr><td class="node-name">economy.admin.add</td><td>Add points to users</td></tr>
-                    <tr><td class="node-name">economy.admin.remove</td><td>Remove points from users</td></tr>
-                    <tr><td class="node-name">economy.admin.set</td><td>Set user balances</td></tr>
-                </tbody>
-            </table>
-
-            <h3>Leveling (<code>leveling.*</code>)</h3>
-            <table class="node-table">
-                <thead><tr><th>Node</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td class="node-name">leveling.rank</td><td>View own rank</td></tr>
-                    <tr><td class="node-name">leveling.level</td><td>View levels</td></tr>
-                    <tr><td class="node-name">leveling.xp</td><td>View XP</td></tr>
-                    <tr><td class="node-name">leveling.leaderboard</td><td>View XP leaderboard</td></tr>
-                    <tr><td class="node-name">leveling.admin.add</td><td>Add XP to users</td></tr>
-                    <tr><td class="node-name">leveling.admin.remove</td><td>Remove XP from users</td></tr>
-                    <tr><td class="node-name">leveling.admin.set</td><td>Set user XP/levels</td></tr>
-                </tbody>
-            </table>
-
-            <h3>Logging (<code>logging.*</code>)</h3>
-            <table class="node-table">
-                <thead><tr><th>Node</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td class="node-name">logging.view</td><td>View log settings</td></tr>
-                    <tr><td class="node-name">logging.channel</td><td>Set log channels</td></tr>
-                    <tr><td class="node-name">logging.enable</td><td>Enable logging</td></tr>
-                    <tr><td class="node-name">logging.disable</td><td>Disable logging</td></tr>
-                    <tr><td class="node-name">logging.events.messages</td><td>Configure message logging</td></tr>
-                    <tr><td class="node-name">logging.events.joins</td><td>Configure join logging</td></tr>
-                    <tr><td class="node-name">logging.events.leaves</td><td>Configure leave logging</td></tr>
-                    <tr><td class="node-name">logging.events.bans</td><td>Configure ban logging</td></tr>
-                    <tr><td class="node-name">logging.events.roles</td><td>Configure role logging</td></tr>
-                </tbody>
-            </table>
-
-            <h3>Utility (<code>utility.*</code>)</h3>
-            <table class="node-table">
-                <thead><tr><th>Node</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td class="node-name">utility.ping</td><td>Use ping command</td></tr>
-                    <tr><td class="node-name">utility.info</td><td>View bot info</td></tr>
-                    <tr><td class="node-name">utility.help</td><td>Access help system</td></tr>
-                    <tr><td class="node-name">utility.status</td><td>View bot status</td></tr>
-                    <tr><td class="node-name">utility.echo</td><td>Use echo command</td></tr>
-                </tbody>
-            </table>
-
-            <h3>Rules (<code>rules.*</code>)</h3>
-            <table class="node-table">
-                <thead><tr><th>Node</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td class="node-name">rules.view</td><td>View server rules</td></tr>
-                    <tr><td class="node-name">rules.add</td><td>Add new rules</td></tr>
-                    <tr><td class="node-name">rules.remove</td><td>Remove rules</td></tr>
-                    <tr><td class="node-name">rules.edit</td><td>Edit existing rules</td></tr>
-                    <tr><td class="node-name">rules.list</td><td>List all rules</td></tr>
-                </tbody>
-            </table>
-
-            <h3>Admin (<code>admin.*</code>)</h3>
-            <table class="node-table">
-                <thead><tr><th>Node</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td class="node-name">admin.restart</td><td>Restart bot</td></tr>
-                    <tr><td class="node-name">admin.presence</td><td>Change bot presence</td></tr>
-                    <tr><td class="node-name">admin.appearance</td><td>Change bot appearance</td></tr>
-                    <tr><td class="node-name">admin.settings</td><td>Manage bot settings</td></tr>
-                    <tr><td class="node-name">admin.permissions</td><td>Manage permissions</td></tr>
-                    <tr><td class="node-name">admin.config</td><td>Access configuration</td></tr>
-                </tbody>
-            </table>
-
-            <h3>Global Chat (<code>globalchat.*</code>)</h3>
-            <table class="node-table">
-                <thead><tr><th>Node</th><th>Description</th></tr></thead>
-                <tbody>
-                    <tr><td class="node-name">globalchat.use</td><td>Send messages in global chat channels</td></tr>
-                    <tr><td class="node-name">globalchat.manage</td><td>Create, delete, and manage global chat channels</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Examples -->
-        <div class="section">
-            <h2>Usage Examples</h2>
-            <div class="code-block">
-<span class="code-comment"># Grant all moderation permissions to the Moderator role</span>
+      <div class="doc-section">
+        <h2>Usage Examples</h2>
+        <pre style="background:var(--bg-inline);padding:1rem;border-radius:var(--radius);font-size:0.85rem;overflow-x:auto;line-height:1.9;color:var(--text-secondary);"># Grant all moderation permissions to the Moderator role
 /permissions role-set @Moderator mod.* true
 
-<span class="code-comment"># Deny all economy commands for @everyone</span>
+# Deny all economy commands for @everyone
 /permissions everyone-set economy.* false
 
-<span class="code-comment"># Allow a specific user to use the restart command</span>
+# Allow a specific user to use the restart command
 /permissions user-set @User admin.restart true
 
-<span class="code-comment"># Remove a permission from a role</span>
+# Remove a permission from a role
 /permissions role-remove @Role economy.daily
 
-<span class="code-comment"># Check if a user has a specific permission</span>
+# Check if a user has a specific permission
 /permissions check @User mod.kick
 
-<span class="code-comment"># View all permissions for a role</span>
+# View all permissions for a role
 /permissions role-view @Moderator
 
-<span class="code-comment"># List all available permission nodes</span>
-/permissions list-nodes
+# List all available permission nodes
+/permissions list-nodes</pre>
+      </div>
 
-<span class="code-comment"># List nodes in a specific category</span>
-/permissions list-nodes mod
-            </div>
-        </div>
+      <div class="doc-section">
+        <h2>Default Permissions</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Group</th><th>Default Permissions</th></tr></thead>
+          <tbody>
+            <tr><td><strong>@everyone</strong></td><td><code>utility.ping</code>, <code>utility.help</code>, <code>utility.info</code></td></tr>
+            <tr><td><strong>Discord moderators</strong></td><td>Members with Discord's built-in moderation permissions automatically receive moderation command access</td></tr>
+            <tr><td><strong>Bot owner</strong></td><td><code>*</code> — all permissions (hardcoded, cannot be overridden)</td></tr>
+          </tbody>
+        </table></div>
+        <div class="callout callout-warn"><strong>Note</strong>All other permissions are <strong>denied by default</strong> and must be explicitly granted by a server administrator.</div>
+      </div>
 
-        <!-- Defaults -->
-        <div class="section">
-            <h2>Default Permissions</h2>
-            <p>Out of the box, the following defaults apply:</p>
-            <table class="node-table">
-                <thead><tr><th>Group</th><th>Default Permissions</th></tr></thead>
-                <tbody>
-                    <tr><td><strong>@everyone</strong></td><td>Basic utility commands — <code>utility.ping</code>, <code>utility.help</code>, <code>utility.info</code></td></tr>
-                    <tr><td><strong>Discord moderators</strong></td><td>Members with Discord's built-in moderation permissions automatically receive moderation command access</td></tr>
-                    <tr><td><strong>Bot owner</strong></td><td><code>*</code> — all permissions (hardcoded, cannot be overridden)</td></tr>
-                </tbody>
-            </table>
-            <div class="highlight">
-                All other permissions are <strong>denied by default</strong> and must be explicitly granted by a server administrator.
-            </div>
-        </div>
-
+      <div class="page-nav"></div>
     </div>
-
-    <div class="footer">
-        <p>&copy; 2026 Ammonite &bull; <a href="index.html">Home</a> &bull; <a href="commands.html">Commands</a></p>
-    </div>
-
+  </main>
+</div>
+<script src="site.js"></script>
+<script>AmDoc.init("permissions");</script>
 </body>
 </html>
