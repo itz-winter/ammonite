@@ -228,88 +228,88 @@ public class EmbedGuiListener extends ListenerAdapter {
     // ── Modal builders ────────────────────────────────────────────────────────
 
     private Modal titleModal(String uid, EmbedGuiSession s) {
-        TextInput val = TextInput.create("val", TextInputStyle.SHORT)
+        TextInput.Builder val = TextInput.create("val", TextInputStyle.SHORT)
             .setPlaceholder("Embed title (leave blank to clear)")
-            .setValue(s.title != null ? s.title : "")
-            .setMaxLength(256).setRequired(false).build();
-        TextInput url = TextInput.create("url", TextInputStyle.SHORT)
+            .setMaxLength(256).setRequired(false);
+        if (s.title != null) val.setValue(s.title);
+        TextInput.Builder url = TextInput.create("url", TextInputStyle.SHORT)
             .setPlaceholder("Title URL (leave blank for none)")
-            .setValue(s.titleUrl != null ? s.titleUrl : "")
-            .setMaxLength(2048).setRequired(false).build();
+            .setMaxLength(2048).setRequired(false);
+        if (s.titleUrl != null) url.setValue(s.titleUrl);
         return Modal.create("egm:title:"+uid, "Set Embed Title")
-            .addComponents(Label.of("Title", val), Label.of("Title URL (optional)", url))
+            .addComponents(Label.of("Title", val.build()), Label.of("Title URL (optional)", url.build()))
             .build();
     }
 
     private Modal descModal(String uid, EmbedGuiSession s) {
-        TextInput val = TextInput.create("val", TextInputStyle.PARAGRAPH)
+        TextInput.Builder val = TextInput.create("val", TextInputStyle.PARAGRAPH)
             .setPlaceholder("Embed description (leave blank to clear). Use \\n for newlines.")
-            .setValue(s.description != null ? s.description : "")
-            .setMaxLength(4000).setRequired(false).build();
+            .setMaxLength(4000).setRequired(false);
+        if (s.description != null) val.setValue(s.description);
         return Modal.create("egm:desc:"+uid, "Set Description")
-            .addComponents(Label.of("Description", val))
+            .addComponents(Label.of("Description", val.build()))
             .build();
     }
 
     private Modal colorModal(String uid, EmbedGuiSession s) {
-        TextInput val = TextInput.create("val", TextInputStyle.SHORT)
+        TextInput.Builder val = TextInput.create("val", TextInputStyle.SHORT)
             .setPlaceholder("#5865F2  (hex, leave blank for default)")
-            .setValue(s.colorHex != null ? s.colorHex : "")
-            .setMaxLength(7).setRequired(false).build();
+            .setMaxLength(7).setRequired(false);
+        if (s.colorHex != null) val.setValue(s.colorHex);
         return Modal.create("egm:color:"+uid, "Set Color")
-            .addComponents(Label.of("Hex Color (#RRGGBB)", val))
+            .addComponents(Label.of("Hex Color (#RRGGBB)", val.build()))
             .build();
     }
 
     private Modal authorModal(String uid, EmbedGuiSession s) {
-        TextInput name = TextInput.create("name", TextInputStyle.SHORT)
+        TextInput.Builder name = TextInput.create("name", TextInputStyle.SHORT)
             .setPlaceholder("Author name (leave blank to clear)")
-            .setValue(s.authorName != null ? s.authorName : "")
-            .setMaxLength(256).setRequired(false).build();
-        TextInput icon = TextInput.create("icon", TextInputStyle.SHORT)
+            .setMaxLength(256).setRequired(false);
+        if (s.authorName != null) name.setValue(s.authorName);
+        TextInput.Builder icon = TextInput.create("icon", TextInputStyle.SHORT)
             .setPlaceholder("Author icon URL (leave blank for none)")
-            .setValue(s.authorIconUrl != null ? s.authorIconUrl : "")
-            .setMaxLength(2048).setRequired(false).build();
-        TextInput url = TextInput.create("url", TextInputStyle.SHORT)
+            .setMaxLength(2048).setRequired(false);
+        if (s.authorIconUrl != null) icon.setValue(s.authorIconUrl);
+        TextInput.Builder url = TextInput.create("url", TextInputStyle.SHORT)
             .setPlaceholder("Author link URL (leave blank for none)")
-            .setValue(s.authorUrl != null ? s.authorUrl : "")
-            .setMaxLength(2048).setRequired(false).build();
+            .setMaxLength(2048).setRequired(false);
+        if (s.authorUrl != null) url.setValue(s.authorUrl);
         return Modal.create("egm:author:"+uid, "Set Author")
-            .addComponents(Label.of("Author Name", name), Label.of("Icon URL (optional)", icon), Label.of("Link URL (optional)", url))
+            .addComponents(Label.of("Author Name", name.build()), Label.of("Icon URL (optional)", icon.build()), Label.of("Link URL (optional)", url.build()))
             .build();
     }
 
     private Modal footerModal(String uid, EmbedGuiSession s) {
-        TextInput text = TextInput.create("text", TextInputStyle.SHORT)
+        TextInput.Builder text = TextInput.create("text", TextInputStyle.SHORT)
             .setPlaceholder("Footer text (leave blank to clear)")
-            .setValue(s.footerText != null ? s.footerText : "")
-            .setMaxLength(2048).setRequired(false).build();
-        TextInput icon = TextInput.create("icon", TextInputStyle.SHORT)
+            .setMaxLength(2048).setRequired(false);
+        if (s.footerText != null) text.setValue(s.footerText);
+        TextInput.Builder icon = TextInput.create("icon", TextInputStyle.SHORT)
             .setPlaceholder("Footer icon URL (leave blank for none)")
-            .setValue(s.footerIconUrl != null ? s.footerIconUrl : "")
-            .setMaxLength(2048).setRequired(false).build();
+            .setMaxLength(2048).setRequired(false);
+        if (s.footerIconUrl != null) icon.setValue(s.footerIconUrl);
         return Modal.create("egm:footer:"+uid, "Set Footer")
-            .addComponents(Label.of("Footer Text", text), Label.of("Icon URL (optional)", icon))
+            .addComponents(Label.of("Footer Text", text.build()), Label.of("Icon URL (optional)", icon.build()))
             .build();
     }
 
     private Modal imageModal(String uid, EmbedGuiSession s) {
-        TextInput val = TextInput.create("val", TextInputStyle.SHORT)
+        TextInput.Builder val = TextInput.create("val", TextInputStyle.SHORT)
             .setPlaceholder("Image URL (leave blank to clear)")
-            .setValue(s.imageUrl != null ? s.imageUrl : "")
-            .setMaxLength(2048).setRequired(false).build();
+            .setMaxLength(2048).setRequired(false);
+        if (s.imageUrl != null) val.setValue(s.imageUrl);
         return Modal.create("egm:image:"+uid, "Set Image")
-            .addComponents(Label.of("Image URL", val))
+            .addComponents(Label.of("Image URL", val.build()))
             .build();
     }
 
     private Modal thumbModal(String uid, EmbedGuiSession s) {
-        TextInput val = TextInput.create("val", TextInputStyle.SHORT)
+        TextInput.Builder val = TextInput.create("val", TextInputStyle.SHORT)
             .setPlaceholder("Thumbnail URL (leave blank to clear)")
-            .setValue(s.thumbnailUrl != null ? s.thumbnailUrl : "")
-            .setMaxLength(2048).setRequired(false).build();
+            .setMaxLength(2048).setRequired(false);
+        if (s.thumbnailUrl != null) val.setValue(s.thumbnailUrl);
         return Modal.create("egm:thumb:"+uid, "Set Thumbnail")
-            .addComponents(Label.of("Thumbnail URL", val))
+            .addComponents(Label.of("Thumbnail URL", val.build()))
             .build();
     }
 
