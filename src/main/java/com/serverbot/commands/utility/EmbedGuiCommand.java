@@ -7,6 +7,7 @@ import com.serverbot.utils.EmbedUtils;
 import com.serverbot.utils.PermissionUtils;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
@@ -62,10 +63,14 @@ public class EmbedGuiCommand implements SlashCommand {
         // can edit this original ephemeral message.
         event.deferReply(true).queue(hook -> {
             session.hook = hook;
-            hook.editOriginalEmbeds(
-                buildPreview(session).build(),
-                buildStatus(session, target).build()
-            ).setComponents(buildRows(userId)).queue();
+            // Controls message = the original deferred reply (has buttons, status only)
+            hook.editOriginalEmbeds(buildStatus(session, target).build())
+                .setComponents(buildRows(userId))
+                .queue();
+            // Preview message = separate ephemeral follow-up (no buttons, just the embed preview)
+            hook.sendMessageEmbeds(buildPreview(session).build())
+                .setEphemeral(true)
+                .queue(msg -> session.previewMessageId = msg.getId());
         });
     }
 
@@ -113,27 +118,31 @@ public class EmbedGuiCommand implements SlashCommand {
     /** The 3 rows of control buttons. */
     public static List<ActionRow> buildRows(String userId) {
         String u = userId;
+        Emoji NOTE    = Emoji.fromFormatted("<:NOTE:1436161206233858070>");
+        Emoji TRASH   = Emoji.fromFormatted("<:TRASH:1436161220007825458>");
+        Emoji SAVE    = Emoji.fromFormatted("<:SAVE:1436161201880170526>");
+        Emoji SUCCESS = Emoji.fromFormatted("<:SUCCESS:1436158779996504066>");
         return Arrays.asList(
             ActionRow.of(
-                Button.secondary("egui:title:"+u,    "📝 Title"),
-                Button.secondary("egui:desc:"+u,     "📄 Description"),
-                Button.secondary("egui:color:"+u,    "🎨 Color"),
-                Button.secondary("egui:author:"+u,   "👤 Author"),
-                Button.secondary("egui:footer:"+u,   "📋 Footer")
+                Button.secondary("egui:title:"+u,  "📝 Title"),
+                Button.secondary("egui:desc:"+u,   "Description").withEmoji(NOTE),
+                Button.secondary("egui:color:"+u,  "🎨 Color"),
+                Button.secondary("egui:author:"+u, "👤 Author"),
+                Button.secondary("egui:footer:"+u, "📋 Footer")
             ),
             ActionRow.of(
-                Button.secondary("egui:image:"+u,    "🖼 Image"),
-                Button.secondary("egui:thumb:"+u,    "🔲 Thumbnail"),
-                Button.success("egui:field:"+u,      "➕ Add Field"),
-                Button.danger("egui:rmfield:"+u,     "➖ Remove Field"),
-                Button.secondary("egui:ts:"+u,       "🕐 Timestamp")
+                Button.secondary("egui:image:"+u,  "🖼 Image"),
+                Button.secondary("egui:thumb:"+u,  "🔲 Thumbnail"),
+                Button.success("egui:field:"+u,    "➕ Add Field"),
+                Button.danger("egui:rmfield:"+u,   "Remove Field").withEmoji(TRASH),
+                Button.secondary("egui:ts:"+u,     "🕐 Timestamp")
             ),
             ActionRow.of(
-                Button.success("egui:addbtn:"+u,     "🔘 Add Button"),
-                Button.danger("egui:rmbtn:"+u,       "❌ Remove Button"),
-                Button.danger("egui:clear:"+u,       "🧹 Clear All"),
-                Button.secondary("egui:export:"+u,   "📤 Export JSON"),
-                Button.success("egui:send:"+u,       "✅ Send")
+                Button.success("egui:addbtn:"+u,   "➕ Add Button"),
+                Button.danger("egui:rmbtn:"+u,     "Remove Button").withEmoji(TRASH),
+                Button.danger("egui:clear:"+u,     "Clear All").withEmoji(TRASH),
+                Button.secondary("egui:export:"+u, "Export JSON").withEmoji(SAVE),
+                Button.success("egui:send:"+u,     "Send").withEmoji(SUCCESS)
             )
         );
     }

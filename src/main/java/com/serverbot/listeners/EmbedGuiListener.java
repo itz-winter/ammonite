@@ -154,10 +154,15 @@ public class EmbedGuiListener extends ListenerAdapter {
         }
 
         if (session.hook != null) {
+            // Update controls message (original reply)
             session.hook.editOriginalEmbeds(
-                EmbedGuiCommand.buildPreview(session).build(),
                 EmbedGuiCommand.buildStatus(session, targetCh).build()
             ).setComponents(EmbedGuiCommand.buildRows(userId)).queue();
+            // Update the separate preview message
+            if (session.previewMessageId != null) {
+                session.hook.editMessageEmbedsById(session.previewMessageId,
+                    EmbedGuiCommand.buildPreview(session).build()).queue();
+            }
         }
     }
 
@@ -169,10 +174,15 @@ public class EmbedGuiListener extends ListenerAdapter {
         if (event.isFromGuild()) {
             targetCh = event.getGuild().getTextChannelById(session.targetChannelId);
         }
+        // Update the controls message (the one with the buttons)
         event.editMessageEmbeds(
-            EmbedGuiCommand.buildPreview(session).build(),
             EmbedGuiCommand.buildStatus(session, targetCh).build()
         ).setComponents(EmbedGuiCommand.buildRows(userId)).queue();
+        // Update the separate preview message
+        if (session.previewMessageId != null && session.hook != null) {
+            session.hook.editMessageEmbedsById(session.previewMessageId,
+                EmbedGuiCommand.buildPreview(session).build()).queue();
+        }
     }
 
     /** Send the built embed to the target channel and close the GUI. */
@@ -209,12 +219,18 @@ public class EmbedGuiListener extends ListenerAdapter {
 
         sendAction.queue(
             msg -> {
+                String previewId = session.previewMessageId;
                 EmbedGuiSession.remove(userId);
+                // Replace controls with success embed
                 event.editMessageEmbeds(
                     EmbedUtils.createSuccessEmbed("Embed Sent",
                         "✅ Your embed was sent to " + dest.getAsMention() + ".\n" +
                         "[Jump to message](" + msg.getJumpUrl() + ")")
                 ).setComponents(Collections.emptyList()).queue();
+                // Delete the separate preview message
+                if (previewId != null && session.hook != null) {
+                    session.hook.deleteMessageById(previewId).queue(null, ignored -> {});
+                }
             },
             err -> event.reply("❌ Failed to send: " + err.getMessage()).setEphemeral(true).queue()
         );
