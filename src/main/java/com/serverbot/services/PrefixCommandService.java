@@ -126,7 +126,10 @@ public class PrefixCommandService {
         Map.entry("vol", "volume"),
         Map.entry("repeat", "repeat"),
         Map.entry("loop", "repeat"),
-        Map.entry("shuffle", "shuffle")
+        Map.entry("shuffle", "shuffle"),
+        // Global chat aliases
+        Map.entry("globalchat", "globalchat"),
+        Map.entry("gc", "globalchat")
     );
 
     public PrefixCommandService(CommandManager commandManager) {
@@ -431,6 +434,9 @@ public class PrefixCommandService {
                 break;
             case "shuffle":
                 handleShuffleCommand(event);
+                break;
+            case "globalchat":
+                handleGlobalChatCommand(event, args);
                 break;
             default:
                 // Command is registered as a slash command but has no prefix implementation
@@ -6411,5 +6417,431 @@ public class PrefixCommandService {
             "🔀 Shuffle " + (newState ? "Enabled" : "Disabled"),
             newState ? "The queue will now be shuffled." : "Shuffle mode has been turned off."
         )).queue();
+    }
+
+    // ── Global Chat prefix handlers ───────────────────────────────────────────
+    // Works in both DMs and guilds. Only link/unlink are guild-only.
+
+    /**
+     * Handle !globalchat / !gc — works in DMs and guilds.
+     * Usage: !globalchat <subcommand> [args...]
+     */
+    private void handleGlobalChatCommand(MessageReceivedEvent event, String[] args) {
+        if (args.length == 0) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                "Global Chat",
+                "**Available subcommands:**\n" +
+                "`create <name> <description>` — create a channel\n" +
+                "`list` — list your channels\n" +
+                "`info <channelId>` — view channel info\n" +
+                "`manage <channelId>` — open management panel (sent to DMs)\n" +
+                "`edit <channelId> [name:<n>] [desc:<d>] [vis:<v>] [key:<k>]` — edit a channel\n" +
+                "`setrules <channelId> <rule1 | rule2 | ...>` — set rules\n" +
+                "`delete <channelId>` — delete a channel\n" +
+                "`link <channelId> <#channel> [key]` — link a channel *(guild only)*\n" +
+                "`unlink <#channel>` — unlink a channel *(guild only)*\n" +
+                "`kick/ban/unban/warn/unwarn <channelId> <serverId> [reason]`\n" +
+                "`mute <channelId> <serverId> [duration] [reason]`\n" +
+                "`unmute <channelId> <serverId>`\n" +
+                "`addmod/removemod/addcoowner <channelId> <@user or userId>`\n\n" +
+                "💡 Use `/globalchat` for the full interactive slash command."
+            )).queue();
+            return;
+        }
+
+        com.serverbot.services.GlobalChatService service = ServerBot.getGlobalChatService();
+        String sub = args[0].toLowerCase();
+        String[] subArgs = Arrays.copyOfRange(args, 1, args.length);
+
+        switch (sub) {
+            case "create"     -> handleGcPrefixCreate(event, subArgs, service);
+            case "edit"       -> handleGcPrefixEdit(event, subArgs, service);
+            case "delete"     -> handleGcPrefixDelete(event, subArgs, service);
+            case "link"       -> handleGcPrefixLink(event, subArgs, service);
+            case "unlink"     -> handleGcPrefixUnlink(event, subArgs, service);
+            case "info"       -> handleGcPrefixInfo(event, subArgs, service);
+            case "list"       -> handleGcPrefixList(event, service);
+            case "setrules"   -> handleGcPrefixSetRules(event, subArgs, service);
+            case "manage"     -> handleGcPrefixManage(event, subArgs, service);
+            case "kick"       -> handleGcPrefixKick(event, subArgs, service);
+            case "ban"        -> handleGcPrefixBan(event, subArgs, service);
+            case "unban"      -> handleGcPrefixUnban(event, subArgs, service);
+            case "warn"       -> handleGcPrefixWarn(event, subArgs, service);
+            case "unwarn"     -> handleGcPrefixUnwarn(event, subArgs, service);
+            case "mute"       -> handleGcPrefixMute(event, subArgs, service);
+            case "unmute"     -> handleGcPrefixUnmute(event, subArgs, service);
+            case "addmod"     -> handleGcPrefixAddMod(event, subArgs, service);
+            case "removemod"  -> handleGcPrefixRemoveMod(event, subArgs, service);
+            case "addcoowner" -> handleGcPrefixAddCoOwner(event, subArgs, service);
+            default -> event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Unknown Subcommand",
+                "Unknown subcommand `" + sub + "`. Use `!globalchat` to see all subcommands."
+            )).queue();
+        }
+    }
+
+    private void handleGcPrefixCreate(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        // !globalchat create <name> <description...>
+        // First token = name, rest = description
+        if (args.length < 2) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Usage", "`!globalchat create <name> <description>`\n" +
+                "The name is the first word; everything after is the description."
+            )).queue();
+            return;
+        }
+        String name = args[0];
+        String desc = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+        com.serverbot.models.GlobalChatChannel ch = service.createChannel(
+            name, desc, "public", false, null, event.getAuthor().getId(), null, null);
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "Global Chat Channel Created",
+            "**" + ch.getName() + "** created!\n" +
+            "**ID:** `" + ch.getChannelId() + "`\n" +
+            "Use `!globalchat manage " + ch.getChannelId() + "` to manage it."
+        )).queue();
+    }
+
+    private void handleGcPrefixEdit(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        // !globalchat edit <channelId> [name:<name>] [desc:<desc>] [vis:<vis>] [key:<key>]
+        if (args.length < 1) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Usage", "`!globalchat edit <channelId> [name:<name>] [desc:<desc>] [vis:public|private] [key:<key>]`"
+            )).queue();
+            return;
+        }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if (!gc.hasManageAccess(event.getAuthor().getId())) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Access", "You don't have permission to edit this channel.")).queue(); return; }
+
+        String remaining = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+        String newName = gcExtractKvArg(remaining, "name");
+        String newDesc = gcExtractKvArg(remaining, "desc");
+        String newVis  = gcExtractKvArg(remaining, "vis");
+        String newKey  = gcExtractKvArg(remaining, "key");
+
+        if (newName != null) gc.setName(newName);
+        if (newDesc != null) gc.setDescription(newDesc);
+        if (newVis != null) {
+            if (!newVis.equalsIgnoreCase("public") && !newVis.equalsIgnoreCase("private")) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Invalid Visibility", "Visibility must be `public` or `private`.")).queue();
+                return;
+            }
+            gc.setVisibility(newVis.toLowerCase());
+        }
+        if (newKey != null) { gc.setKey(newKey); gc.setKeyRequired(true); }
+
+        service.saveChannels();
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "Channel Updated", "Global chat channel **" + gc.getName() + "** has been updated."
+        )).queue();
+    }
+
+    private void handleGcPrefixDelete(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (args.length < 1) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat delete <channelId>`")).queue(); return; }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if (!gc.isOwner(event.getAuthor().getId())) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Access", "Only the channel owner can delete it.")).queue(); return; }
+
+        for (Map.Entry<String, String> entry : gc.getLinkedChannels().entrySet()) {
+            try {
+                net.dv8tion.jda.api.entities.Guild g = event.getJDA().getGuildById(entry.getKey());
+                if (g != null) {
+                    net.dv8tion.jda.api.entities.channel.concrete.TextChannel tc = g.getTextChannelById(entry.getValue());
+                    if (tc != null) tc.sendMessageEmbeds(EmbedUtils.createInfoEmbed("Global Chat",
+                        CustomEmojis.TRASH + " The global chat channel **" + gc.getName() + "** has been deleted.")).queue(s -> {}, e -> {});
+                }
+            } catch (Exception ignored) {}
+        }
+
+        service.deleteChannel(args[0]);
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "Channel Deleted", "Global chat channel **" + gc.getName() + "** has been deleted."
+        )).queue();
+    }
+
+    private void handleGcPrefixLink(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (!event.isFromGuild()) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "The `link` subcommand can only be used in a server.")).queue(); return; }
+        if (args.length < 2) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat link <channelId> <#channel> [key]`")).queue(); return; }
+        if (!PermissionManager.hasPermission(event.getMember(), "globalchat.link")) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Permission", "You need the `globalchat.link` permission.")).queue(); return; }
+
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+
+        String channelRef = args[1];
+        Matcher cm = Pattern.compile("<#(\\d+)>").matcher(channelRef);
+        String textChannelId = cm.matches() ? cm.group(1) : channelRef.replaceAll("\\D", "");
+        net.dv8tion.jda.api.entities.channel.concrete.TextChannel target = event.getGuild().getTextChannelById(textChannelId);
+        if (target == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Invalid Channel", "Could not find that channel in this server.")).queue(); return; }
+
+        String key = args.length > 2 ? args[2] : null;
+        String error = service.linkChannel(args[0], event.getGuild().getId(), textChannelId, key);
+        if (error != null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Link Failed", error)).queue(); return; }
+
+        service.sendRulesToChannel(args[0], event.getGuild().getId(), event.getJDA());
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "Channel Linked", target.getAsMention() + " is now linked to global chat **" + gc.getName() + "**."
+        )).queue();
+    }
+
+    private void handleGcPrefixUnlink(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (!event.isFromGuild()) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "The `unlink` subcommand can only be used in a server.")).queue(); return; }
+        if (args.length < 1) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat unlink <#channel>`")).queue(); return; }
+
+        String channelRef = args[0];
+        Matcher cm = Pattern.compile("<#(\\d+)>").matcher(channelRef);
+        String textChannelId = cm.matches() ? cm.group(1) : channelRef.replaceAll("\\D", "");
+        String globalId = service.getGlobalChannelIdByTextChannel(textChannelId);
+        if (globalId == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Linked", "That channel is not linked to any global chat.")).queue(); return; }
+
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(globalId);
+        boolean isChannelOwner = gc != null && gc.hasManageAccess(event.getAuthor().getId());
+        if (!isChannelOwner && !PermissionManager.hasPermission(event.getMember(), "globalchat.unlink")) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Permission", "You need the `globalchat.unlink` permission.")).queue();
+            return;
+        }
+        String error = service.unlinkChannel(event.getGuild().getId(), textChannelId);
+        if (error != null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Unlink Failed", error)).queue(); return; }
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "Channel Unlinked", "Channel has been unlinked" + (gc != null ? " from **" + gc.getName() + "**" : "") + "."
+        )).queue();
+    }
+
+    private void handleGcPrefixInfo(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (args.length < 1) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat info <channelId>`")).queue(); return; }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if ("private".equals(gc.getVisibility()) && !gc.hasModerateAccess(event.getAuthor().getId())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Private Channel", "This channel is private.")).queue();
+            return;
+        }
+        EmbedBuilder eb = new EmbedBuilder()
+            .setTitle(CustomEmojis.INFO + " " + gc.getName())
+            .setDescription(gc.getDescription())
+            .setColor(EmbedUtils.INFO_COLOR)
+            .addField("Channel ID", "`" + gc.getChannelId() + "`", true)
+            .addField("Visibility", gc.getVisibility(), true)
+            .addField("Key Required", gc.isKeyRequired() ? "Yes" : "No", true)
+            .addField("Owner", "<@" + gc.getOwnerId() + ">", true)
+            .addField("Linked Servers", String.valueOf(gc.getLinkedChannels().size()), true);
+        if (!gc.getRules().isEmpty()) eb.addField("Rules", service.formatRules(gc), false);
+        event.getChannel().sendMessageEmbeds(eb.build()).queue();
+    }
+
+    private void handleGcPrefixList(MessageReceivedEvent event, com.serverbot.services.GlobalChatService service) {
+        java.util.List<com.serverbot.models.GlobalChatChannel> owned = service.getChannelsByOwner(event.getAuthor().getId());
+        if (owned.isEmpty()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed("No Channels",
+                "You don't own any global chat channels. Use `!globalchat create <name> <description>` to make one!")).queue();
+            return;
+        }
+        EmbedBuilder eb = new EmbedBuilder()
+            .setTitle(CustomEmojis.INFO + " Your Global Chat Channels")
+            .setColor(EmbedUtils.INFO_COLOR);
+        for (com.serverbot.models.GlobalChatChannel gc : owned) {
+            String role = gc.isOwner(event.getAuthor().getId()) ? "Owner" : "Co-Owner";
+            eb.addField(gc.getName() + " (`" + gc.getChannelId() + "`)",
+                gc.getDescription() + "\nVisibility: " + gc.getVisibility() +
+                " | Linked: " + gc.getLinkedChannels().size() + " | Role: " + role, false);
+        }
+        event.getChannel().sendMessageEmbeds(eb.build()).queue();
+    }
+
+    private void handleGcPrefixSetRules(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (args.length < 2) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat setrules <channelId> <rule1 | rule2 | ...>`")).queue(); return; }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if (!gc.hasManageAccess(event.getAuthor().getId())) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Access", "You don't have permission to set rules for this channel.")).queue(); return; }
+
+        String rulesRaw = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+        java.util.List<String> rules = Arrays.stream(rulesRaw.split("\\|"))
+            .map(String::trim).filter(s -> !s.isEmpty())
+            .collect(java.util.stream.Collectors.toList());
+        service.setRules(args[0], rules, event.getJDA());
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "Rules Updated", "Rules for **" + gc.getName() + "** have been updated.\n" + service.formatRules(gc)
+        )).queue();
+    }
+
+    private void handleGcPrefixManage(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (args.length < 1) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat manage <channelId>`")).queue(); return; }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if (!gc.hasModerateAccess(event.getAuthor().getId())) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Access", "You don't have permission to manage this channel.")).queue(); return; }
+
+        boolean isOwnerOrCoOwner = gc.hasManageAccess(event.getAuthor().getId());
+        EmbedBuilder eb = new EmbedBuilder()
+            .setTitle(CustomEmojis.SETTING + " Manage: " + gc.getName())
+            .setDescription("Use the buttons below to manage this global chat channel.\n" +
+                "**ID:** `" + gc.getChannelId() + "`\n**Linked Servers:** " + gc.getLinkedChannels().size())
+            .setColor(EmbedUtils.INFO_COLOR);
+
+        java.util.List<Button> row1 = new java.util.ArrayList<>();
+        java.util.List<Button> row2 = new java.util.ArrayList<>();
+        java.util.List<Button> row3 = new java.util.ArrayList<>();
+        if (isOwnerOrCoOwner) {
+            row1.add(Button.primary("gc_edit:" + gc.getChannelId(), "Edit Channel"));
+            row1.add(Button.danger("gc_delete:" + gc.getChannelId(), "Delete Channel"));
+            row1.add(Button.primary("gc_setrules:" + gc.getChannelId(), "Set Rules"));
+            row1.add(Button.primary("gc_addmod:" + gc.getChannelId(), "Add Mod"));
+        }
+        row2.add(Button.danger("gc_kick:" + gc.getChannelId(), "Kick Server"));
+        row2.add(Button.danger("gc_ban:" + gc.getChannelId(), "Ban Server"));
+        row2.add(Button.secondary("gc_warn:" + gc.getChannelId(), "Warn Server"));
+        row2.add(Button.secondary("gc_mute:" + gc.getChannelId(), "Mute Server"));
+        row3.add(Button.secondary("gc_unmute:" + gc.getChannelId(), "Unmute Server"));
+        row3.add(Button.secondary("gc_unwarn:" + gc.getChannelId(), "Unwarn Server"));
+        row3.add(Button.primary("gc_linked:" + gc.getChannelId(), "View Linked"));
+
+        event.getAuthor().openPrivateChannel().queue(dm -> {
+            var msgAction = dm.sendMessageEmbeds(eb.build());
+            if (!row1.isEmpty()) msgAction = msgAction.addComponents(ActionRow.of(row1));
+            msgAction = msgAction.addComponents(ActionRow.of(row2)).addComponents(ActionRow.of(row3));
+            msgAction.queue(s -> {}, e -> {});
+        }, e -> {});
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "Management Panel Sent", "The management panel has been sent to your DMs."
+        )).queue();
+    }
+
+    private void handleGcPrefixKick(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (args.length < 2) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat kick <channelId> <serverId> [reason]`")).queue(); return; }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if (!gc.hasModerateAccess(event.getAuthor().getId())) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Access", "You don't have permission to kick from this channel.")).queue(); return; }
+        String reason = args.length > 2 ? String.join(" ", Arrays.copyOfRange(args, 2, args.length)) : null;
+        String error = service.kickServer(args[0], args[1], reason, event.getJDA());
+        if (error != null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Error", error)).queue(); return; }
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed("Server Kicked", "Server `" + args[1] + "` has been kicked.")).queue();
+    }
+
+    private void handleGcPrefixBan(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (args.length < 2) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat ban <channelId> <serverId> [reason]`")).queue(); return; }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if (!gc.hasModerateAccess(event.getAuthor().getId())) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Access", "You don't have permission to ban from this channel.")).queue(); return; }
+        String reason = args.length > 2 ? String.join(" ", Arrays.copyOfRange(args, 2, args.length)) : null;
+        String error = service.banServer(args[0], args[1], reason, event.getJDA());
+        if (error != null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Error", error)).queue(); return; }
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed("Server Banned", "Server `" + args[1] + "` has been banned.")).queue();
+    }
+
+    private void handleGcPrefixUnban(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (args.length < 2) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat unban <channelId> <serverId>`")).queue(); return; }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if (!gc.hasManageAccess(event.getAuthor().getId())) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Access", "You don't have permission to unban from this channel.")).queue(); return; }
+        String error = service.unbanServer(args[0], args[1]);
+        if (error != null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Error", error)).queue(); return; }
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed("Server Unbanned", "Server `" + args[1] + "` has been unbanned.")).queue();
+    }
+
+    private void handleGcPrefixWarn(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (args.length < 2) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat warn <channelId> <serverId> [reason]`")).queue(); return; }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if (!gc.hasModerateAccess(event.getAuthor().getId())) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Access", "You don't have permission to warn in this channel.")).queue(); return; }
+        String reason = args.length > 2 ? String.join(" ", Arrays.copyOfRange(args, 2, args.length)) : null;
+        String error = service.warnServer(args[0], args[1], reason, event.getJDA());
+        if (error != null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Error", error)).queue(); return; }
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed("Server Warned", "Server `" + args[1] + "` has been warned.")).queue();
+    }
+
+    private void handleGcPrefixUnwarn(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (args.length < 2) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat unwarn <channelId> <serverId>`")).queue(); return; }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if (!gc.hasModerateAccess(event.getAuthor().getId())) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Access", "You don't have permission to unwarn in this channel.")).queue(); return; }
+        String error = service.unwarnServer(args[0], args[1]);
+        if (error != null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Error", error)).queue(); return; }
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed("Warnings Cleared", "Warnings for server `" + args[1] + "` have been cleared.")).queue();
+    }
+
+    private void handleGcPrefixMute(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        // !globalchat mute <channelId> <serverId> [duration] [reason...]
+        if (args.length < 2) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat mute <channelId> <serverId> [duration] [reason]`")).queue(); return; }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if (!gc.hasModerateAccess(event.getAuthor().getId())) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Access", "You don't have permission to mute in this channel.")).queue(); return; }
+        String durationStr = args.length > 2 ? args[2] : "0";
+        String reason = args.length > 3 ? String.join(" ", Arrays.copyOfRange(args, 3, args.length)) : null;
+        long durationMs = gcParseDuration(durationStr);
+        String error = service.muteServer(args[0], args[1], durationMs, reason, event.getJDA());
+        if (error != null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Error", error)).queue(); return; }
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed("Server Muted",
+            "Server `" + args[1] + "` has been muted" + (durationMs <= 0 ? " permanently" : " for " + durationStr) + ".")).queue();
+    }
+
+    private void handleGcPrefixUnmute(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (args.length < 2) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat unmute <channelId> <serverId>`")).queue(); return; }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if (!gc.hasModerateAccess(event.getAuthor().getId())) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Access", "You don't have permission to unmute in this channel.")).queue(); return; }
+        String error = service.unmuteServer(args[0], args[1], event.getJDA());
+        if (error != null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Error", error)).queue(); return; }
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed("Server Unmuted", "Server `" + args[1] + "` has been unmuted.")).queue();
+    }
+
+    private void handleGcPrefixAddMod(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (args.length < 2) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat addmod <channelId> <@user or userId>`")).queue(); return; }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if (!gc.hasManageAccess(event.getAuthor().getId())) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Access", "You don't have permission to add moderators.")).queue(); return; }
+        String userId = gcParseUserArg(args[1]);
+        String error = service.addModerator(args[0], userId);
+        if (error != null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Error", error)).queue(); return; }
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed("Moderator Added", "<@" + userId + "> has been added as a moderator.")).queue();
+    }
+
+    private void handleGcPrefixRemoveMod(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (args.length < 2) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat removemod <channelId> <@user or userId>`")).queue(); return; }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if (!gc.hasManageAccess(event.getAuthor().getId())) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Access", "You don't have permission to remove moderators.")).queue(); return; }
+        String userId = gcParseUserArg(args[1]);
+        String error = service.removeModerator(args[0], userId);
+        if (error != null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Error", error)).queue(); return; }
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed("Moderator Removed", "<@" + userId + "> has been removed as a moderator.")).queue();
+    }
+
+    private void handleGcPrefixAddCoOwner(MessageReceivedEvent event, String[] args, com.serverbot.services.GlobalChatService service) {
+        if (args.length < 2) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!globalchat addcoowner <channelId> <@user or userId>`")).queue(); return; }
+        com.serverbot.models.GlobalChatChannel gc = service.getChannel(args[0]);
+        if (gc == null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Not Found", "Global chat channel not found.")).queue(); return; }
+        if (!gc.isOwner(event.getAuthor().getId())) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("No Access", "Only the channel owner can add co-owners.")).queue(); return; }
+        String userId = gcParseUserArg(args[1]);
+        String error = service.addCoOwner(args[0], userId);
+        if (error != null) { event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Error", error)).queue(); return; }
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed("Co-Owner Added", "<@" + userId + "> has been added as a co-owner.")).queue();
+    }
+
+    /** Parse a user mention (&lt;@123&gt; or &lt;@!123&gt;) or bare numeric ID. */
+    private String gcParseUserArg(String input) {
+        Matcher m = USER_MENTION.matcher(input);
+        return m.matches() ? m.group(1) : input.replaceAll("\\D", "");
+    }
+
+    /** Extract value from "key:value" (or key:"quoted value") pairs in a string. */
+    private String gcExtractKvArg(String input, String key) {
+        Matcher m = Pattern.compile("\\b" + key + ":(?:\"([^\"]+)\"|([^\\s]+))").matcher(input);
+        if (m.find()) return m.group(1) != null ? m.group(1) : m.group(2);
+        return null;
+    }
+
+    /** Parse duration string (e.g. "1h", "30m", "7d") to milliseconds; returns 0 for permanent/invalid. */
+    private long gcParseDuration(String input) {
+        if (input == null || input.equals("0")) return 0;
+        try {
+            input = input.trim().toLowerCase();
+            long value = Long.parseLong(input.substring(0, input.length() - 1));
+            char unit = input.charAt(input.length() - 1);
+            return switch (unit) {
+                case 's' -> TimeUnit.SECONDS.toMillis(value);
+                case 'm' -> TimeUnit.MINUTES.toMillis(value);
+                case 'h' -> TimeUnit.HOURS.toMillis(value);
+                case 'd' -> TimeUnit.DAYS.toMillis(value);
+                default  -> 0;
+            };
+        } catch (Exception e) { return 0; }
     }
 }

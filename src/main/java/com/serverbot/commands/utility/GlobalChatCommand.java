@@ -46,7 +46,7 @@ public class GlobalChatCommand implements SlashCommand {
     public CommandCategory getCategory() { return CommandCategory.GLOBAL_CHAT; }
 
     @Override
-    public boolean isGuildOnly() { return true; } // all subcommands require a guild context; manage sends a DM panel but is invoked from a guild
+    public boolean isGuildOnly() { return false; } // link/unlink guard themselves; all other subcommands work in DMs
 
     public static CommandData getCommandData() {
         return Commands.slash("globalchat", "Manage cross-server global chat channels")
@@ -214,8 +214,8 @@ public class GlobalChatCommand implements SlashCommand {
             eb.addField("Suffix", channel.getMessageSuffix().isEmpty() ? "*(empty)*" : "`" + channel.getMessageSuffix() + "`", true);
         }
 
-        // DM the user the channel details (respects guild DM toggle)
-        if (com.serverbot.utils.DmUtils.areDmsEnabled(event.getGuild())) {
+        // DM the user the channel details (only if not in a guild, or guild has DMs enabled)
+        if (!event.isFromGuild() || com.serverbot.utils.DmUtils.areDmsEnabled(event.getGuild())) {
             event.getUser().openPrivateChannel().queue(dm -> {
                 EmbedBuilder dmEmbed = new EmbedBuilder()
                         .setTitle(CustomEmojis.INFO + " Your New Global Chat Channel")
