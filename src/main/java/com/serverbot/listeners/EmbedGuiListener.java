@@ -163,6 +163,12 @@ public class EmbedGuiListener extends ListenerAdapter {
 
     /** Send the built embed to the target channel and close the GUI. */
     private void handleSend(ButtonInteractionEvent event, EmbedGuiSession session, String userId) {
+        // Double-check permission at send time (session may have been created before perm change)
+        if (!session.canSend) {
+            event.reply("❌ You don't have permission to send embeds. Use **Export JSON** to copy the embed instead.")
+                 .setEphemeral(true).queue();
+            return;
+        }
         EmbedBuilder embed = EmbedJsonUtils.buildEmbed(session);
         var built = embed.build();
         if ((built.getTitle() == null || built.getTitle().isBlank())

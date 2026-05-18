@@ -44,7 +44,7 @@
     .param-table tr:last-child td { border-bottom: none; }
     .param-required { color: #cc2222; font-weight: 700; font-size: 0.75rem; }
     .param-optional { color: #4488cc; font-size: 0.75rem; }
-    .cmd-screenshot { margin: 10px 0; border-radius: var(--radius); border: 1px solid var(--border); max-width: 100%; }
+    .cmd-screenshot { margin: 10px 0; border-radius: 10px; border: 1px solid var(--border); max-width: 100%; }
     .screenshot-caption { font-size: 0.75rem; color: var(--text-secondary); margin-top: 3px; font-style: italic; }
     .note-box { background: #fffae8; border-left: 3px solid #e8a820; padding: 8px 12px; border-radius: 0 var(--radius) var(--radius) 0; margin: 6px 0; font-size: 0.85rem; color: #6a5000; }
     .no-results { text-align: center; color: var(--text-secondary); padding: 40px 20px; display: none; font-size: 1rem; }
@@ -55,10 +55,10 @@
   </style>
 </head>
 <body>
-<header class="site-header"><button class="sidebar-toggle">&#9776;</button><a class="site-logo" href="index.html">&#127803; Ammonite</a></header>
+<header class="site-header"><button class="sidebar-toggle">&#9776;</button><a class="site-logo" href="/">Ammonite</a></header>
 <div class="site-body"><aside class="sidebar"></aside><div class="sidebar-backdrop"></div>
 <main class="content"><div class="content-inner">
-  <div class="breadcrumb"><a href="index.html">Home</a> &#8250; Commands</div>
+  <div class="breadcrumb"><a href="/">Home</a> &#8250; Commands</div>
   <div class="page-header"><h1>Command Reference</h1><p>All commands use Discord slash command syntax. Click any command to see full details, usage examples, and screenshots.</p></div>
 
   <div class="cmd-controls">
@@ -121,6 +121,8 @@
                 <h4>Screenshot</h4>
                 <img src="assets/ban-example.png" alt="Ban command example" class="cmd-screenshot">
                 <p class="screenshot-caption">Example of the /ban command in action</p>
+                <img src="assets/ban-example-command-feedback.png" alt="Ban command feedback" class="cmd-screenshot">
+                <p class="screenshot-caption">Feedback shown to the moderator executing /ban</p>
             </div>
         </div>
 
@@ -150,6 +152,8 @@
                 <h4>Screenshot</h4>
                 <img src="assets/unban-example.png" alt="Unban command example" class="cmd-screenshot">
                 <p class="screenshot-caption">Example of the /unban command</p>
+                <img src="assets/unban-example-command-feedback.png" alt="Unban command feedback" class="cmd-screenshot">
+                <p class="screenshot-caption">Feedback shown to the moderator executing /unban</p>
             </div>
         </div>
 
@@ -181,6 +185,8 @@
                 <h4>Screenshot</h4>
                 <img src="assets/kick-example.png" alt="Kick command example" class="cmd-screenshot">
                 <p class="screenshot-caption">Example of the /kick command</p>
+                <img src="assets/kick-example-command-feedback.png" alt="Kick command feedback" class="cmd-screenshot">
+                <p class="screenshot-caption">Feedback shown to the moderator executing /kick</p>
             </div>
         </div>
 
@@ -243,6 +249,10 @@
                 <h4>Screenshot</h4>
                 <img src="assets/warn-example.png" alt="Warn command example" class="cmd-screenshot">
                 <p class="screenshot-caption">Example of the /warn command</p>
+                <img src="assets/warn-example-command-feedback.png" alt="Warn command feedback" class="cmd-screenshot">
+                <p class="screenshot-caption">Feedback shown to the moderator executing /warn</p>
+                <img src="assets/warn-expiry-example.png" alt="Warn expiry example" class="cmd-screenshot">
+                <p class="screenshot-caption">Example of an expiring warning</p>
             </div>
         </div>
 
@@ -273,6 +283,8 @@
                 <h4>Screenshot</h4>
                 <img src="assets/unwarn-example.png" alt="Unwarn command example" class="cmd-screenshot">
                 <p class="screenshot-caption">Example of the /unwarn command</p>
+                <img src="assets/unwarn-example-command-feedback.png" alt="Unwarn command feedback" class="cmd-screenshot">
+                <p class="screenshot-caption">Feedback shown to the moderator executing /unwarn</p>
             </div>
         </div>
 
@@ -383,6 +395,8 @@
                 <h4>Screenshot</h4>
                 <img src="assets/timeout-example.png" alt="Timeout command example" class="cmd-screenshot">
                 <p class="screenshot-caption">Example of the /timeout command</p>
+                <img src="assets/timeout-example-command-feedback.png" alt="Timeout command feedback" class="cmd-screenshot">
+                <p class="screenshot-caption">Feedback shown to the moderator executing /timeout</p>
             </div>
         </div>
 
@@ -898,7 +912,7 @@
                 <ul>
                     <li>Supports <code>user</code>, <code>role</code>, and <code>everyone</code> targets.</li>
                     <li>Actions: <code>set</code>, <code>remove</code>, <code>view</code>.</li>
-                    <li>See <a href="permissions.html">Permissions</a> for the full list of nodes.</li>
+                    <li>See <a href="permissions">Permissions</a> for the full list of nodes.</li>
                 </ul>
             </div>
         </div>

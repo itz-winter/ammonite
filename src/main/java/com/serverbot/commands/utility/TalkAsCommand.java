@@ -1,18 +1,22 @@
 package com.serverbot.commands.utility;
 
+import com.serverbot.ServerBot;
 import com.serverbot.commands.CommandCategory;
 import com.serverbot.commands.SlashCommand;
+import com.serverbot.models.ProxyMember;
+import com.serverbot.services.ProxyService;
 import com.serverbot.utils.EmbedJsonUtils;
 import com.serverbot.utils.EmbedUtils;
 import com.serverbot.utils.PermissionManager;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Webhook;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
@@ -25,13 +29,21 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * TalkAs command for sending webhook messages with custom names and avatars
+ * TalkAs command for sending webhook messages with custom names and avatars.
+ *
+ * Permission behaviour:
+ *   talkas.use  â†’ full mode: arbitrary name, avatar, message, embed_json
+ *   proxy.use   â†’ proxy mode: name must match one of the user's proxy members;
+ *                 that proxy's display-name and avatar are used automatically
+ *   neither     â†’ denied
  */
 public class TalkAsCommand implements SlashCommand {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(TalkAsCommand.class);
 
     @Override
@@ -44,31 +56,67 @@ public class TalkAsCommand implements SlashCommand {
         }
 
         Member member = event.getMember();
-        if (!PermissionManager.hasPermission(member, "talkas.use")) {
+        boolean hasTalkAs = PermissionManager.hasPermission(member, "talkas.use");
+        boolean hasProxy  = PermissionManager.hasPermission(member, "proxy.use");
+
+        if (!hasTalkAs && !hasProxy) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", 
-                "You need the `talkas.use` permission to use this command."
+                "Insufficient Permissions",
+                "You need `talkas.use` to use this command freely, or `proxy.use` to send as one of your proxy members."
             )).setEphemeral(true).queue();
             return;
         }
 
-        OptionMapping nameOption = event.getOption("name");
+        OptionMapping nameOption    = event.getOption("name");
         OptionMapping messageOption = event.getOption("message");
-        OptionMapping avatarOption = event.getOption("avatar");
+        OptionMapping avatarOption  = event.getOption("avatar");
         OptionMapping embedJsonOption = event.getOption("embed_json");
 
         if (nameOption == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                 "Missing Parameters [T01]",
-                "The `name` parameter is required.\n" +
-                "Error Code: **T01** - Missing TalkAs Parameters"
+                "The `name` parameter is required."
             )).setEphemeral(true).queue();
             return;
         }
 
-        String name = nameOption.getAsString();
-        String message = messageOption != null ? messageOption.getAsString() : null;
-        String avatarUrl = avatarOption != null ? avatarOption.getAsString() : null;
+        String nameValue = nameOption.getAsString();
+        String name;
+        String avatarUrl;
+
+        if (hasTalkAs) {
+            // â”€â”€ Full mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            name      = nameValue;
+            avatarUrl = avatarOption != null ? avatarOption.getAsString() : null;
+        } else {
+            // â”€â”€ Proxy-only mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // The value must match one of the user's proxy members.
+            String guildId = event.getGuild().getId();
+            ProxyService proxyService = ServerBot.getProxyService();
+            List<ProxyMember> userProxies = proxyService.getUserMembers(event.getUser().getId(), guildId);
+
+            ProxyMember matched = userProxies.stream()
+                .filter(m -> m.getName().equalsIgnoreCase(nameValue)
+                          || m.getDisplayName().equalsIgnoreCase(nameValue))
+                .findFirst().orElse(null);
+
+            if (matched == null) {
+                event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                    "Proxy Not Found [T11]",
+                    "No proxy member named `" + nameValue + "` was found.\n" +
+                    "Use `/proxy list` to see your members, or pick one from the autocomplete dropdown.\n" +
+                    "Error Code: **T11** - Proxy Not Found"
+                )).setEphemeral(true).queue();
+                return;
+            }
+
+            name = matched.getDisplayName(); // getDisplayName() falls back to name if null
+            // Prefer original CDN URL for webhooks; fall back to cached local path
+            String orig = matched.getOriginalAvatarUrl();
+            avatarUrl = (orig != null && !orig.isBlank()) ? orig : matched.getAvatarUrl();
+        }
+
+        String message  = messageOption   != null ? messageOption.getAsString()   : null;
         String embedJson = embedJsonOption != null ? embedJsonOption.getAsString() : null;
 
         // Must have at least message or embed
@@ -101,7 +149,7 @@ public class TalkAsCommand implements SlashCommand {
             return;
         }
 
-        // Validate avatar URL if provided
+        // Validate avatar URL if provided (only relevant in full mode)
         if (avatarUrl != null && !isValidImageUrl(avatarUrl)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                 "Invalid Avatar URL [T04]",
@@ -143,14 +191,51 @@ public class TalkAsCommand implements SlashCommand {
 
         TextChannel channel = event.getChannel().asTextChannel();
 
-        // Send initial response
-        event.reply("🔄 Preparing webhook message...").setEphemeral(true).queue();
+        event.reply("ðŸ”„ Preparing webhook message...").setEphemeral(true).queue();
 
-        // Find or create webhook
-        final EmbedBuilder finalEmbed = parsedEmbed;
+        final EmbedBuilder finalEmbed   = parsedEmbed;
         final List<Button> finalButtons = buttons;
-        findOrCreateWebhook(channel, name, avatarUrl, message, finalEmbed, finalButtons, event);
+        final String finalName          = name;
+        final String finalAvatar        = avatarUrl;
+        findOrCreateWebhook(channel, finalName, finalAvatar, message, finalEmbed, finalButtons, event);
     }
+
+    // â”€â”€ Autocomplete â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @Override
+    public void handleAutoComplete(CommandAutoCompleteInteractionEvent event) {
+        if (!event.isFromGuild()) {
+            event.replyChoices(Collections.emptyList()).queue();
+            return;
+        }
+
+        Member member = event.getMember();
+        boolean hasTalkAs = PermissionManager.hasPermission(member, "talkas.use");
+
+        // Full talkas permission â€” they can type any name freely; no suggestions needed.
+        if (hasTalkAs) {
+            event.replyChoices(Collections.emptyList()).queue();
+            return;
+        }
+
+        // Proxy-only mode â€” suggest the user's proxy members (up to 25).
+        String guildId = event.getGuild().getId();
+        ProxyService proxyService = ServerBot.getProxyService();
+        List<ProxyMember> userProxies = proxyService.getUserMembers(event.getUser().getId(), guildId);
+
+        String typed = event.getFocusedOption().getValue().toLowerCase();
+
+        List<Command.Choice> choices = userProxies.stream()
+            .filter(m -> m.getName().toLowerCase().startsWith(typed)
+                      || m.getDisplayName().toLowerCase().startsWith(typed))
+            .limit(25)
+            .map(m -> new Command.Choice(m.getDisplayName(), m.getName()))
+            .collect(Collectors.toList());
+
+        event.replyChoices(choices).queue();
+    }
+
+    // â”€â”€ Webhook helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private void findOrCreateWebhook(TextChannel channel, String name, String avatarUrl, String message, EmbedBuilder embed, List<Button> buttons, SlashCommandInteractionEvent event) {
         channel.retrieveWebhooks().queue(
@@ -191,31 +276,23 @@ public class TalkAsCommand implements SlashCommand {
     private void sendWebhookMessage(Webhook webhook, String name, String avatarUrl, String message, EmbedBuilder embed, List<Button> buttons, SlashCommandInteractionEvent event) {
         try {
             MessageCreateBuilder builder = new MessageCreateBuilder();
-            if (message != null && !message.isBlank()) {
-                builder.setContent(message);
-            }
-            if (embed != null) {
-                builder.setEmbeds(embed.build());
-            }
-            // Add buttons in rows of 5
+            if (message != null && !message.isBlank()) builder.setContent(message);
+            if (embed != null) builder.setEmbeds(embed.build());
             if (!buttons.isEmpty()) {
                 List<ActionRow> rows = new ArrayList<>();
-                for (int i = 0; i < buttons.size(); i += 5) {
+                for (int i = 0; i < buttons.size(); i += 5)
                     rows.add(ActionRow.of(buttons.subList(i, Math.min(i + 5, buttons.size()))));
-                }
                 builder.setComponents(rows);
             }
             MessageCreateData messageData = builder.build();
 
             var messageAction = webhook.sendMessage(messageData).setUsername(name);
-            if (avatarUrl != null) {
-                messageAction = messageAction.setAvatarUrl(avatarUrl);
-            }
+            if (avatarUrl != null) messageAction = messageAction.setAvatarUrl(avatarUrl);
 
             messageAction.queue(
                 success -> event.getHook().editOriginalEmbeds(EmbedUtils.createSuccessEmbed(
                     "Message Sent",
-                    "✅ Webhook message sent successfully as **" + name + "**!"
+                    "âœ… Webhook message sent successfully as **" + name + "**!"
                 )).queue(),
                 throwable -> {
                     logger.warn("Failed to send webhook message: {}", throwable.getMessage());
@@ -237,49 +314,36 @@ public class TalkAsCommand implements SlashCommand {
     }
 
     private boolean isValidImageUrl(String url) {
-        if (url == null || url.trim().isEmpty()) {
-            return false;
-        }
-        
+        if (url == null || url.trim().isEmpty()) return false;
         try {
             URL urlObj = new URL(url);
             String path = urlObj.getPath().toLowerCase();
-            return path.endsWith(".jpg") || path.endsWith(".jpeg") || 
-                   path.endsWith(".png") || path.endsWith(".gif") || 
+            return path.endsWith(".jpg") || path.endsWith(".jpeg") ||
+                   path.endsWith(".png") || path.endsWith(".gif")  ||
                    path.endsWith(".webp");
         } catch (Exception e) {
             return false;
         }
     }
 
-    @Override
-    public String getName() {
-        return "talkas";
-    }
+    @Override public String getName()              { return "talkas"; }
+    @Override public String getDescription()       { return "Send a message as a webhook with custom name and avatar"; }
+    @Override public CommandCategory getCategory() { return CommandCategory.UTILITY; }
+    @Override public boolean requiresPermissions() { return true; }
 
-    @Override
-    public String getDescription() {
-        return "Send a message as a webhook with custom name and avatar";
-    }
-
-    @Override
-    public CommandCategory getCategory() {
-        return CommandCategory.UTILITY;
-    }
-
-    @Override
-    public boolean requiresPermissions() {
-        return true;
-    }
-
-    // Static method for command registration
     public static CommandData getCommandData() {
         return Commands.slash("talkas", "Send a message as a webhook with custom name and avatar")
-                .addOptions(
-                    new OptionData(OptionType.STRING, "name", "The name to display for the webhook message", true),
-                    new OptionData(OptionType.STRING, "message", "The message content to send (optional if embed_json provided)", false),
-                    new OptionData(OptionType.STRING, "embed_json", "Embed JSON to attach — optionally include a \"buttons\" key (use /embedgui)", false),
-                    new OptionData(OptionType.STRING, "avatar", "Avatar URL for the webhook (optional)", false)
-                );
+            .addOptions(
+                new OptionData(OptionType.STRING, "name",
+                    "Your proxy member name, or (with talkas.use) any custom name", true)
+                    .setAutoComplete(true),
+                new OptionData(OptionType.STRING, "message",
+                    "The message content to send (optional if embed_json provided)", false),
+                new OptionData(OptionType.STRING, "embed_json",
+                    "Embed JSON to attach â€” optionally include a \"buttons\" key (use /embedgui)", false),
+                new OptionData(OptionType.STRING, "avatar",
+                    "Avatar URL for the webhook â€” only used with talkas.use permission", false)
+            );
     }
 }
+

@@ -23,12 +23,13 @@
   </style>
 </head>
 <body>
-<header class="site-header"><button class="sidebar-toggle">&#9776;</button><a class="site-logo" href="index.html">&#127803; Ammonite</a></header>
+<header class="site-header"><button class="sidebar-toggle">&#9776;</button><a class="site-logo" href="/">Ammonite</a></header>
 <div class="site-body"><aside class="sidebar"></aside><div class="sidebar-backdrop"></div>
 <main class="content"><div class="content-inner">
-  <div class="breadcrumb"><a href="index.html">Home</a> &#8250; Support &amp; FAQ</div>
+  <div class="breadcrumb"><a href="/">Home</a> &#8250; Support &amp; FAQ</div>
   <div class="page-header"><h1>Support &amp; FAQ</h1><p>Frequently asked questions, troubleshooting, and how to get help.</p></div>
-
+  <a class="btn-invite" href="https://discord.gg/dcmsbXU5Yf" target="_blank" rel="noopener">Join Support Server</a>
+  <br><br>
   <div class="doc-section">
     <h2>Getting Help</h2>
     <div class="contact-grid">
@@ -57,7 +58,7 @@
     <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">How do permissions work? <span class="faq-arrow">&#9660;</span></div>
       <div class="faq-a"><p>Ammonite uses a node-based permission system. Most commands are denied by default. Admins must grant permissions to roles or users.</p>
         <p>Example: <code>/permissions role-set @Moderator mod.* true</code> grants all moderation permissions to the Moderator role.</p>
-        <p>See the full <a href="permissions.html">Permissions documentation</a> for details.</p></div>
+        <p>See the full <a href="permissions">Permissions documentation</a> for details.</p></div>
     </div>
     <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Can I use multiple prefix styles? <span class="faq-arrow">&#9660;</span></div>
       <div class="faq-a"><p>Yes! Ammonite supports both <strong>slash commands</strong> (recommended) and <strong>prefix commands</strong>. Configure the prefix with <code>/prefix set &lt;prefix&gt;</code>. Slash commands always work regardless of prefix settings.</p></div>
@@ -66,16 +67,16 @@
       <div class="faq-a"><p>Global chat links channels across different servers. One admin creates a channel with <code>/globalchat create &lt;name&gt;</code> and shares the join code. Other server admins use <code>/globalchat join &lt;code&gt;</code> to link their channel. Messages relay via webhooks with a <code>[GC]</code> prefix. Rate limiting (3s/user) and content limits (2000 chars, 5 attachments) are enforced.</p></div>
     </div>
     <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">How do I delete my data? <span class="faq-arrow">&#9660;</span></div>
-      <div class="faq-a"><p>Use <code>/deletedata</code> anywhere. You'll see exactly what will be deleted and must confirm. Deleted data includes economy, leveling, warnings, moderation logs, suspicious account records, and all proxy members. <strong>This action is irreversible.</strong> See our <a href="privacy.html">Privacy Policy</a> for details.</p></div>
+      <div class="faq-a"><p>Use <code>/deletedata</code> anywhere. You'll see exactly what will be deleted and must confirm. Deleted data includes economy, leveling, warnings, moderation logs, suspicious account records, and all proxy members. <strong>This action is irreversible.</strong> See our <a href="privacy">Privacy Policy</a> for details.</p></div>
     </div>
     <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">What does the proxy system do? <span class="faq-arrow">&#9660;</span></div>
       <div class="faq-a"><p>The proxy system lets users send messages as different identities via webhooks. Designed for plural systems, roleplay, or anyone who wants to use alternative personas. Create members with <code>/proxy create</code>, set tags, and your messages automatically send through webhooks with that member's name and avatar.</p></div>
     </div>
     <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">Is the economy real money? <span class="faq-arrow">&#9660;</span></div>
-      <div class="faq-a"><p><strong>No.</strong> All currency is virtual and has absolutely no real-world monetary value. It cannot be exchanged for real money, goods, or services. Gambling features are purely for entertainment. See the <a href="terms.html">Terms of Service</a> for details.</p></div>
+      <div class="faq-a"><p><strong>No.</strong> All currency is virtual and has absolutely no real-world monetary value. It cannot be exchanged for real money, goods, or services. Gambling features are purely for entertainment. See the <a href="terms">Terms of Service</a> for details.</p></div>
     </div>
     <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">The bot says "insufficient permissions" — what do I do? <span class="faq-arrow">&#9660;</span></div>
-      <div class="faq-a"><p>You likely lack the bot's permission node for that command. Ask a server admin to check with <code>/permissions check @You &lt;node&gt;</code> and grant the needed node. Required nodes are listed on the <a href="commands.html">Commands page</a>.</p>
+      <div class="faq-a"><p>You likely lack the bot's permission node for that command. Ask a server admin to check with <code>/permissions check @You &lt;node&gt;</code> and grant the needed node. Required nodes are listed on the <a href="commands">Commands page</a>.</p>
         <p>If the <strong>bot itself</strong> lacks Discord permissions, ensure it has the necessary Discord role permissions (e.g., Ban Members for /ban).</p></div>
     </div>
   </div>

@@ -1,0 +1,566 @@
+[
+  {
+    "title": "Commands",
+    "section": "",
+    "snippet": "All commands use Discord slash command syntax. Click any command to see full details, usage examples, and screenshots. <required> must be provided [optional] can be omitted Moderation Economy Leveling",
+    "href": "commands.html"
+  },
+  {
+    "title": "Command Reference",
+    "section": "Commands",
+    "snippet": "All commands use Discord slash command syntax. Click any command to see full details, usage examples, and screenshots. <required> must be provided [optional] can be omitted Moderation Economy Leveling",
+    "href": "commands.html#command-reference"
+  },
+  {
+    "title": "Moderation",
+    "section": "Commands",
+    "snippet": "/ban Ban a user from the server (permanent or timed) mod.ban Syntax /ban <user> [duration] [reason] Parameters Name Type Required Description user User Yes The user to ban duration String No Duration ",
+    "href": "commands.html#moderation"
+  },
+  {
+    "title": "Economy",
+    "section": "Commands",
+    "snippet": "/balance Check your or another user's balance economy.balance Syntax /balance [user] Parameters Name Type Required Description user User No User to check. Defaults to yourself Examples /balance — Chec",
+    "href": "commands.html#economy"
+  },
+  {
+    "title": "Leveling",
+    "section": "Commands",
+    "snippet": "/rank Display rank information for a user leveling.rank Syntax /rank [user] Details Shows level, XP, XP needed for next level, and server rank position. /leaderboard Show the XP/level leaderboard leve",
+    "href": "commands.html#leveling"
+  },
+  {
+    "title": "Games",
+    "section": "Commands",
+    "snippet": "/chess Start a chess game against another player or the bot — Syntax /chess [opponent] Parameters Name Type Required Description opponent User No Player to challenge. Leave empty to play against the b",
+    "href": "commands.html#games"
+  },
+  {
+    "title": "Configuration",
+    "section": "Commands",
+    "snippet": "/settings Configure server settings admin.settings Syntax /settings <setting> [value] Examples /settings setting:daily-reward value:100 — Set the daily reward to 100 coins Details Central hub for all ",
+    "href": "commands.html#configuration"
+  },
+  {
+    "title": "Proxy System",
+    "section": "Commands",
+    "snippet": "/proxy Manage proxy members (PluralKit-style) — create, edit, delete, list — Syntax /proxy <action> Details Create proxy identities that send messages via webhooks with custom names and avatars. Set p",
+    "href": "commands.html#proxy-system"
+  },
+  {
+    "title": "Tickets",
+    "section": "Commands",
+    "snippet": "/ticket Manage support tickets — create, close, add users, panels, categories — Syntax /ticket <action> [options] Details Subcommands: create , close , add , remove , panel , settings , categories Tic",
+    "href": "commands.html#tickets"
+  },
+  {
+    "title": "Global Chat",
+    "section": "Commands",
+    "snippet": "/globalchat Manage cross-server global chat channels globalchat.* Syntax /globalchat <subcommand> Subcommands Subcommand Description create Create a new global chat channel (name, description, visibil",
+    "href": "commands.html#global-chat"
+  },
+  {
+    "title": "Utility",
+    "section": "Commands",
+    "snippet": "/help Get help with bot commands — Syntax /help [command] Details Without arguments: shows all commands by category. With a command name: shows detailed help for that specific command. /ping Check bot",
+    "href": "commands.html#utility"
+  },
+  {
+    "title": "Owner Only",
+    "section": "Commands",
+    "snippet": "/statusmsg Set bot custom status message Owner only Syntax /statusmsg [message] /rpc Set the bot's rich presence (activity) Owner only Syntax /rpc <activity> /appearance Set bot online appearance (onl",
+    "href": "commands.html#owner-only"
+  },
+  {
+    "title": "Features",
+    "section": "",
+    "snippet": "An in-depth look at everything Ammonite can do. Jump to: Moderation Economy Leveling Games Proxy Global Chat Tickets Auto-Mod Logging Welcome Suspicious More",
+    "href": "features.html"
+  },
+  {
+    "title": "Moderation",
+    "section": "Features",
+    "snippet": "A full suite of moderation tools for managing your community.",
+    "href": "features.html#moderation"
+  },
+  {
+    "title": "Commands",
+    "section": "Features",
+    "snippet": "/ban — Permanent or timed bans /kick — Kick members instantly /mute — Timed mutes with duration /timeout — Discord native timeout /warn — Warning system with history /purge — Bulk message deletion /lo",
+    "href": "features.html#commands"
+  },
+  {
+    "title": "Moderation History",
+    "section": "Features",
+    "snippet": "Every moderation action is logged and reviewable with /hist <user> . Warnings can be viewed with /warns [user] and removed with /unwarn .",
+    "href": "features.html#moderation-history"
+  },
+  {
+    "title": "Punishment DM Notifications",
+    "section": "Features",
+    "snippet": "When enabled via /punishment-dm , users receive a DM when warned, muted, banned, or kicked. Users can also appeal punishments through the built-in appeal system.",
+    "href": "features.html#punishment-dm-notifications"
+  },
+  {
+    "title": "Economy & Banking",
+    "section": "Features",
+    "snippet": "A full virtual currency system with earning, spending, gambling, and banking.",
+    "href": "features.html#economy-banking"
+  },
+  {
+    "title": "Earning",
+    "section": "Features",
+    "snippet": "/daily — Claim daily rewards (24h cooldown) /work — Work a random job to earn points /rob <user> — Risk robbing another user",
+    "href": "features.html#earning"
+  },
+  {
+    "title": "Banking",
+    "section": "Features",
+    "snippet": "/bank deposit <amount> — Deposit into your bank (protected from robbery) /bank withdraw <amount> — Withdraw from your bank /bank balance — View bank and wallet balances Loan system with interest and r",
+    "href": "features.html#banking"
+  },
+  {
+    "title": "Gambling",
+    "section": "Features",
+    "snippet": "/blackjack — Full blackjack with hit, stand, double /poker — Five-card draw poker /flip — Heads or tails coin flip /dice — Bet on dice rolls /slots — Slot machine with multipliers Note All currency is",
+    "href": "features.html#gambling"
+  },
+  {
+    "title": "Leveling System",
+    "section": "Features",
+    "snippet": "Members earn XP by chatting. XP accumulates and unlocks levels with configurable role rewards. Automatic XP — users earn XP for messages (with cooldowns) Level-based roles — auto-assign roles at speci",
+    "href": "features.html#leveling-system"
+  },
+  {
+    "title": "Games",
+    "section": "Features",
+    "snippet": "",
+    "href": "features.html#games"
+  },
+  {
+    "title": "Chess",
+    "section": "Features",
+    "snippet": "Play against another member or the bot AI Full chess rules with move validation Interactive button-based interface for moves, draws, and resignation Board rendered as text with emoji pieces",
+    "href": "features.html#chess"
+  },
+  {
+    "title": "Poker",
+    "section": "Features",
+    "snippet": "Five-card draw poker with betting Hold and discard mechanics via buttons Standard poker hand rankings and payouts",
+    "href": "features.html#poker"
+  },
+  {
+    "title": "Proxy System",
+    "section": "Features",
+    "snippet": "A PluralKit-style proxy system that lets users send messages as different identities using webhooks.",
+    "href": "features.html#proxy-system"
+  },
+  {
+    "title": "How It Works",
+    "section": "Features",
+    "snippet": "Create a proxy member with /proxy create <name> Set proxy tags (prefix/suffix) — e.g., {text} sends as that member Set a custom avatar with /proxy avatar <name> <url> Messages matching your tags are a",
+    "href": "features.html#how-it-works"
+  },
+  {
+    "title": "Cross-Server Global Chat",
+    "section": "Features",
+    "snippet": "Link channels across multiple servers so messages relay in real-time.",
+    "href": "features.html#cross-server-global-chat"
+  },
+  {
+    "title": "How It Works",
+    "section": "Features",
+    "snippet": "Create a channel with /globalchat create <name> Other admins join with /globalchat join <code> Messages relay to all linked channels via webhooks",
+    "href": "features.html#how-it-works"
+  },
+  {
+    "title": "Safety Features",
+    "section": "Features",
+    "snippet": "Attribution — relayed messages prefixed with [GC] Rate limiting — 3-second per-user cooldown Content limits — 2000 chars, max 5 attachments Server muting — mute specific servers from sending or receiv",
+    "href": "features.html#safety-features"
+  },
+  {
+    "title": "Ticket System",
+    "section": "Features",
+    "snippet": "A support ticket system for managing user inquiries and issues. Ticket panels — create embed panels with a button to open tickets Auto-creation — clicking creates a private channel for user and staff ",
+    "href": "features.html#ticket-system"
+  },
+  {
+    "title": "Auto-Moderation",
+    "section": "Features",
+    "snippet": "Automated message filtering to keep your server clean. Spam detection — configurable thresholds for rapid messages Link filtering — block or whitelist specific domains Mention spam — limit mass mentio",
+    "href": "features.html#auto-moderation"
+  },
+  {
+    "title": "Comprehensive Logging",
+    "section": "Features",
+    "snippet": "Log server events to designated channels for transparency and record-keeping. Message logs — edits, deletions, and bulk deletes Moderation logs — bans, kicks, mutes, warns Join/leave logs — member joi",
+    "href": "features.html#comprehensive-logging"
+  },
+  {
+    "title": "Welcome System",
+    "section": "Features",
+    "snippet": "Welcome messages — customizable messages when members join Auto-roles — automatically assign roles to new members Variable support — placeholders for user names, server names, member counts Configure ",
+    "href": "features.html#welcome-system"
+  },
+  {
+    "title": "Suspicious Account Detection",
+    "section": "Features",
+    "snippet": "Automated system that analyzes new members and flags potentially suspicious accounts. Account age analysis — flags very new accounts Pattern detection — identifies bot-like username patterns Risk scor",
+    "href": "features.html#suspicious-account-detection"
+  },
+  {
+    "title": "Role Persistence",
+    "section": "Features",
+    "snippet": "When a member leaves and rejoins, their roles are automatically restored. Configurable expiry period. Enable/disable with /rolepersistence .",
+    "href": "features.html#role-persistence"
+  },
+  {
+    "title": "Reaction Roles",
+    "section": "Features",
+    "snippet": "Let members self-assign roles by reacting to messages. Create panels with /reactionrole . Supports custom and Unicode emojis.",
+    "href": "features.html#reaction-roles"
+  },
+  {
+    "title": "Pride & Inclusivity",
+    "section": "Features",
+    "snippet": "/pride <flag> — apply pride flag overlays to your avatar /flags — list all available pride flags /pronouns — set pronoun roles for yourself",
+    "href": "features.html#pride-inclusivity"
+  },
+  {
+    "title": "Server Backups",
+    "section": "Features",
+    "snippet": "Create and restore snapshots of your server configuration with /backup create and /backup restore .",
+    "href": "features.html#server-backups"
+  },
+  {
+    "title": "Privacy & Data",
+    "section": "Features",
+    "snippet": "/privacy — view the privacy policy in Discord /deletedata — permanently delete all your personal data",
+    "href": "features.html#privacy-data"
+  },
+  {
+    "title": "Permissions",
+    "section": "",
+    "snippet": "Fine-grained, node-based permissions with hierarchical checking and wildcard support.",
+    "href": "permissions.html"
+  },
+  {
+    "title": "Permission System",
+    "section": "Permissions",
+    "snippet": "Fine-grained, node-based permissions with hierarchical checking and wildcard support.",
+    "href": "permissions.html#permission-system"
+  },
+  {
+    "title": "How It Works",
+    "section": "Permissions",
+    "snippet": "Ammonite uses a node-based permission system similar to Bukkit/Spigot plugins. Every action is gated behind a permission node (e.g., mod.ban , economy.daily ). Admins can grant or deny these nodes at ",
+    "href": "permissions.html#how-it-works"
+  },
+  {
+    "title": "Permission Hierarchy",
+    "section": "Permissions",
+    "snippet": "Permissions are evaluated in this order (highest priority first): 1. User-specific 2. Role permissions 3. @everyone 4. Built-in defaults User-specific — permissions set directly on a user always win. ",
+    "href": "permissions.html#permission-hierarchy"
+  },
+  {
+    "title": "Wildcard Permissions",
+    "section": "Permissions",
+    "snippet": "Wildcard Effect * Grants all permissions (use with extreme caution) mod.* Grants all moderation permissions economy.* Grants all economy permissions economy.games.* Grants all gambling game permission",
+    "href": "permissions.html#wildcard-permissions"
+  },
+  {
+    "title": "All Permission Nodes",
+    "section": "Permissions",
+    "snippet": "",
+    "href": "permissions.html#all-permission-nodes"
+  },
+  {
+    "title": "Auto-Moderation ( automod.* )",
+    "section": "Permissions",
+    "snippet": "Node Description automod.enable Enable auto-moderation automod.disable Disable auto-moderation automod.spam Configure spam protection automod.links Configure link protection automod.mentions Configure",
+    "href": "permissions.html#auto-moderation-automod"
+  },
+  {
+    "title": "Moderation ( mod.* )",
+    "section": "Permissions",
+    "snippet": "Node Description mod.kick Kick members mod.ban Ban members mod.unban Unban members mod.warn Warn members mod.unwarn Remove warnings mod.mute Mute members mod.unmute Unmute members mod.purge Purge mess",
+    "href": "permissions.html#moderation-mod"
+  },
+  {
+    "title": "Economy ( economy.* )",
+    "section": "Permissions",
+    "snippet": "Node Description economy.balance View balances economy.daily Claim daily rewards economy.work Use work command economy.pay Pay other users economy.rob Rob other users economy.baltop View balance leade",
+    "href": "permissions.html#economy-economy"
+  },
+  {
+    "title": "Leveling ( leveling.* )",
+    "section": "Permissions",
+    "snippet": "Node Description leveling.rank View own rank leveling.level View levels leveling.xp View XP leveling.leaderboard View XP leaderboard leveling.admin.add Add XP to users leveling.admin.remove Remove XP ",
+    "href": "permissions.html#leveling-leveling"
+  },
+  {
+    "title": "Logging ( logging.* )",
+    "section": "Permissions",
+    "snippet": "Node Description logging.view View log settings logging.channel Set log channels logging.enable Enable logging logging.disable Disable logging logging.events.messages Configure message logging logging",
+    "href": "permissions.html#logging-logging"
+  },
+  {
+    "title": "Utility ( utility.* )",
+    "section": "Permissions",
+    "snippet": "Node Description utility.ping Use ping command utility.info View bot info utility.help Access help system utility.status View bot status utility.echo Use echo command",
+    "href": "permissions.html#utility-utility"
+  },
+  {
+    "title": "Rules ( rules.* )",
+    "section": "Permissions",
+    "snippet": "Node Description rules.view View server rules rules.add Add new rules rules.remove Remove rules rules.edit Edit existing rules rules.list List all rules",
+    "href": "permissions.html#rules-rules"
+  },
+  {
+    "title": "Admin ( admin.* )",
+    "section": "Permissions",
+    "snippet": "Node Description admin.restart Restart bot admin.presence Change bot presence admin.appearance Change bot appearance admin.settings Manage bot settings admin.permissions Manage permissions admin.confi",
+    "href": "permissions.html#admin-admin"
+  },
+  {
+    "title": "Global Chat ( globalchat.* )",
+    "section": "Permissions",
+    "snippet": "Node Description globalchat.use Send messages in global chat channels globalchat.manage Create, delete, and manage global chat channels",
+    "href": "permissions.html#global-chat-globalchat"
+  },
+  {
+    "title": "Usage Examples",
+    "section": "Permissions",
+    "snippet": "# Grant all moderation permissions to the Moderator role /permissions role-set @Moderator mod.* true # Deny all economy commands for @everyone /permissions everyone-set economy.* false # Allow a speci",
+    "href": "permissions.html#usage-examples"
+  },
+  {
+    "title": "Default Permissions",
+    "section": "Permissions",
+    "snippet": "Group Default Permissions @everyone utility.ping , utility.help , utility.info Discord moderators Members with Discord's built-in moderation permissions automatically receive moderation command access",
+    "href": "permissions.html#default-permissions"
+  },
+  {
+    "title": "Privacy Policy",
+    "section": "",
+    "snippet": "Ammonite is committed to protecting your privacy. Last updated: February 2026.",
+    "href": "privacy.html"
+  },
+  {
+    "title": "Data We Collect",
+    "section": "Privacy Policy",
+    "snippet": "Ammonite collects only the minimum data necessary: User IDs — to track economy, levels, warnings, and permissions. Guild IDs — to store per-server configuration and settings. Message Content — process",
+    "href": "privacy.html#data-we-collect"
+  },
+  {
+    "title": "How Data Is Stored",
+    "section": "Privacy Policy",
+    "snippet": "All data is stored locally on the bot host machine as JSON files in the data/ directory. Cached in memory using ConcurrentHashMaps and periodically written to disk. Key Guarantees Data is never shared",
+    "href": "privacy.html#how-data-is-stored"
+  },
+  {
+    "title": "Data Retention",
+    "section": "Privacy Policy",
+    "snippet": "Economy and leveling data is kept as long as the bot is active in the server. Moderation records are kept indefinitely for server admin reference. Proxy data is kept until the user manually deletes it",
+    "href": "privacy.html#data-retention"
+  },
+  {
+    "title": "Your Rights",
+    "section": "Privacy Policy",
+    "snippet": "View your data — economy balances, levels, warnings, and proxy members are all visible through bot commands. Request deletion using /deletedata . This permanently removes your economy data, leveling p",
+    "href": "privacy.html#your-rights"
+  },
+  {
+    "title": "Privileged Gateway Intents",
+    "section": "Privacy Policy",
+    "snippet": "Guild Members (GUILD_MEMBERS) — required for role persistence, suspicious account detection, welcome messages, and member cache for moderation. Message Content (MESSAGE_CONTENT) — required for proxy t",
+    "href": "privacy.html#privileged-gateway-intents"
+  },
+  {
+    "title": "Global Chat & Webhooks",
+    "section": "Privacy Policy",
+    "snippet": "The Global Chat feature relays messages between linked channels via Discord webhooks. Relayed messages have a [GC] prefix. Messages are rate-limited and content-capped. Message content is forwarded in",
+    "href": "privacy.html#global-chat-webhooks"
+  },
+  {
+    "title": "Proxy System & Webhooks",
+    "section": "Privacy Policy",
+    "snippet": "The Proxy system sends messages via webhooks using user-configured display names and avatars. Servers can enable a [proxied] indicator. All proxy data can be deleted at any time by the user.",
+    "href": "privacy.html#proxy-system-webhooks"
+  },
+  {
+    "title": "Contact",
+    "section": "Privacy Policy",
+    "snippet": "Use /deletedata to erase your personal data at any time. Contact the bot owner through the support server or Discord DM. Server owners can contact the bot owner for server-level data requests.",
+    "href": "privacy.html#contact"
+  },
+  {
+    "title": "Setup Guide",
+    "section": "",
+    "snippet": "Add Ammonite to your Discord server and get started in minutes.",
+    "href": "setup.html"
+  },
+  {
+    "title": "Adding Ammonite to Your Server",
+    "section": "Setup Guide",
+    "snippet": "",
+    "href": "setup.html#adding-ammonite-to-your-server"
+  },
+  {
+    "title": "1 Invite the Bot",
+    "section": "Setup Guide",
+    "snippet": "Use the official invite link to add Ammonite. You must have the Manage Server permission in the target server. Invite Ammonite",
+    "href": "setup.html#1-invite-the-bot"
+  },
+  {
+    "title": "2 Grant the Right Permissions",
+    "section": "Setup Guide",
+    "snippet": "When invited, Ammonite will request the permissions it needs. For full functionality, grant Administrator , or at minimum: Manage Roles, Manage Channels, Manage Messages Ban Members, Kick Members, Mod",
+    "href": "setup.html#2-grant-the-right-permissions"
+  },
+  {
+    "title": "3 Run the Auto-Config Wizard",
+    "section": "Setup Guide",
+    "snippet": "Once the bot is in your server, run /autoconfig to launch the setup wizard. It will walk you through everything automatically.",
+    "href": "setup.html#3-run-the-auto-config-wizard"
+  },
+  {
+    "title": "First Steps After Setup",
+    "section": "Setup Guide",
+    "snippet": "",
+    "href": "setup.html#first-steps-after-setup"
+  },
+  {
+    "title": "Auto-Config Wizard",
+    "section": "Setup Guide",
+    "snippet": "The fastest way to configure your server is the auto-config wizard . Run /autoconfig and it will walk you through setting up: Moderation log channel Message log channel Join/leave log channel Suspicio",
+    "href": "setup.html#auto-config-wizard"
+  },
+  {
+    "title": "Manual Configuration",
+    "section": "Setup Guide",
+    "snippet": "Alternatively, configure individual features with these commands: /settings — general server settings /logging — configure log channels /levels enable — enable the leveling system /points enable — ena",
+    "href": "setup.html#manual-configuration"
+  },
+  {
+    "title": "Setting Up Permissions",
+    "section": "Setup Guide",
+    "snippet": "By default, only basic utility commands are available to all users. To grant moderation access to your staff: # Give moderators all moderation permissions /permissions role-set @Moderator mod.* true #",
+    "href": "setup.html#setting-up-permissions"
+  },
+  {
+    "title": "Support & FAQ",
+    "section": "",
+    "snippet": "Frequently asked questions, troubleshooting, and how to get help.",
+    "href": "support.html"
+  },
+  {
+    "title": "Getting Help",
+    "section": "Support & FAQ",
+    "snippet": "Support Server Join the support Discord server for live help from community and bot staff. In-Bot Help Use /help or /help <command> for command usage info. Error Codes Use /error [code] to look up an ",
+    "href": "support.html#getting-help"
+  },
+  {
+    "title": "Frequently Asked Questions",
+    "section": "Support & FAQ",
+    "snippet": "Why aren't slash commands showing up? Global slash commands can take up to 1 hour to propagate after registration. If commands still don't appear: Ensure the bot was invited with the applications.comm",
+    "href": "support.html#frequently-asked-questions"
+  },
+  {
+    "title": "Common Error Codes",
+    "section": "Support & FAQ",
+    "snippet": "Use /error <code> in Discord for detailed info. Common codes: Code Meaning Solution 403 Missing bot permissions Ensure the bot has the required Discord permission (e.g., Ban Members) 703 Data operatio",
+    "href": "support.html#common-error-codes"
+  },
+  {
+    "title": "Troubleshooting",
+    "section": "Support & FAQ",
+    "snippet": "Bot is offline / not responding? Check if the bot process is running on the host machine. Verify the bot token in config.json is correct and hasn't been regenerated. Check the logs/ directory for erro",
+    "href": "support.html#troubleshooting"
+  },
+  {
+    "title": "Terms of Service",
+    "section": "",
+    "snippet": "By using Ammonite, you agree to the following terms. Last updated: February 2026.",
+    "href": "terms.html"
+  },
+  {
+    "title": "1. Acceptance of Terms",
+    "section": "Terms of Service",
+    "snippet": "By adding Ammonite to your Discord server or using any of its commands, you agree to be bound by these Terms of Service and our Privacy Policy . If you do not agree, please remove the bot from your se",
+    "href": "terms.html#1-acceptance-of-terms"
+  },
+  {
+    "title": "2. Description of Service",
+    "section": "Terms of Service",
+    "snippet": "Ammonite is a Discord bot that provides moderation, economy, leveling, games, proxy messaging, global chat, ticket support, and configuration management. The bot is provided free of charge and on an \"",
+    "href": "terms.html#2-description-of-service"
+  },
+  {
+    "title": "3. User Eligibility",
+    "section": "Terms of Service",
+    "snippet": "You must comply with Discord's Terms of Service and Community Guidelines . You must be at least 13 years old (or the minimum age in your country) to use Discord and, by extension, this bot. Server adm",
+    "href": "terms.html#3-user-eligibility"
+  },
+  {
+    "title": "4. Acceptable Use",
+    "section": "Terms of Service",
+    "snippet": "When using Ammonite, you agree not to: Violate Discord's Terms of Service or Community Guidelines. Exploit bugs or unintended behavior for personal gain or to disrupt service. Spam, abuse, or overload",
+    "href": "terms.html#4-acceptable-use"
+  },
+  {
+    "title": "5. Economy & Virtual Currency",
+    "section": "Terms of Service",
+    "snippet": "All currency, points, and items are virtual and have no real-world monetary value . Virtual currency cannot be exchanged for real money, goods, or services. The bot owner reserves the right to reset, ",
+    "href": "terms.html#5-economy-virtual-currency"
+  },
+  {
+    "title": "6. Global Chat",
+    "section": "Terms of Service",
+    "snippet": "By using global chat, you consent to your messages (with display name and avatar) being visible in other linked servers. Relayed messages are marked with a [GC] prefix. Server owners and global chat m",
+    "href": "terms.html#6-global-chat"
+  },
+  {
+    "title": "7. Proxy System",
+    "section": "Terms of Service",
+    "snippet": "The proxy system is designed for plural systems, roleplay, and similar legitimate use cases. You are solely responsible for content sent through proxy members. Using proxied messages to impersonate re",
+    "href": "terms.html#7-proxy-system"
+  },
+  {
+    "title": "8. Moderation & Enforcement",
+    "section": "Terms of Service",
+    "snippet": "Server administrators are responsible for configuring and using moderation features appropriately. The bot owner is not responsible for moderation actions taken by server administrators. The bot owner",
+    "href": "terms.html#8-moderation-enforcement"
+  },
+  {
+    "title": "9. Data & Privacy",
+    "section": "Terms of Service",
+    "snippet": "Your use is also governed by our Privacy Policy , which explains what data is collected, how it's stored, and your rights including the right to delete it via /deletedata .",
+    "href": "terms.html#9-data-privacy"
+  },
+  {
+    "title": "10. Availability & Disclaimers",
+    "section": "Terms of Service",
+    "snippet": "Ammonite is provided \"as-is\" with no warranties of any kind. We do not guarantee 100% uptime or uninterrupted service. We are not responsible for any data loss or damages arising from use of the bot. ",
+    "href": "terms.html#10-availability-disclaimers"
+  },
+  {
+    "title": "11. Limitation of Liability",
+    "section": "Terms of Service",
+    "snippet": "To the maximum extent permitted by law, the bot owner and contributors shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of Ammonite.",
+    "href": "terms.html#11-limitation-of-liability"
+  },
+  {
+    "title": "12. Changes to Terms",
+    "section": "Terms of Service",
+    "snippet": "We reserve the right to update these Terms at any time. Changes will be reflected on this page with an updated date. Continued use constitutes acceptance. Tip Check this page periodically. Major chang",
+    "href": "terms.html#12-changes-to-terms"
+  },
+  {
+    "title": "13. Contact",
+    "section": "Terms of Service",
+    "snippet": "For questions about these Terms, contact the bot owner through the support server or Discord DM. See the Support page for contact options.",
+    "href": "terms.html#13-contact"
+  }
+]

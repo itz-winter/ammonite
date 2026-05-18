@@ -4,6 +4,7 @@ import com.serverbot.commands.CommandCategory;
 import com.serverbot.commands.SlashCommand;
 import com.serverbot.utils.EmbedGuiSession;
 import com.serverbot.utils.EmbedUtils;
+import com.serverbot.utils.PermissionManager;
 import com.serverbot.utils.PermissionUtils;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
@@ -41,10 +42,10 @@ public class EmbedGuiCommand implements SlashCommand {
             return;
         }
         Member member = event.getMember();
-        if (!PermissionUtils.hasModeratorPermissions(member)) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Insufficient Permissions","You need moderation permissions to use the embed builder.")).setEphemeral(true).queue();
-            return;
-        }
+        // Anyone can open the builder. Send permission requires embed.simple / embed.advanced or mod perms.
+        boolean canSend = PermissionManager.hasPermission(member, "embed.simple")
+                       || PermissionManager.hasPermission(member, "embed.advanced")
+                       || PermissionUtils.hasModeratorPermissions(member);
 
         // Resolve target channel
         GuildMessageChannel targetTmp = event.getChannel().asGuildMessageChannel();
@@ -60,6 +61,7 @@ public class EmbedGuiCommand implements SlashCommand {
 
         String userId = event.getUser().getId();
         EmbedGuiSession session = EmbedGuiSession.getOrCreate(userId, target.getId());
+        session.canSend = canSend;
 
         // Defer the reply — we store the hook in the session so that modal submissions
         // can edit this original ephemeral message.
@@ -75,7 +77,7 @@ public class EmbedGuiCommand implements SlashCommand {
     public static MessageEditData buildGuiEdit(EmbedGuiSession s, GuildMessageChannel target, String userId) {
         return new MessageEditBuilder()
             .setEmbeds(buildPreview(s).build(), buildStatus(s, target).build())
-            .setComponents(buildRows(userId))
+            .setComponents(buildRows(userId, s.canSend))
             .build();
     }
 
@@ -109,22 +111,25 @@ public class EmbedGuiCommand implements SlashCommand {
     /** A small status embed shown below the preview. */
     public static EmbedBuilder buildStatus(EmbedGuiSession s, GuildMessageChannel target) {
         String targetMention = target != null ? "<#"+target.getId()+">" : "<#"+s.targetChannelId+">";
+        String sendNote = s.canSend ? "" : "\n⚠️ *You don't have permission to send — use **Export JSON** to copy the embed.*";
         return new EmbedBuilder()
             .setColor(new Color(0x36393F))
             .addField("📊 Builder Status",
                 "**Fields:** " + s.fields.size() + "/25  •  " +
                 "**Buttons:** " + s.buttons.size() + "/25  •  " +
                 "**Timestamp:** " + (s.timestamp ? "✅ On" : "❌ Off") + "\n" +
-                "**Target:** " + targetMention, false);
+                "**Target:** " + targetMention + sendNote, false);
     }
 
-    /** The 3 rows of control buttons. */
-    public static List<ActionRow> buildRows(String userId) {
+    /** The 3 rows of control buttons. canSend=false disables the Send button for users without send permission. */
+    public static List<ActionRow> buildRows(String userId, boolean canSend) {
         String u = userId;
         Emoji NOTE    = Emoji.fromFormatted("<:NOTE:1436161206233858070>");
         Emoji TRASH   = Emoji.fromFormatted("<:TRASH:1436161220007825458>");
         Emoji SAVE    = Emoji.fromFormatted("<:SAVE:1436161201880170526>");
         Emoji SUCCESS = Emoji.fromFormatted("<:SUCCESS:1436158779996504066>");
+        Button sendBtn = Button.success("egui:send:"+u, "Send").withEmoji(SUCCESS);
+        if (!canSend) sendBtn = sendBtn.asDisabled();
         return Arrays.asList(
             ActionRow.of(
                 Button.secondary("egui:title:"+u,  "📝 Title"),
@@ -145,7 +150,7 @@ public class EmbedGuiCommand implements SlashCommand {
                 Button.danger("egui:rmbtn:"+u,     "Remove Button").withEmoji(TRASH),
                 Button.danger("egui:clear:"+u,     "Clear All").withEmoji(TRASH),
                 Button.secondary("egui:export:"+u, "Export JSON").withEmoji(SAVE),
-                Button.success("egui:send:"+u,     "Send").withEmoji(SUCCESS)
+                sendBtn
             )
         );
     }

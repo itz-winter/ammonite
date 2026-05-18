@@ -47,6 +47,9 @@ public class EmbedGuiSession {
     public String userId;
     public String targetChannelId;
 
+    /** Whether this user has permission to send the built embed to a channel. */
+    public boolean canSend = false;
+
     /** Reference to the original slash-command hook so we can edit the GUI message after modals. */
     public InteractionHook hook;
 

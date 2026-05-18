@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error — Ammonite</title>
+  <link rel="stylesheet" href="/common.css">
+  <style>
+    .error-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 5rem 2rem; gap: 1rem; }
+    .error-code { font-size: 6rem; font-weight: 900; color: var(--brand-primary); line-height: 1; letter-spacing: -4px; }
+    .error-title { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+    .error-desc { color: var(--text-secondary); font-size: 1rem; max-width: 420px; margin: 0; line-height: 1.6; }
+    .error-btn { display: inline-block; margin-top: 0.5rem; padding: 10px 24px; background: var(--brand-primary); color: #000; border-radius: var(--radius); font-weight: 700; font-size: 0.95rem; text-decoration: none; transition: opacity .15s; }
+    .error-btn:hover { opacity: 0.85; text-decoration: none; }
+  </style>
+</head>
+<body>
+<header class="site-header"><button class="sidebar-toggle">&#9776;</button><a class="site-logo" href="/">Ammonite</a></header>
+<div class="site-body"><aside class="sidebar"></aside><div class="sidebar-backdrop"></div>
+<main class="content"><div class="content-inner">
+  <div class="error-wrap">
+    <div class="error-code" id="err-code"></div>
+    <p class="error-title" id="err-title"></p>
+    <p class="error-desc" id="err-desc"></p>
+    <a class="error-btn" href="/">Return to Homepage</a>
+  </div>
+</div></main></div>
+<script src="/site.js"></script>
+<script>
+AmDoc.init();
+(function () {
+  var ERRORS = {
+    400: { title: "Bad Request",           desc: "The server couldn't understand your request. Please check the URL and try again." },
+    403: { title: "Access Forbidden",      desc: "You don't have permission to view this page." },
+    404: { title: "Page Not Found",        desc: "The page you're looking for doesn't exist or may have been moved." },
+    408: { title: "Request Timeout",       desc: "The server took too long to respond. Please try again." },
+    429: { title: "Too Many Requests",     desc: "You've sent too many requests in a short time. Please wait a moment and try again." },
+    500: { title: "Internal Server Error", desc: "Something went wrong on our end. Please try again later." },
+    502: { title: "Bad Gateway",           desc: "The server received an invalid response from an upstream server." },
+    503: { title: "Service Unavailable",   desc: "The service is temporarily unavailable. Please try again in a moment." },
+    504: { title: "Gateway Timeout",       desc: "The upstream server didn't respond in time. Please try again later." },
+  };
+  var DEFAULT = { title: "Something Went Wrong", desc: "An unexpected error occurred. Please try returning to the homepage." };
+
+  var code = 404;
+  try {
+    var nav = performance.getEntriesByType("navigation")[0];
+    if (nav && nav.responseStatus && nav.responseStatus !== 200) {
+      code = nav.responseStatus;
+    }
+  } catch (e) {}
+
+  var info = ERRORS[code] || DEFAULT;
+  document.getElementById("err-code").textContent  = code;
+  document.getElementById("err-title").textContent = info.title;
+  document.getElementById("err-desc").textContent  = info.desc;
+  document.title = code + " " + info.title + " — Ammonite";
+})();
+</script>
+</body>
+</html>
