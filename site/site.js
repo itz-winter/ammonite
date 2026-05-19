@@ -3,13 +3,14 @@
   "use strict";
 
   const NAV = [
-    { slug: "commands",    title: "Commands",         href: "commands" },
-    { slug: "features",    title: "Features",         href: "features" },
-    { slug: "setup",       title: "Setup Guide",      href: "setup" },
-    { slug: "permissions", title: "Permissions",      href: "permissions" },
-    { slug: "privacy",     title: "Privacy Policy",   href: "privacy" },
-    { slug: "terms",       title: "Terms of Service", href: "terms" },
-    { slug: "support",     title: "Support & FAQ",    href: "support" },
+    { slug: "commands",     title: "Commands",          href: "commands" },
+    { slug: "features",     title: "Features",          href: "features" },
+    { slug: "setup",        title: "Setup Guide",       href: "setup" },
+    { slug: "permissions",  title: "Permissions",       href: "permissions" },
+    { slug: "embedbuilder", title: "Embed Builder",     href: "embedbuilder" },
+    { slug: "privacy",      title: "Privacy Policy",    href: "privacy" },
+    { slug: "terms",        title: "Terms of Service",  href: "terms" },
+    { slug: "support",      title: "Support & FAQ",     href: "support" },
   ];
 
   function buildSidebar(activeSlug) {
