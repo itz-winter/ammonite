@@ -9,13 +9,19 @@ import com.serverbot.utils.CustomEmojis;
 import com.serverbot.utils.EmbedUtils;
 import com.serverbot.utils.PermissionManager;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
@@ -63,7 +69,7 @@ public class GlobalChatCommand implements SlashCommand {
                         .addOption(OptionType.STRING, "webhookmode", "'webhook' (default) or 'text' — text sends as the bot itself", false))
                 // edit
                 .addSubcommands(new SubcommandData("edit", "Edit your global chat channel")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true))
                         .addOption(OptionType.STRING, "name", "New name", false)
                         .addOption(OptionType.STRING, "description", "New description", false)
                         .addOption(OptionType.STRING, "visibility", "New visibility (public/private)", false)
@@ -74,71 +80,71 @@ public class GlobalChatCommand implements SlashCommand {
                         .addOption(OptionType.STRING, "webhookmode", "'webhook' or 'text'", false))
                 // delete
                 .addSubcommands(new SubcommandData("delete", "Delete your global chat channel")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true))
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true)))
                 // link
                 .addSubcommands(new SubcommandData("link", "Link a server channel to a global chat")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true)
-                        .addOption(OptionType.CHANNEL, "channel", "Server channel to link", true)
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true))
+                        .addOptions(new OptionData(OptionType.STRING, "channel", "Server channel to link (#name or channel ID)", true).setAutoComplete(true))
                         .addOption(OptionType.STRING, "key", "Join key (if required)", false))
                 // unlink
                 .addSubcommands(new SubcommandData("unlink", "Unlink a server channel from its global chat")
-                        .addOption(OptionType.CHANNEL, "channel", "Server channel to unlink", true))
+                        .addOptions(new OptionData(OptionType.STRING, "channel", "Server channel to unlink (#name or channel ID)", true).setAutoComplete(true)))
                 // info
                 .addSubcommands(new SubcommandData("info", "View info about a global chat channel")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true))
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true)))
                 // list
                 .addSubcommands(new SubcommandData("list", "List your global chat channels"))
                 // setrules
                 .addSubcommands(new SubcommandData("setrules", "Set rules for your global chat channel")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true))
                         .addOption(OptionType.STRING, "rules", "Rules (separate each rule with |)", true))
                 // manage
                 .addSubcommands(new SubcommandData("manage", "Open the management panel for a global chat channel (DM only)")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true))
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true)))
                 // kick
                 .addSubcommands(new SubcommandData("kick", "Kick a server from your global chat channel")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true))
                         .addOption(OptionType.STRING, "serverid", "Server ID to kick", true)
                         .addOption(OptionType.STRING, "reason", "Reason for kick", false))
                 // ban
                 .addSubcommands(new SubcommandData("ban", "Ban a server from your global chat channel")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true))
                         .addOption(OptionType.STRING, "serverid", "Server ID to ban", true)
                         .addOption(OptionType.STRING, "reason", "Reason for ban", false))
                 // unban
                 .addSubcommands(new SubcommandData("unban", "Unban a server from your global chat channel")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true))
                         .addOption(OptionType.STRING, "serverid", "Server ID to unban", true))
                 // warn
                 .addSubcommands(new SubcommandData("warn", "Warn a server in your global chat channel")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true))
                         .addOption(OptionType.STRING, "serverid", "Server ID to warn", true)
                         .addOption(OptionType.STRING, "reason", "Reason for warning", false))
                 // unwarn
                 .addSubcommands(new SubcommandData("unwarn", "Clear warnings for a server")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true))
                         .addOption(OptionType.STRING, "serverid", "Server ID to unwarn", true))
                 // mute
                 .addSubcommands(new SubcommandData("mute", "Mute a server in your global chat channel")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true))
                         .addOption(OptionType.STRING, "serverid", "Server ID to mute", true)
                         .addOption(OptionType.STRING, "duration", "Duration (e.g. 1h, 30m, 7d, 0 for permanent)", false)
                         .addOption(OptionType.STRING, "reason", "Reason for mute", false))
                 // unmute
                 .addSubcommands(new SubcommandData("unmute", "Unmute a server in your global chat channel")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true))
                         .addOption(OptionType.STRING, "serverid", "Server ID to unmute", true))
                 // addmod
                 .addSubcommands(new SubcommandData("addmod", "Add a moderator to your global chat channel")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true))
                         .addOption(OptionType.USER, "user", "User to add as moderator", true))
                 // removemod
                 .addSubcommands(new SubcommandData("removemod", "Remove a moderator from your global chat channel")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true))
                         .addOption(OptionType.USER, "user", "User to remove as moderator", true))
                 // addcoowner
                 .addSubcommands(new SubcommandData("addcoowner", "Add a co-owner to your global chat channel")
-                        .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true).setAutoComplete(true))
                         .addOption(OptionType.USER, "user", "User to add as co-owner", true));
     }
 
@@ -393,8 +399,15 @@ public class GlobalChatCommand implements SlashCommand {
         }
 
         String channelId = event.getOption("channelid", OptionMapping::getAsString);
-        TextChannel target = event.getOption("channel", OptionMapping::getAsChannel).asTextChannel();
+        String channelInput = event.getOption("channel", OptionMapping::getAsString);
         String key = event.getOption("key", (String) null, OptionMapping::getAsString);
+
+        TextChannel target = resolveTextChannel(event.getGuild(), channelInput);
+        if (target == null) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Channel",
+                    "Could not find a text channel matching `" + channelInput + "`. Use the autocomplete or paste a channel ID.")).setEphemeral(true).queue();
+            return;
+        }
 
         GlobalChatChannel gc = service.getChannel(channelId);
         if (gc == null) { replyNotFound(event); return; }
@@ -420,8 +433,17 @@ public class GlobalChatCommand implements SlashCommand {
             return;
         }
 
-        TextChannel target = event.getOption("channel", OptionMapping::getAsChannel).asTextChannel();
-        String globalId = service.getGlobalChannelIdByTextChannel(target.getId());
+        String channelInput = event.getOption("channel", OptionMapping::getAsString);
+        String globalId = null;
+
+        TextChannel target = resolveTextChannel(event.getGuild(), channelInput);
+        if (target == null) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Channel",
+                    "Could not find a text channel matching `" + channelInput + "`. Use the autocomplete or paste a channel ID.")).setEphemeral(true).queue();
+            return;
+        }
+
+        globalId = service.getGlobalChannelIdByTextChannel(target.getId());
 
         if (globalId == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Linked",
@@ -760,6 +782,93 @@ public class GlobalChatCommand implements SlashCommand {
             };
         } catch (Exception e) {
             return 0;
+        }
+    }
+
+    /** Resolve a user-supplied channel string (ID, <#id>, or #name) to a TextChannel in the given guild. */
+    private static TextChannel resolveTextChannel(Guild guild, String input) {
+        if (guild == null || input == null || input.isBlank()) return null;
+        // Strip <#...> mention or leading #
+        String id = input.trim().replaceAll("[<#>]", "");
+        // Try by ID first
+        try {
+            TextChannel tc = guild.getTextChannelById(id);
+            if (tc != null) return tc;
+        } catch (NumberFormatException ignored) {}
+        // Try by name (case-insensitive)
+        String lower = id.toLowerCase();
+        return guild.getTextChannels().stream()
+                .filter(tc -> tc.getName().equalsIgnoreCase(lower))
+                .findFirst().orElse(null);
+    }
+
+    @Override
+    public void handleAutoComplete(CommandAutoCompleteInteractionEvent event) {
+        GlobalChatService service = ServerBot.getGlobalChatService();
+        String sub     = event.getSubcommandName();
+        String focused = event.getFocusedOption().getName();
+        String input   = event.getFocusedOption().getValue().toLowerCase();
+
+        if ("channelid".equals(focused)) {
+            // For link / info: show public channels + channels the user manages
+            // For management subcommands: only channels the user owns/co-owns
+            List<GlobalChatChannel> candidates;
+            if ("link".equals(sub) || "info".equals(sub)) {
+                // Merge owned + public (owned first, no duplicates)
+                List<GlobalChatChannel> owned  = service.getChannelsByOwner(event.getUser().getId());
+                List<GlobalChatChannel> pub    = service.getPublicChannels();
+                Set<String> seen = new java.util.LinkedHashSet<>();
+                candidates = new ArrayList<>();
+                for (GlobalChatChannel gc : owned) { if (seen.add(gc.getChannelId())) candidates.add(gc); }
+                for (GlobalChatChannel gc : pub)   { if (seen.add(gc.getChannelId())) candidates.add(gc); }
+            } else {
+                candidates = service.getChannelsByOwner(event.getUser().getId());
+            }
+
+            List<Command.Choice> choices = candidates.stream()
+                    .filter(gc -> input.isEmpty()
+                            || gc.getName().toLowerCase().contains(input)
+                            || gc.getChannelId().toLowerCase().contains(input))
+                    .limit(25)
+                    .map(gc -> new Command.Choice(gc.getName() + " (" + gc.getChannelId() + ")", gc.getChannelId()))
+                    .collect(Collectors.toList());
+
+            event.replyChoices(choices).queue();
+
+        } else if ("channel".equals(focused)) {
+            // Server text channel autocomplete — only valid in guilds
+            if (!event.isFromGuild()) { event.replyChoices().queue(); return; }
+            Guild  guild  = event.getGuild();
+            Member member = event.getMember();
+
+            List<Command.Choice> choices;
+            if ("unlink".equals(sub)) {
+                // Only show channels that are currently linked to a global chat
+                choices = guild.getTextChannels().stream()
+                        .filter(tc -> service.getGlobalChannelIdByTextChannel(tc.getId()) != null)
+                        .filter(tc -> input.isEmpty()
+                                || tc.getName().toLowerCase().contains(input)
+                                || tc.getId().contains(input))
+                        .limit(25)
+                        .map(tc -> new Command.Choice("#" + tc.getName(), tc.getId()))
+                        .collect(Collectors.toList());
+            } else {
+                // link: show text channels the member has MANAGE_CHANNEL or can at least see
+                choices = guild.getTextChannels().stream()
+                        .filter(tc -> member == null
+                                || member.hasPermission(tc, Permission.MANAGE_CHANNEL)
+                                || tc.canTalk(member))
+                        .filter(tc -> input.isEmpty()
+                                || tc.getName().toLowerCase().contains(input)
+                                || tc.getId().contains(input))
+                        .limit(25)
+                        .map(tc -> new Command.Choice("#" + tc.getName(), tc.getId()))
+                        .collect(Collectors.toList());
+            }
+            event.replyChoices(choices).queue();
+
+        } else {
+            event.replyChoices().queue();
         }
     }
 }

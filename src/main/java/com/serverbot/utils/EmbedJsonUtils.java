@@ -61,27 +61,104 @@ public final class EmbedJsonUtils {
 
     /**
      * Parse a raw JSON string into a populated EmbedBuilder.
-     * The JSON may optionally contain a "buttons" key — it is ignored here.
+     * Accepts either a bare embed object OR a full message payload
+     * ({ "embeds": [...], "components": [...] }) — in the latter case embeds[0] is used.
      * Use {@link #parseButtonsFromJson(String)} to extract buttons from the same JSON.
      */
     public static EmbedBuilder parseEmbed(String json) {
-        return buildEmbedFromObject(parseRootObject(json));
+        JsonObject root = parseRootObject(json);
+        // Unwrap message-payload format: { "embeds": [ {...} ], ... }
+        if (root.has("embeds") && root.get("embeds").isJsonArray()) {
+            JsonArray embeds = root.getAsJsonArray("embeds");
+            if (!embeds.isEmpty() && embeds.get(0).isJsonObject()) {
+                return buildEmbedFromObject(embeds.get(0).getAsJsonObject());
+            }
+        }
+        return buildEmbedFromObject(root);
     }
 
     /**
-     * Extract buttons from the "buttons" array inside an embed JSON string.
-     * Returns an empty list if the key is absent or the JSON has none.
+     * Extract buttons from the JSON string.
+     * Accepts two formats:
+     *  - Legacy "buttons": [ {...}, ... ]  (simple flat array used by /embedgui sessions)
+     *  - Discord API "components": [ { "type":1, "components": [ {"type":2, ...} ] } ]
+     * Returns an empty list if neither key is present or the JSON has no buttons.
      */
     public static List<Button> parseButtonsFromJson(String json) {
         JsonObject obj = parseRootObject(json);
-        if (!obj.has("buttons") || !obj.get("buttons").isJsonArray()) return new ArrayList<>();
         List<Button> result = new ArrayList<>();
+
+        // ── Discord API format: "components" array of action rows ────────────
+        if (obj.has("components") && obj.get("components").isJsonArray()) {
+            for (JsonElement rowEl : obj.getAsJsonArray("components")) {
+                if (!rowEl.isJsonObject()) continue;
+                JsonObject row = rowEl.getAsJsonObject();
+                // type 1 = ActionRow
+                if (row.has("type") && row.get("type").getAsInt() != 1) continue;
+                if (!row.has("components") || !row.get("components").isJsonArray()) continue;
+                for (JsonElement compEl : row.getAsJsonArray("components")) {
+                    if (!compEl.isJsonObject() || result.size() >= 25) continue;
+                    JsonObject comp = compEl.getAsJsonObject();
+                    // type 2 = Button
+                    if (comp.has("type") && comp.get("type").getAsInt() != 2) continue;
+                    Button btn = parseButtonObjectApiFormat(comp);
+                    if (btn != null) result.add(btn);
+                }
+            }
+            if (!result.isEmpty()) return result;
+        }
+
+        // ── Legacy format: "buttons" flat array ──────────────────────────────
+        if (!obj.has("buttons") || !obj.get("buttons").isJsonArray()) return result;
         for (JsonElement el : obj.getAsJsonArray("buttons")) {
             if (!el.isJsonObject() || result.size() >= 25) continue;
             Button btn = parseButtonObject(el.getAsJsonObject());
             if (btn != null) result.add(btn);
         }
         return result;
+    }
+
+    /**
+     * Parse a button component in Discord API format:
+     * { "type":2, "style":1-5, "label":"...", "custom_id":"...", "url":"...",
+     *   "emoji":{"name":"...","id":"..."}, "disabled":false }
+     */
+    private static Button parseButtonObjectApiFormat(JsonObject obj) {
+        int style = obj.has("style") ? obj.get("style").getAsInt() : 1;
+        String label    = obj.has("label")     ? obj.get("label").getAsString()     : "";
+        String url      = obj.has("url")       ? obj.get("url").getAsString()       : null;
+        String customId = obj.has("custom_id") ? obj.get("custom_id").getAsString() : null;
+        boolean disabled = obj.has("disabled") && obj.get("disabled").getAsBoolean();
+
+        // Emoji — unicode or custom
+        net.dv8tion.jda.api.entities.emoji.Emoji emoji = null;
+        if (obj.has("emoji") && obj.get("emoji").isJsonObject()) {
+            JsonObject em = obj.getAsJsonObject("emoji");
+            String emojiName = em.has("name") ? em.get("name").getAsString() : null;
+            String emojiId   = em.has("id")   ? em.get("id").getAsString()   : null;
+            if (emojiId != null && emojiName != null) {
+                boolean animated = em.has("animated") && em.get("animated").getAsBoolean();
+                emoji = net.dv8tion.jda.api.entities.emoji.Emoji.fromCustom(emojiName, Long.parseLong(emojiId), animated);
+            } else if (emojiName != null) {
+                try { emoji = net.dv8tion.jda.api.entities.emoji.Emoji.fromUnicode(emojiName); }
+                catch (Exception ignored) {}
+            }
+        }
+
+        if (label.isBlank() && emoji == null) return null;
+        if (customId == null && style != 5) customId = "btn_" + java.util.UUID.randomUUID().toString().substring(0, 8);
+
+        Button btn = switch (style) {
+            case 1 -> Button.primary(customId,   label.isBlank() ? "\u200b" : label);
+            case 3 -> Button.success(customId,   label.isBlank() ? "\u200b" : label);
+            case 4 -> Button.danger(customId,    label.isBlank() ? "\u200b" : label);
+            case 5 -> url != null ? Button.link(url, label.isBlank() ? "\u200b" : label) : null;
+            default-> Button.secondary(customId, label.isBlank() ? "\u200b" : label);
+        };
+        if (btn == null) return null;
+        if (emoji != null) btn = btn.withEmoji(emoji);
+        if (disabled) btn = btn.asDisabled();
+        return btn;
     }
 
     private static EmbedBuilder buildEmbedFromObject(JsonObject obj) {
