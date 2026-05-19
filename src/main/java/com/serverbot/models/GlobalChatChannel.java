@@ -37,6 +37,14 @@ public class GlobalChatChannel {
     private String messagePrefix;  // e.g. "[Lounge]"
     private String messageSuffix;  // e.g. "@ {serverName}"
 
+    // Full display name template — overrides prefix+authorName+suffix entirely when non-null.
+    // Supports same placeholders: {user}, {username}, {displayname}, {server}, {pronouns}
+    // e.g. "{user} @ {server}"
+    private String nameFormat;
+
+    // Whether to relay via webhook (true, default) or as a plain bot message (false)
+    private boolean webhookEnabled = true;
+
     public GlobalChatChannel() {
         this.coOwnerIds = new HashSet<>();
         this.moderatorIds = new HashSet<>();
@@ -208,4 +216,10 @@ public class GlobalChatChannel {
 
     public String getMessageSuffix() { return messageSuffix; }
     public void setMessageSuffix(String messageSuffix) { this.messageSuffix = messageSuffix; }
+
+    public String getNameFormat() { return nameFormat; }
+    public void setNameFormat(String nameFormat) { this.nameFormat = nameFormat; }
+
+    public boolean isWebhookEnabled() { return webhookEnabled; }
+    public void setWebhookEnabled(boolean webhookEnabled) { this.webhookEnabled = webhookEnabled; }
 }

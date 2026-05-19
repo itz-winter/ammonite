@@ -58,7 +58,9 @@ public class GlobalChatCommand implements SlashCommand {
                         .addOption(OptionType.BOOLEAN, "keyrequired", "Whether a key is required to join", false)
                         .addOption(OptionType.STRING, "key", "Custom join key (auto-generated if not provided)", false)
                         .addOption(OptionType.STRING, "prefix", "Custom message prefix (default: [GC]) — use {} for empty", false)
-                        .addOption(OptionType.STRING, "suffix", "Custom message suffix (default: • {server}) — use {} for empty", false))
+                        .addOption(OptionType.STRING, "suffix", "Custom message suffix (default: • {server}) — use {} for empty", false)
+                        .addOption(OptionType.STRING, "nameformat", "Full display name template e.g. '{user} @ {server}' — overrides prefix/suffix", false)
+                        .addOption(OptionType.STRING, "webhookmode", "'webhook' (default) or 'text' — text sends as the bot itself", false))
                 // edit
                 .addSubcommands(new SubcommandData("edit", "Edit your global chat channel")
                         .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true)
@@ -67,7 +69,9 @@ public class GlobalChatCommand implements SlashCommand {
                         .addOption(OptionType.STRING, "visibility", "New visibility (public/private)", false)
                         .addOption(OptionType.STRING, "key", "New join key", false)
                         .addOption(OptionType.STRING, "prefix", "New message prefix — 'reset' for default, {} for empty", false)
-                        .addOption(OptionType.STRING, "suffix", "New message suffix — 'reset' for default, {} for empty", false))
+                        .addOption(OptionType.STRING, "suffix", "New message suffix — 'reset' for default, {} for empty", false)
+                        .addOption(OptionType.STRING, "nameformat", "Full display name template — 'reset' to clear, {} for empty", false)
+                        .addOption(OptionType.STRING, "webhookmode", "'webhook' or 'text'", false))
                 // delete
                 .addSubcommands(new SubcommandData("delete", "Delete your global chat channel")
                         .addOption(OptionType.STRING, "channelid", "Global chat channel ID", true))
@@ -182,10 +186,15 @@ public class GlobalChatCommand implements SlashCommand {
         String key = event.getOption("key", (String) null, OptionMapping::getAsString);
         String msgPrefix = event.getOption("prefix", (String) null, OptionMapping::getAsString);
         String msgSuffix = event.getOption("suffix", (String) null, OptionMapping::getAsString);
+        String nameFormat = event.getOption("nameformat", (String) null, OptionMapping::getAsString);
+        String webhookModeStr = event.getOption("webhookmode", (String) null, OptionMapping::getAsString);
 
         // Handle {} as intentionally empty
         if ("{}".equals(msgPrefix)) msgPrefix = "";
         if ("{}".equals(msgSuffix)) msgSuffix = "";
+        if ("{}".equals(nameFormat)) nameFormat = "";
+
+        boolean webhookEnabled = webhookModeStr == null || !webhookModeStr.equalsIgnoreCase("text");
 
         if (!vis.equalsIgnoreCase("public") && !vis.equalsIgnoreCase("private")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Visibility",
@@ -194,7 +203,7 @@ public class GlobalChatCommand implements SlashCommand {
         }
 
         GlobalChatChannel channel = service.createChannel(name, desc, vis.toLowerCase(), keyReq, key,
-                event.getUser().getId(), msgPrefix, msgSuffix);
+                event.getUser().getId(), msgPrefix, msgSuffix, nameFormat, webhookEnabled);
 
         EmbedBuilder eb = new EmbedBuilder()
                 .setTitle(CustomEmojis.SUCCESS + " Global Chat Channel Created")
@@ -213,6 +222,10 @@ public class GlobalChatCommand implements SlashCommand {
         if (channel.getMessageSuffix() != null) {
             eb.addField("Suffix", channel.getMessageSuffix().isEmpty() ? "*(empty)*" : "`" + channel.getMessageSuffix() + "`", true);
         }
+        if (channel.getNameFormat() != null) {
+            eb.addField("Name Format", channel.getNameFormat().isEmpty() ? "*(empty)*" : "`" + channel.getNameFormat() + "`", true);
+        }
+        eb.addField("Webhook Mode", channel.isWebhookEnabled() ? "webhook" : "text", true);
 
         // DM the user the channel details (only if not in a guild, or guild has DMs enabled)
         if (!event.isFromGuild() || com.serverbot.utils.DmUtils.areDmsEnabled(event.getGuild())) {
@@ -229,7 +242,12 @@ public class GlobalChatCommand implements SlashCommand {
                 }
                 String effectivePrefix = channel.getMessagePrefix() != null ? channel.getMessagePrefix() : "[GC]";
                 String effectiveSuffix = channel.getMessageSuffix() != null ? channel.getMessageSuffix() : "• {server}";
-                dmEmbed.addField("Message Format", "`" + effectivePrefix + " {user} " + effectiveSuffix + "`", false);
+                if (channel.getNameFormat() != null) {
+                    dmEmbed.addField("Name Format (overrides prefix/suffix)", "`" + channel.getNameFormat() + "`", false);
+                } else {
+                    dmEmbed.addField("Message Format", "`" + effectivePrefix + " {user} " + effectiveSuffix + "`", false);
+                }
+                dmEmbed.addField("Webhook Mode", channel.isWebhookEnabled() ? "webhook" : "text", true);
                 dmEmbed.addField("Valid Placeholders",
                         "`{user}` — server nickname\n`{username}` — Discord username\n`{displayname}` — global display name\n`{server}` — server name\n`{pronouns}` — pronoun roles", false);
                 dmEmbed.setFooter("Use /globalchat manage " + channel.getChannelId() + " to manage this channel")
@@ -255,6 +273,8 @@ public class GlobalChatCommand implements SlashCommand {
         String newKey  = event.getOption("key", (String) null, OptionMapping::getAsString);
         String newPrefix = event.getOption("prefix", (String) null, OptionMapping::getAsString);
         String newSuffix = event.getOption("suffix", (String) null, OptionMapping::getAsString);
+        String newNameFormat = event.getOption("nameformat", (String) null, OptionMapping::getAsString);
+        String newWebhookMode = event.getOption("webhookmode", (String) null, OptionMapping::getAsString);
 
         if (newName != null) gc.setName(newName);
         if (newDesc != null) gc.setDescription(newDesc);
@@ -288,15 +308,30 @@ public class GlobalChatCommand implements SlashCommand {
                 gc.setMessageSuffix(newSuffix);
             }
         }
+        if (newNameFormat != null) {
+            if (newNameFormat.equalsIgnoreCase("none") || newNameFormat.equalsIgnoreCase("default") || newNameFormat.equalsIgnoreCase("reset")) {
+                gc.setNameFormat(null); // revert to prefix/suffix mode
+            } else if (newNameFormat.equals("{}")) {
+                gc.setNameFormat(""); // intentionally blank name
+            } else {
+                gc.setNameFormat(newNameFormat);
+            }
+        }
+        if (newWebhookMode != null) {
+            gc.setWebhookEnabled(!newWebhookMode.equalsIgnoreCase("text"));
+        }
 
         service.saveChannels();
 
         String effectivePrefix = gc.getMessagePrefix() != null ? gc.getMessagePrefix() : "[GC]";
         String effectiveSuffix = gc.getMessageSuffix() != null ? gc.getMessageSuffix() : "• {server}";
-        String formatPreview = "`" + effectivePrefix + " {user} " + effectiveSuffix + "`";
+        String formatPreview = gc.getNameFormat() != null
+                ? "Name Format: `" + gc.getNameFormat() + "`"
+                : "`" + effectivePrefix + " {user} " + effectiveSuffix + "`";
 
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Channel Updated",
-                "Global chat channel **" + gc.getName() + "** has been updated.\n\n**Message format:** " + formatPreview)).setEphemeral(true).queue();
+                "Global chat channel **" + gc.getName() + "** has been updated.\n\n**Display name:** " + formatPreview +
+                "\n**Webhook mode:** " + (gc.isWebhookEnabled() ? "webhook" : "text"))).setEphemeral(true).queue();
     }
 
     // ── delete ───────────────────────────────────────────────────────
@@ -443,7 +478,12 @@ public class GlobalChatCommand implements SlashCommand {
 
         String effectivePrefix = gc.getMessagePrefix() != null ? gc.getMessagePrefix() : "[GC]";
         String effectiveSuffix = gc.getMessageSuffix() != null ? gc.getMessageSuffix() : "• {server}";
-        eb.addField("Message Format", "`" + effectivePrefix + " {user} " + effectiveSuffix + "`", false);
+        if (gc.getNameFormat() != null) {
+            eb.addField("Name Format", "`" + gc.getNameFormat() + "` *(overrides prefix/suffix)*", false);
+        } else {
+            eb.addField("Message Format", "`" + effectivePrefix + " {user} " + effectiveSuffix + "`", false);
+        }
+        eb.addField("Webhook Mode", gc.isWebhookEnabled() ? "webhook" : "text", true);
         eb.addField("Valid Placeholders",
                 "`{user}` — server nickname\n`{username}` — Discord username\n`{displayname}` — global display name\n`{server}` — server name\n`{pronouns}` — pronoun roles", false);
 

@@ -139,12 +139,19 @@ public class GlobalChatService {
 
     public GlobalChatChannel createChannel(String name, String description, String visibility,
                                            boolean keyRequired, String key, String ownerId) {
-        return createChannel(name, description, visibility, keyRequired, key, ownerId, null, null);
+        return createChannel(name, description, visibility, keyRequired, key, ownerId, null, null, null, true);
     }
 
     public GlobalChatChannel createChannel(String name, String description, String visibility,
                                            boolean keyRequired, String key, String ownerId,
                                            String messagePrefix, String messageSuffix) {
+        return createChannel(name, description, visibility, keyRequired, key, ownerId, messagePrefix, messageSuffix, null, true);
+    }
+
+    public GlobalChatChannel createChannel(String name, String description, String visibility,
+                                           boolean keyRequired, String key, String ownerId,
+                                           String messagePrefix, String messageSuffix,
+                                           String nameFormat, boolean webhookEnabled) {
         String id = generateChannelId();
         if (keyRequired && (key == null || key.isEmpty())) {
             key = generateKey();
@@ -152,6 +159,8 @@ public class GlobalChatService {
         GlobalChatChannel channel = new GlobalChatChannel(id, name, description, visibility, keyRequired, key, ownerId);
         if (messagePrefix != null) channel.setMessagePrefix(messagePrefix);
         if (messageSuffix != null) channel.setMessageSuffix(messageSuffix);
+        if (nameFormat != null) channel.setNameFormat(nameFormat);
+        channel.setWebhookEnabled(webhookEnabled);
         channels.put(id, channel);
         saveChannels();
         return channel;
@@ -390,19 +399,27 @@ public class GlobalChatService {
         String safeDisplayName = displayName != null ? displayName : safeUsername;
         String safePronouns = pronouns != null && !pronouns.isEmpty() ? pronouns : "";
 
-        String resolvedPrefix = resolvePlaceholders(prefix, authorName, safeServer, safeUsername, safeDisplayName, safePronouns);
-        String resolvedSuffix = resolvePlaceholders(suffix, authorName, safeServer, safeUsername, safeDisplayName, safePronouns);
+        // Build display name
+        // If nameFormat is set it overrides prefix+authorName+suffix entirely.
+        // Otherwise the traditional prefix + authorName + suffix assembly is used.
+        String webhookDisplayName;
+        if (gc.getNameFormat() != null) {
+            webhookDisplayName = resolvePlaceholders(gc.getNameFormat(), authorName, safeServer, safeUsername, safeDisplayName, safePronouns);
+        } else {
+            String resolvedPrefix = resolvePlaceholders(prefix, authorName, safeServer, safeUsername, safeDisplayName, safePronouns);
+            String resolvedSuffix = resolvePlaceholders(suffix, authorName, safeServer, safeUsername, safeDisplayName, safePronouns);
 
-        // Build webhook display name, omitting empty prefix/suffix without extra spaces
-        StringBuilder displayBuilder = new StringBuilder();
-        if (!resolvedPrefix.isEmpty()) {
-            displayBuilder.append(resolvedPrefix).append(" ");
+            // Build webhook display name, omitting empty prefix/suffix without extra spaces
+            StringBuilder displayBuilder = new StringBuilder();
+            if (!resolvedPrefix.isEmpty()) {
+                displayBuilder.append(resolvedPrefix).append(" ");
+            }
+            displayBuilder.append(authorName);
+            if (!resolvedSuffix.isEmpty()) {
+                displayBuilder.append(" ").append(resolvedSuffix);
+            }
+            webhookDisplayName = displayBuilder.toString();
         }
-        displayBuilder.append(authorName);
-        if (!resolvedSuffix.isEmpty()) {
-            displayBuilder.append(" ").append(resolvedSuffix);
-        }
-        String webhookDisplayName = displayBuilder.toString();
         // Discord webhook usernames max 80 chars
         if (webhookDisplayName.length() > 80) {
             webhookDisplayName = webhookDisplayName.substring(0, 80);
@@ -481,26 +498,40 @@ public class GlobalChatService {
             final String messageContent = perChannelContent;
 
             final String targetTextChId = textChId;
-            getOrCreateWebhook(target).thenAccept(webhook -> {
-                if (webhook == null) return;
-                webhook.sendMessage(messageContent)
-                        .setUsername(finalDisplayName)
-                        .setAvatarUrl(authorAvatarUrl)
-                        .queue(
-                                sentMsg -> {
-                                    // Store the mapping: source message -> relayed message in this channel
-                                    if (finalTargetMap != null && sourceMessageId != null) {
-                                        finalTargetMap.put(targetTextChId, sentMsg.getId());
-                                        reverseMessageMapping.put(sentMsg.getId(), sourceMessageId);
+            if (gc.isWebhookEnabled()) {
+                getOrCreateWebhook(target).thenAccept(webhook -> {
+                    if (webhook == null) return;
+                    webhook.sendMessage(messageContent)
+                            .setUsername(finalDisplayName)
+                            .setAvatarUrl(authorAvatarUrl)
+                            .queue(
+                                    sentMsg -> {
+                                        // Store the mapping: source message -> relayed message in this channel
+                                        if (finalTargetMap != null && sourceMessageId != null) {
+                                            finalTargetMap.put(targetTextChId, sentMsg.getId());
+                                            reverseMessageMapping.put(sentMsg.getId(), sourceMessageId);
+                                        }
+                                    },
+                                    err -> {
+                                        logger.warn("Failed to relay message to {}: {}", targetTextChId, err.getMessage());
+                                        // Evict stale webhook so the next message triggers re-creation
+                                        webhookCache.remove(targetTextChId);
                                     }
-                                },
-                                err -> {
-                                    logger.warn("Failed to relay message to {}: {}", targetTextChId, err.getMessage());
-                                    // Evict stale webhook so the next message triggers re-creation
-                                    webhookCache.remove(targetTextChId);
-                                }
-                        );
-            });
+                            );
+                });
+            } else {
+                // Webhook disabled — send as the bot itself
+                String botContent = "**" + finalDisplayName + ":** " + messageContent;
+                target.sendMessage(botContent).queue(
+                        sentMsg -> {
+                            if (finalTargetMap != null && sourceMessageId != null) {
+                                finalTargetMap.put(targetTextChId, sentMsg.getId());
+                                reverseMessageMapping.put(sentMsg.getId(), sourceMessageId);
+                            }
+                        },
+                        err -> logger.warn("Failed to relay message (text mode) to {}: {}", targetTextChId, err.getMessage())
+                );
+            }
         }
     }
 

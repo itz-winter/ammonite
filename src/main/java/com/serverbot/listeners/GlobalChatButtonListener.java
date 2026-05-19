@@ -202,6 +202,38 @@ public class GlobalChatButtonListener extends ListenerAdapter {
                         gc.setKeyRequired(true);
                     }
                 }
+                state.setPendingAction("edit_nameformat");
+                event.getChannel().sendMessage(
+                        "Enter the full display name template (e.g. `{user} @ {server}`) to override prefix/suffix:\n" +
+                        "> Current: **" + (gc.getNameFormat() != null ? gc.getNameFormat() : "*(not set — uses prefix/suffix)*") + "**\n\n" +
+                        "*Type `skip` to keep, `reset` to clear (back to prefix/suffix mode), or a new template.*").queue();
+            }
+            case "edit_nameformat" -> {
+                if (!"skip".equalsIgnoreCase(input)) {
+                    if (input.equalsIgnoreCase("reset") || input.equalsIgnoreCase("none") || input.equalsIgnoreCase("default")) {
+                        gc.setNameFormat(null);
+                    } else if ("{}".equals(input)) {
+                        gc.setNameFormat("");
+                    } else {
+                        gc.setNameFormat(input);
+                    }
+                }
+                state.setPendingAction("edit_webhookmode");
+                event.getChannel().sendMessage(
+                        "Enable webhook mode?\n> Current: **" + (gc.isWebhookEnabled() ? "webhook" : "text") + "**\n\n" +
+                        "*Type `webhook` (messages sent via webhook) or `text` (messages sent as the bot), or `skip` to keep.*").queue();
+            }
+            case "edit_webhookmode" -> {
+                if (!input.equalsIgnoreCase("skip")) {
+                    if (input.equalsIgnoreCase("webhook")) {
+                        gc.setWebhookEnabled(true);
+                    } else if (input.equalsIgnoreCase("text")) {
+                        gc.setWebhookEnabled(false);
+                    } else {
+                        event.getChannel().sendMessage("Invalid value. Please enter `webhook`, `text`, or `skip`.").queue();
+                        return;
+                    }
+                }
                 service.saveChannels();
                 event.getChannel().sendMessage(CustomEmojis.SUCCESS + " Channel **" + gc.getName() + "** has been updated.").queue();
                 service.clearManagePanelState(userId);

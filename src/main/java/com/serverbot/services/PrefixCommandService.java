@@ -6492,8 +6492,15 @@ public class PrefixCommandService {
         }
         String name = args[0];
         String desc = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+        // Support kv args at end of description for nameformat and webhookmode
+        String nameFormat = gcExtractKvArg(desc, "nameformat");
+        String webhookModeStr = gcExtractKvArg(desc, "webhookmode");
+        boolean webhookEnabled = webhookModeStr == null || !webhookModeStr.equalsIgnoreCase("text");
+        // Remove kv args from the description string
+        if (nameFormat != null) desc = desc.replaceAll("(?i)nameformat:[^\\s]+", "").trim();
+        if (webhookModeStr != null) desc = desc.replaceAll("(?i)webhookmode:[^\\s]+", "").trim();
         com.serverbot.models.GlobalChatChannel ch = service.createChannel(
-            name, desc, "public", false, null, event.getAuthor().getId(), null, null);
+            name, desc, "public", false, null, event.getAuthor().getId(), null, null, nameFormat, webhookEnabled);
         event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
             "Global Chat Channel Created",
             "**" + ch.getName() + "** created!\n" +
@@ -6519,6 +6526,8 @@ public class PrefixCommandService {
         String newDesc = gcExtractKvArg(remaining, "desc");
         String newVis  = gcExtractKvArg(remaining, "vis");
         String newKey  = gcExtractKvArg(remaining, "key");
+        String newNameFormat = gcExtractKvArg(remaining, "nameformat");
+        String newWebhookMode = gcExtractKvArg(remaining, "webhookmode");
 
         if (newName != null) gc.setName(newName);
         if (newDesc != null) gc.setDescription(newDesc);
@@ -6530,6 +6539,18 @@ public class PrefixCommandService {
             gc.setVisibility(newVis.toLowerCase());
         }
         if (newKey != null) { gc.setKey(newKey); gc.setKeyRequired(true); }
+        if (newNameFormat != null) {
+            if (newNameFormat.equalsIgnoreCase("reset") || newNameFormat.equalsIgnoreCase("none") || newNameFormat.equalsIgnoreCase("default")) {
+                gc.setNameFormat(null);
+            } else if (newNameFormat.equals("{}")) {
+                gc.setNameFormat("");
+            } else {
+                gc.setNameFormat(newNameFormat);
+            }
+        }
+        if (newWebhookMode != null) {
+            gc.setWebhookEnabled(!newWebhookMode.equalsIgnoreCase("text"));
+        }
 
         service.saveChannels();
         event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
