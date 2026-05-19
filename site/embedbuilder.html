@@ -314,7 +314,21 @@
       padding: 1.5rem 0;
     }
 
-    /* ── Color picker row ────────────────────────────────────── */
+    /* ── Discord markdown rendering ─────────────────────────── */
+    .dc-description, .dc-field-value { white-space: normal; }
+    .dc-md-h1 { font-size: 1.5rem; font-weight: 700; color: #e0e1e5; margin: .4rem 0 .2rem; line-height: 1.2; }
+    .dc-md-h2 { font-size: 1.25rem; font-weight: 700; color: #e0e1e5; margin: .35rem 0 .15rem; line-height: 1.2; }
+    .dc-md-h3 { font-size: 1.05rem; font-weight: 700; color: #e0e1e5; margin: .3rem 0 .1rem; line-height: 1.2; }
+    .dc-md-bq { border-left: 3px solid #4e5058; padding: .1rem 0 .1rem .65rem; color: #b5bac1; margin: .2rem 0; display: block; }
+    .dc-md-cb { background: #1e1f22; border-radius: 4px; padding: .45rem .75rem; font-family: "Consolas","Fira Code",monospace; font-size: .82rem; color: #d4d7dc; margin: .3rem 0; display: block; overflow-x: auto; white-space: pre; }
+    .dc-md-ic { background: #1e1f22; border-radius: 3px; padding: .1rem .3rem; font-family: "Consolas","Fira Code",monospace; font-size: .82rem; color: #d4d7dc; }
+    .dc-md-sp { background: #202225; color: transparent; border-radius: 3px; cursor: pointer; user-select: none; transition: color .15s, background .15s; }
+    .dc-md-sp.revealed { background: #4f545c; color: inherit; }
+    .dc-md-sub { font-size: .72rem; color: #80848e; }
+    .dc-md-ul { margin: .2rem 0 .2rem 1.1rem; padding: 0; list-style: disc; }
+    .dc-md-ul li { margin: .1rem 0; font-size: inherit; color: inherit; }
+    .dc-md-a { color: #00aff4; text-decoration: none; }
+    .dc-md-a:hover { text-decoration: underline; }
     .color-picker-row {
       display: flex;
       align-items: center;
@@ -824,14 +838,14 @@
       }
 
       if (embed.description)
-        html += '<div class="dc-description">' + esc(embed.description) + '</div>';
+        html += '<div class="dc-description">' + renderMarkdown(embed.description) + '</div>';
 
       if (embed.fields && embed.fields.length) {
         html += '<div class="dc-fields">';
         embed.fields.forEach(function (f) {
           html += '<div class="' + (f.inline ? "dc-field" : "dc-field full") + '">';
-          html += '<div class="dc-field-name">' + esc(f.name) + '</div>';
-          html += '<div class="dc-field-value">' + esc(f.value) + '</div>';
+          html += '<div class="dc-field-name">' + renderMarkdown(f.name) + '</div>';
+          html += '<div class="dc-field-value">' + renderMarkdown(f.value) + '</div>';
           html += '</div>';
         });
         html += '</div>';
@@ -910,7 +924,89 @@
       .replace(/"/g, "&quot;");
   }
 
-  /* ── Render JSON ─────────────────────────────────────────────── */
+  /* ── Discord markdown renderer ───────────────────────────────── */
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function renderMarkdown(rawStr) {
+    if (!rawStr) return "";
+    let s = rawStr;
+
+    // 1. Extract fenced code blocks (``` ... ```)
+    const codeBlocks = [];
+    s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, function(_, lang, code) {
+      const i = codeBlocks.length;
+      codeBlocks.push('<code class="dc-md-cb">' + escHtml(code.replace(/^\n|\n$/g, "")) + "</code>");
+      return "\x02CB" + i + "\x02";
+    });
+
+    // 2. Extract inline code (` ... `)
+    const inlines = [];
+    s = s.replace(/`([^`\n]+)`/g, function(_, code) {
+      const i = inlines.length;
+      inlines.push('<code class="dc-md-ic">' + escHtml(code) + "</code>");
+      return "\x02IC" + i + "\x02";
+    });
+
+    // 3. Block-level markup — operate on raw text before HTML-escaping
+    // Headings
+    s = s.replace(/^### (.+)$/gm, "\x02H3S\x02$1\x02H3E\x02");
+    s = s.replace(/^## (.+)$/gm,  "\x02H2S\x02$1\x02H2E\x02");
+    s = s.replace(/^# (.+)$/gm,   "\x02H1S\x02$1\x02H1E\x02");
+    // Subtext (-# small grey text)
+    s = s.replace(/^-# (.+)$/gm, "\x02STS\x02$1\x02STE\x02");
+    // Blockquote >>> multi-line (must come before single >)
+    s = s.replace(/^>>> ([\s\S]+)/m, "\x02BQS\x02$1\x02BQE\x02");
+    // Blockquote > single line
+    s = s.replace(/^> (.+)$/gm, "\x02BQS\x02$1\x02BQE\x02");
+    // Unordered lists — group consecutive list lines
+    s = s.replace(/((?:^[ \t]*[*\-] .+$\n?)+)/gm, function(match) {
+      const items = match.trimEnd().split("\n").map(function(line) {
+        return "\x02LIS\x02" + line.replace(/^[ \t]*[*\-] /, "") + "\x02LIE\x02";
+      });
+      return "\x02ULS\x02" + items.join("") + "\x02ULE\x02";
+    });
+
+    // 4. HTML-escape only the non-placeholder text segments
+    s = s.split(/(\x02[A-Z0-9]+\x02)/).map(function(part) {
+      return /^\x02[A-Z0-9]+\x02$/.test(part) ? part : escHtml(part);
+    }).join("");
+
+    // 5. Inline markdown (order: *** before ** before *, __ before _)
+    s = s.replace(/\*\*\*(.+?)\*\*\*/gs, "<strong><em>$1</em></strong>");
+    s = s.replace(/\*\*(.+?)\*\*/gs,     "<strong>$1</strong>");
+    s = s.replace(/__(.+?)__/gs,         "<u>$1</u>");
+    s = s.replace(/\*(.+?)\*/gs,         "<em>$1</em>");
+    s = s.replace(/(?:^|\s)_([^_\n]+)_(?=\s|$|[.,!?;:])/gm, function(m, inner) { return m.replace("_" + inner + "_", "<em>" + inner + "</em>"); });
+    s = s.replace(/~~(.+?)~~/gs,         "<s>$1</s>");
+    s = s.replace(/\|\|(.+?)\|\|/gs,     "<span class='dc-md-sp' onclick=\"this.classList.toggle('revealed')\">$1</span>");
+
+    // 6. Links — [text](url) and auto-links
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, "<a class='dc-md-a' href='$2' target='_blank' rel='noopener'>$1</a>");
+    // Auto-links (don't re-link already-anchored text)
+    s = s.replace(/(?<!href='|href=")(https?:\/\/[^\s<>"'\x02]+)/g, "<a class='dc-md-a' href='$1' target='_blank' rel='noopener'>$1</a>");
+
+    // 7. Newlines → <br>
+    s = s.replace(/\n/g, "<br>");
+
+    // 8. Restore structural block markers as HTML
+    s = s.replace(/\x02H1S\x02([\s\S]*?)\x02H1E\x02/g, "<span class='dc-md-h1'>$1</span>");
+    s = s.replace(/\x02H2S\x02([\s\S]*?)\x02H2E\x02/g, "<span class='dc-md-h2'>$1</span>");
+    s = s.replace(/\x02H3S\x02([\s\S]*?)\x02H3E\x02/g, "<span class='dc-md-h3'>$1</span>");
+    s = s.replace(/\x02STS\x02([\s\S]*?)\x02STE\x02/g, "<span class='dc-md-sub'>$1</span>");
+    s = s.replace(/\x02BQS\x02([\s\S]*?)\x02BQE\x02/g, "<span class='dc-md-bq'>$1</span>");
+    s = s.replace(/\x02ULS\x02([\s\S]*?)\x02ULE\x02/g, "<ul class='dc-md-ul'>$1</ul>");
+    s = s.replace(/\x02LIS\x02([\s\S]*?)\x02LIE\x02/g, "<li>$1</li>");
+
+    // 9. Restore extracted code
+    inlines.forEach(function(code, i) { s = s.split("\x02IC" + i + "\x02").join(code); });
+    codeBlocks.forEach(function(block, i) { s = s.split("\x02CB" + i + "\x02").join(block); });
+
+    return s;
+  }
   function renderJson(payload) {
     $i("json-output").textContent = JSON.stringify(payload, null, 2);
   }
