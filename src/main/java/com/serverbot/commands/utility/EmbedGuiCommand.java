@@ -37,10 +37,11 @@ public class EmbedGuiCommand implements SlashCommand {
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
+        /*
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only","This command can only be used in servers.")).setEphemeral(true).queue();
             return;
-        }
+        }*/
         Member member = event.getMember();
         // Anyone can open the builder. Send permission requires embed.simple / embed.advanced or mod perms.
         boolean canSend = PermissionManager.hasPermission(member, "embed.simple")

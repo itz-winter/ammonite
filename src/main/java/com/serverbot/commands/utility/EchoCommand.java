@@ -20,12 +20,12 @@ public class EchoCommand implements SlashCommand {
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
-        if (!event.isFromGuild()) {
+        /*if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                 "Guild Only", "This command can only be used in servers."
             )).setEphemeral(true).queue();
             return;
-        }
+        }*/
 
         Member member = event.getMember();
         if (!PermissionManager.hasPermission(member, "utility.echo")) {
