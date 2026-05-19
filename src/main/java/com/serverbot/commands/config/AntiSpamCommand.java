@@ -117,9 +117,9 @@ public class AntiSpamCommand implements SlashCommand {
 
             // Message limits
             embed.addField("Message Limits", 
-                          "**Messages per 10s:** " + settings.getOrDefault("antiSpamMessageLimit", 5) + "\n" +
-                          "**Duplicate messages:** " + settings.getOrDefault("antiSpamDuplicateLimit", 3) + "\n" +
-                          "**Mentions per message:** " + settings.getOrDefault("antiSpamMentionLimit", 5) + "\n" +
+                          "**Messages per 10s:** " + settings.getOrDefault("antiSpamMessageLimit", 10) + "\n" +
+                          "**Duplicate messages:** " + settings.getOrDefault("antiSpamDuplicateLimit", 5) + "\n" +
+                          "**Mentions per message:** " + settings.getOrDefault("antiSpamMentionLimit", 8) + "\n" +
                           "**Max CAPS percentage:** " + settings.getOrDefault("antiSpamCapsLimit", 100) + "%", 
                           false);
 

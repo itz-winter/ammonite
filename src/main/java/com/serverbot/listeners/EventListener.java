@@ -6,6 +6,7 @@ import com.serverbot.services.PunishmentNotificationService.PunishmentType;
 import com.serverbot.services.SchedulerService;
 import com.serverbot.utils.DmUtils;
 import com.serverbot.utils.EmbedUtils;
+import com.serverbot.utils.PermissionManager;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -112,18 +113,24 @@ public class EventListener extends ListenerAdapter {
             if (automodEnabled == null || !automodEnabled) {
                 return false;
             }
+
+            // Administrator bypass: members with the bypass permission (admins get it automatically) skip antispam
+            Member memberEarly = event.getMember();
+            if (memberEarly != null && PermissionManager.hasPermission(memberEarly, "automod.antispam.bypass")) {
+                return false;
+            }
             
             // Check if auto-delete is enabled
-            Boolean autoDelete = (Boolean) settings.getOrDefault("antiSpamAutoDelete", true);
+            Boolean autoDelete = (Boolean) settings.getOrDefault("antiSpamAutoDelete", false);
             
             String userId = event.getAuthor().getId();
             String userKey = guildId + ":" + userId;
             long currentTime = System.currentTimeMillis();
             
-            // Get anti-spam settings - handle both Long and Integer types
-            Object maxMessagesObj = settings.getOrDefault("antiSpamMessageLimit", 5);
-            int maxMessages = maxMessagesObj instanceof Long ? ((Long) maxMessagesObj).intValue() : (Integer) maxMessagesObj;
-            long timeWindow = 10000L; // 10 seconds as per the UI
+            // Get anti-spam settings — handle Long, Integer, and Double (common from JSON parsers)
+            Object maxMessagesObj = settings.getOrDefault("antiSpamMessageLimit", 10);
+            int maxMessages = ((Number) maxMessagesObj).intValue();
+            long timeWindow = 10000L; // 10 seconds
             
             // Track message times
             messageTimes.computeIfAbsent(userKey, k -> new ArrayList<>()).add(currentTime);

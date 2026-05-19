@@ -54,6 +54,7 @@ public class PermissionManager {
         DEFAULT_PERMISSIONS.put("automod.antispam.muteduration", false);
         DEFAULT_PERMISSIONS.put("automod.antispam.banduration", false);
         DEFAULT_PERMISSIONS.put("automod.antispam.view", false);
+        DEFAULT_PERMISSIONS.put("automod.antispam.bypass", false); // bypass antispam check (admins get this automatically)
         DEFAULT_PERMISSIONS.put("automod.viewsettings", false);
         DEFAULT_PERMISSIONS.put("automod.edit", false);
         
