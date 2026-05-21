@@ -8,547 +8,250 @@ import com.serverbot.utils.PermissionManager;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * Compressed permissions management command with all functionality in one root command
+ * Permission management command with autocomplete on the node option.
+ * Supports viewing, setting, and removing permissions for users, roles, and @everyone.
  */
 public class PermissionsCommand implements SlashCommand {
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).setEphemeral(true).queue();
+            return;
+        }
+        if (!PermissionManager.hasPermission(event.getMember(), "admin.permissions")) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("No Permission",
+                    "You need `admin.permissions` to manage permissions.")).setEphemeral(true).queue();
             return;
         }
 
-        Member member = event.getMember();
-        if (!PermissionManager.hasPermission(member, "admin.permissions")) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", "You need the `admin.permissions` permission to use this command."
-            )).setEphemeral(true).queue();
+        OptionMapping actionOpt = event.getOption("action");
+        if (actionOpt == null) {
+            showHelp(event);
             return;
         }
 
-        // Check special functions first
-        OptionMapping targetOption = event.getOption("target");
-        if (targetOption != null) {
-            String target = targetOption.getAsString();
-            if ("list-nodes".equals(target)) {
-                handleListNodes(event);
-                return;
-            } else if ("check".equals(target)) {
-                handleCheckPermissions(event);
-                return;
-            }
+        switch (actionOpt.getAsString()) {
+            case "view"   -> handleView(event);
+            case "set"    -> handleSet(event);
+            case "remove" -> handleRemove(event);
+            default       -> showHelp(event);
         }
+    }
 
-        // Check if no arguments provided - show help
-        OptionMapping targetEntityOption = event.getOption("target-entity");
-        OptionMapping actionOption = event.getOption("action");
-        
-        if (targetEntityOption == null && actionOption == null) {
-            showPermissionsHelp(event);
+    @Override
+    public void handleAutoComplete(CommandAutoCompleteInteractionEvent event) {
+        String focused = event.getFocusedOption().getName();
+        if (!"node".equals(focused)) { event.replyChoices().queue(); return; }
+
+        String input = event.getFocusedOption().getValue().toLowerCase();
+        List<Command.Choice> choices = PermissionManager.getAllPermissionNodes().stream()
+                .filter(n -> n.toLowerCase().contains(input))
+                .sorted()
+                .limit(25)
+                .map(n -> new Command.Choice(n, n))
+                .collect(Collectors.toList());
+        event.replyChoices(choices).queue();
+    }
+
+    // ── Handlers ──────────────────────────────────────────────────────────────
+
+    private void handleView(SlashCommandInteractionEvent event) {
+        String guildId = event.getGuild().getId();
+        OptionMapping targetOpt = event.getOption("target");
+
+        if (targetOpt == null) {
+            // Show @everyone permissions
+            Map<String, Boolean> perms = PermissionManager.getEveryonePermissions(guildId);
+            event.replyEmbeds(buildPermEmbed("@everyone", null, perms, event.getGuild().getName()).build()).setEphemeral(true).queue();
             return;
         }
 
-        if (targetEntityOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Target [100]", 
-                "Please specify a target entity (user, role, or @everyone).\n" +
-                "Error Code: **100** - Missing Target Parameter\n" +
-                "Use `/error category:1` for full 1XX-series documentation."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        String action = actionOption != null ? actionOption.getAsString() : "view";
-
-        // Auto-detect target type and handle accordingly
-        if (targetEntityOption.getAsUser() != null) {
-            // It's a user
-            User targetUser = targetEntityOption.getAsUser();
-            Member targetMember = event.getGuild().getMember(targetUser);
-            if (targetMember == null) {
-                event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "User Not Found [301]", 
-                    "The specified user is not a member of this server.\n" +
-                    "Error Code: **301** - Target Not Found\n" +
-                    "Use `/error category:3` for full 3XX-series documentation."
-                )).setEphemeral(true).queue();
+        try {
+            Member member = targetOpt.getAsMember();
+            if (member != null) {
+                Map<String, Boolean> perms = PermissionManager.getUserPermissions(guildId, member.getId());
+                event.replyEmbeds(buildPermEmbed(member.getEffectiveName(), "\uD83D\uDC64", perms, event.getGuild().getName()).build()).setEphemeral(true).queue();
                 return;
             }
-            handleUserPermissions(event, targetMember, action);
-        } else if (targetEntityOption.getAsRole() != null) {
-            Role targetRole = targetEntityOption.getAsRole();
-            // Check if this is the @everyone role
-            if (targetRole.isPublicRole()) {
-                handleEveryonePermissions(event, action);
-            } else {
-                handleRolePermissions(event, targetRole, action);
+        } catch (Exception ignored) {}
+
+        try {
+            Role role = targetOpt.getAsRole();
+            Map<String, Boolean> perms = PermissionManager.getRolePermissions(guildId, role.getId());
+            event.replyEmbeds(buildPermEmbed(role.getName(), "\uD83C\uDFAD", perms, event.getGuild().getName()).build()).setEphemeral(true).queue();
+        } catch (Exception e) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "Could not resolve target.")).setEphemeral(true).queue();
+        }
+    }
+
+    private void handleSet(SlashCommandInteractionEvent event) {
+        OptionMapping targetOpt = event.getOption("target");
+        OptionMapping nodeOpt   = event.getOption("node");
+
+        if (nodeOpt == null) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Node",
+                    "Specify a permission node. Use autocomplete to browse available nodes.")).setEphemeral(true).queue();
+            return;
+        }
+
+        String guildId = event.getGuild().getId();
+        String node    = nodeOpt.getAsString();
+        OptionMapping valueOpt = event.getOption("value");
+        boolean allow  = valueOpt == null || valueOpt.getAsBoolean(); // default: allow
+
+        if (targetOpt == null) {
+            // @everyone
+            PermissionManager.setEveryonePermission(guildId, node, allow);
+            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+                    "Permission " + (allow ? "Granted" : "Denied"),
+                    "@everyone — `" + node + "` \u2192 **" + (allow ? "ALLOW" : "DENY") + "**")).queue();
+            return;
+        }
+
+        try {
+            Member member = targetOpt.getAsMember();
+            if (member != null) {
+                PermissionManager.setUserPermission(guildId, member.getId(), node, allow);
+                event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+                        "Permission " + (allow ? "Granted" : "Denied"),
+                        member.getAsMention() + " — `" + node + "` \u2192 **" + (allow ? "ALLOW" : "DENY") + "**")).queue();
+                return;
             }
+        } catch (Exception ignored) {}
+
+        try {
+            Role role = targetOpt.getAsRole();
+            PermissionManager.setRolePermission(guildId, role.getId(), node, allow);
+            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+                    "Permission " + (allow ? "Granted" : "Denied"),
+                    role.getAsMention() + " — `" + node + "` \u2192 **" + (allow ? "ALLOW" : "DENY") + "**")).queue();
+        } catch (Exception e) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "Could not resolve target.")).setEphemeral(true).queue();
+        }
+    }
+
+    private void handleRemove(SlashCommandInteractionEvent event) {
+        OptionMapping targetOpt = event.getOption("target");
+        OptionMapping nodeOpt   = event.getOption("node");
+
+        if (nodeOpt == null) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Node",
+                    "Specify a permission node to remove.")).setEphemeral(true).queue();
+            return;
+        }
+
+        String guildId = event.getGuild().getId();
+        String node    = nodeOpt.getAsString();
+
+        if (targetOpt == null) {
+            PermissionManager.removeEveryonePermission(guildId, node);
+            event.replyEmbeds(EmbedUtils.createSuccessEmbed("Permission Removed",
+                    "@everyone — `" + node + "` reset to default.")).queue();
+            return;
+        }
+
+        try {
+            Member member = targetOpt.getAsMember();
+            if (member != null) {
+                PermissionManager.removeUserPermission(guildId, member.getId(), node);
+                event.replyEmbeds(EmbedUtils.createSuccessEmbed("Permission Removed",
+                        member.getAsMention() + " — `" + node + "` reset to default.")).queue();
+                return;
+            }
+        } catch (Exception ignored) {}
+
+        try {
+            Role role = targetOpt.getAsRole();
+            PermissionManager.removeRolePermission(guildId, role.getId(), node);
+            event.replyEmbeds(EmbedUtils.createSuccessEmbed("Permission Removed",
+                    role.getAsMention() + " — `" + node + "` reset to default.")).queue();
+        } catch (Exception e) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "Could not resolve target.")).setEphemeral(true).queue();
+        }
+    }
+
+    // ── UI helpers ────────────────────────────────────────────────────────────
+
+    private EmbedBuilder buildPermEmbed(String name, String icon, Map<String, Boolean> perms, String guildName) {
+        EmbedBuilder eb = new EmbedBuilder()
+                .setTitle(CustomEmojis.SETTING + "  Permissions \u2014 " + (icon != null ? icon + " " : "") + name)
+                .setColor(0x5865F2)
+                .setFooter(guildName + "  \u2022  Explicit overrides only \u2014 defaults not shown");
+
+        if (perms.isEmpty()) {
+            eb.setDescription("*No explicit overrides. All permissions use their server defaults.*");
         } else {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Target", "Please specify a valid user, role, or @everyone.\n\n" +
-                "💡 **Usage:** `/permissions target-entity:@user action:view`\n" +
-                "Or: `/permissions target-entity:@role action:set node:<node> value:<true/false>`"
-            )).setEphemeral(true).queue();
+            StringBuilder sb = new StringBuilder();
+            perms.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .limit(40)
+                    .forEach(e -> sb.append(e.getValue() ? CustomEmojis.ON : CustomEmojis.OFF)
+                            .append("  `").append(e.getKey()).append("`\n"));
+            if (perms.size() > 40) sb.append("\u2026 and ").append(perms.size() - 40).append(" more.");
+            eb.setDescription(sb.toString());
         }
+        return eb;
     }
 
-    private void showPermissionsHelp(SlashCommandInteractionEvent event) {
-        EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
-                .setTitle("Permissions Help")
-                .setDescription("Simplified permissions management - auto-detects user vs role targets")
-                .addField("**Set Permissions**", 
-                    "```/permissions target-entity:@user action:set node:mod.ban value:true```\n" +
-                    "```/permissions target-entity:@role action:set node:economy.admin value:false```\n" +
-                    "```/permissions target-entity:@everyone action:set node:levels.use value:true```", false)
-                .addField("**View Permissions**", 
-                    "```/permissions target-entity:@user action:view```\n" +
-                    "```/permissions target-entity:@role action:view```\n" +
-                    "```/permissions action:view``` - View your own permissions", false)
-                .addField("**Remove Permissions**", 
-                    "```/permissions target-entity:@user action:remove node:mod.ban```\n" +
-                    "```/permissions target-entity:@role action:remove node:economy.admin```", false)
-                .addField("**Utility Commands**", 
-                    "```/permissions target:list-nodes``` - List all available permission nodes\n" +
-                    "```/permissions target:check target-entity:@user node:mod.ban``` - Check if user has permission", false)
-                .addField("**Notes**", 
-                    "• Use @everyone to set server-wide permissions\n" +
-                    "• Wildcard permissions: `*` (all), `mod.*` (all moderation), etc.\n" +
-                    "• Guild owner automatically has all permissions", false);
-
-        event.replyEmbeds(embed.build()).queue();
+    private void showHelp(SlashCommandInteractionEvent event) {
+        EmbedBuilder eb = new EmbedBuilder()
+                .setTitle(CustomEmojis.INFO + "  /permissions — Help")
+                .setColor(0x5865F2)
+                .setDescription("Manage fine-grained permission nodes for users, roles, and @everyone.")
+                .addField("Actions",
+                        "**view** — Show explicit overrides for a target (omit target \u2192 @everyone)\n"
+                        + "**set** — Grant or deny a node (`value: true` = allow, `false` = deny)\n"
+                        + "**remove** — Reset a node back to server default", false)
+                .addField("Tips",
+                        "\u2022 Omitting `target` targets `@everyone`.\n"
+                        + "\u2022 The `node` field has autocomplete \u2014 just start typing!\n"
+                        + "\u2022 Wildcard nodes like `mod.*` grant/deny entire groups.\n"
+                        + "\u2022 Explicit deny always wins over allow.", false)
+                .setFooter("Guild owners and Discord Administrators bypass all permission checks.");
+        event.replyEmbeds(eb.build()).setEphemeral(true).queue();
     }
 
-    private void handleUserPermissions(SlashCommandInteractionEvent event, Member targetMember, String action) {
-        switch (action) {
-            case "view" -> viewUserPermissions(event, targetMember);
-            case "set" -> setUserPermission(event, targetMember);
-            case "remove" -> removeUserPermission(event, targetMember);
-            default -> event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Action", "Valid actions: view, set, remove"
-            )).setEphemeral(true).queue();
-        }
-    }
+    // ── Metadata ──────────────────────────────────────────────────────────────
 
-    private void handleRolePermissions(SlashCommandInteractionEvent event, Role targetRole, String action) {
-        switch (action) {
-            case "view" -> viewRolePermissions(event, targetRole);
-            case "set" -> setRolePermission(event, targetRole);
-            case "remove" -> removeRolePermission(event, targetRole);
-            default -> event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Action", "Valid actions: view, set, remove"
-            )).setEphemeral(true).queue();
-        }
-    }
+    @Override public String getName()              { return "permissions"; }
+    @Override public String getDescription()       { return "Manage server permission nodes for users, roles, and @everyone"; }
+    @Override public CommandCategory getCategory() { return CommandCategory.CONFIGURATION; }
+    @Override public boolean requiresPermissions() { return true; }
 
-    private void handleEveryonePermissions(SlashCommandInteractionEvent event, String action) {
-        switch (action) {
-            case "view" -> viewEveryonePermissions(event);
-            case "set" -> setEveryonePermission(event);
-            case "remove" -> removeEveryonePermission(event);
-            default -> event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Action", "Valid actions: view, set, remove"
-            )).setEphemeral(true).queue();
-        }
-    }
-
-    private void handleListNodes(SlashCommandInteractionEvent event) {
-        Set<String> allNodes = PermissionManager.getAllPermissionNodes();
-        
-        EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
-                .setTitle("Permission Nodes")
-                .setDescription("All available permission nodes in the system:");
-
-        StringBuilder nodeList = new StringBuilder();
-        String currentCategory = "";
-        
-        for (String node : allNodes.stream().sorted().toList()) {
-            String category = node.split("\\.")[0];
-            if (!category.equals(currentCategory)) {
-                if (!currentCategory.isEmpty()) {
-                    embed.addField(currentCategory.toUpperCase(), nodeList.toString(), false);
-                    nodeList.setLength(0);
-                }
-                currentCategory = category;
-            }
-            nodeList.append("`").append(node).append("`\n");
-        }
-        
-        if (!nodeList.isEmpty()) {
-            embed.addField(currentCategory.toUpperCase(), nodeList.toString(), false);
-        }
-
-        event.replyEmbeds(embed.build()).queue();
-    }
-
-    private void handleCheckPermissions(SlashCommandInteractionEvent event) {
-        OptionMapping targetEntityOption = event.getOption("target-entity");
-        OptionMapping nodeOption = event.getOption("node");
-        
-        if (targetEntityOption == null || nodeOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameters [100]", 
-                "Please specify both target entity and permission node to check.\n" +
-                "Error Code: **100** - Missing Target Parameter\n" +
-                "Use `/error category:1` for full 1XX-series documentation."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        User targetUser = targetEntityOption.getAsUser();
-        if (targetUser == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Target", "Permission check only works with user targets."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        Member targetMember = event.getGuild().getMember(targetUser);
-        String permissionNode = nodeOption.getAsString();
-        
-        if (targetMember == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "User Not Found [301]", 
-                "The specified user is not a member of this server.\n" +
-                "Error Code: **301** - Target Not Found\n" +
-                "Use `/error category:3` for full 3XX-series documentation."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        boolean hasPermission = PermissionManager.hasPermission(targetMember, permissionNode);
-        
-        EmbedBuilder embed = EmbedUtils.createEmbedBuilder(hasPermission ? EmbedUtils.SUCCESS_COLOR : EmbedUtils.ERROR_COLOR)
-                .setTitle("Permissions")
-                .addField("User", targetUser.getAsMention(), true)
-                .addField("Permission Node", "`" + permissionNode + "`", true)
-                .addField("Has Permission", hasPermission ? CustomEmojis.SUCCESS + " **Yes**" : CustomEmojis.ERROR + " **No**", true);
-
-        event.replyEmbeds(embed.build()).queue();
-    }
-
-    private void viewUserPermissions(SlashCommandInteractionEvent event, Member targetMember) {
-        try {
-            Map<String, Boolean> userPermissions = PermissionManager.getUserPermissions(targetMember.getGuild().getId(), targetMember.getId());
-            
-            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
-                    .setTitle("User Permissions")
-                    .addField("User", targetMember.getAsMention(), true)
-                    .addField("Permission Count", String.valueOf(userPermissions.size()), true);
-
-            if (userPermissions.isEmpty()) {
-                embed.addField("Permissions", "No specific permissions assigned", false);
-            } else {
-                StringBuilder permList = new StringBuilder();
-                for (Map.Entry<String, Boolean> entry : userPermissions.entrySet()) {
-                    String status = entry.getValue() ? CustomEmojis.SUCCESS : CustomEmojis.ERROR;
-                    permList.append(status).append(" `").append(entry.getKey()).append("`\n");
-                }
-                embed.addField("Permissions", permList.toString(), false);
-            }
-
-            event.replyEmbeds(embed.build()).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "View Failed [400]", 
-                "Failed to view user permissions: " + e.getMessage() + "\n" +
-                "Error Code: **400** - Permission Update Failed\n" +
-                "Use `/error category:4` for full 4XX-series documentation."
-            )).setEphemeral(true).queue();
-        }
-    }
-
-    private void setUserPermission(SlashCommandInteractionEvent event, Member targetMember) {
-        OptionMapping nodeOption = event.getOption("node");
-        if (nodeOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Node", "Please specify a permission node to set.\n\n" +
-                "💡 **Usage:** `/permissions target-entity:@user action:set node:<node> value:<true/false>`\n" +
-                "Use `/permissions target:list-nodes` to see all available nodes."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        String permissionNode = nodeOption.getAsString();
-        
-        // Get the value option (defaults to true if not provided)
-        OptionMapping valueOption = event.getOption("value");
-        boolean value = valueOption == null || valueOption.getAsBoolean();
-        
-        try {
-            PermissionManager.setUserPermission(targetMember.getGuild().getId(), targetMember.getId(), permissionNode, value);
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Permission Set",
-                String.format("Permission `%s` set to `%s` for %s", permissionNode, value, targetMember.getAsMention())
-            )).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Set Failed", 
-                "Failed to set node: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
-    }
-
-    private void removeUserPermission(SlashCommandInteractionEvent event, Member targetMember) {
-        OptionMapping nodeOption = event.getOption("node");
-        if (nodeOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Node", "Please specify a permission node to remove."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        String permissionNode = nodeOption.getAsString();
-        
-        try {
-            PermissionManager.removeUserPermission(targetMember.getGuild().getId(), targetMember.getId(), permissionNode);
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Permission Removed",
-                String.format("Permission `%s` set `false` for %s", permissionNode, targetMember.getAsMention())
-            )).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Removal Failed", 
-                "Failed to remove node: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
-    }
-
-    private void viewRolePermissions(SlashCommandInteractionEvent event, Role targetRole) {
-        try {
-            Map<String, Boolean> rolePermissions = PermissionManager.getRolePermissions(targetRole.getGuild().getId(), targetRole.getId());
-            
-            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
-                    .setTitle("Role Permissions")
-                    .addField("Role", targetRole.getAsMention(), true)
-                    .addField("Permission Count", String.valueOf(rolePermissions.size()), true);
-
-            if (rolePermissions.isEmpty()) {
-                embed.addField("Permissions", "No specific permissions assigned", false);
-            } else {
-                StringBuilder permList = new StringBuilder();
-                for (Map.Entry<String, Boolean> entry : rolePermissions.entrySet()) {
-                    String status = entry.getValue() ? CustomEmojis.SUCCESS : CustomEmojis.ERROR;
-                    permList.append(status).append(" `").append(entry.getKey()).append("`\n");
-                }
-                embed.addField("Permissions", permList.toString(), false);
-            }
-
-            event.replyEmbeds(embed.build()).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "View Failed", 
-                "Failed to view role permissions: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
-    }
-
-    private void setRolePermission(SlashCommandInteractionEvent event, Role targetRole) {
-        OptionMapping nodeOption = event.getOption("node");
-        if (nodeOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Node", "Please specify a permission node to set.\n\n" +
-                "💡 **Usage:** `/permissions target-entity:@role action:set node:<node> value:<true/false>`\n" +
-                "Use `/permissions target:list-nodes` to see all available nodes."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        String permissionNode = nodeOption.getAsString();
-        
-        // Get the value option (defaults to true if not provided)
-        OptionMapping valueOption = event.getOption("value");
-        boolean value = valueOption == null || valueOption.getAsBoolean();
-        
-        try {
-            PermissionManager.setRolePermission(targetRole.getGuild().getId(), targetRole.getId(), permissionNode, value);
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Permission Set",
-                String.format("Permission `%s` set to `%s` for %s", permissionNode, value, targetRole.getAsMention())
-            )).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Set Failed", 
-                "Failed to set role permission: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
-    }
-
-    private void removeRolePermission(SlashCommandInteractionEvent event, Role targetRole) {
-        OptionMapping nodeOption = event.getOption("node");
-        if (nodeOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Node", "Please specify a permission node to remove."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        String permissionNode = nodeOption.getAsString();
-        
-        try {
-            PermissionManager.removeRolePermission(targetRole.getGuild().getId(), targetRole.getId(), permissionNode);
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Permission Removed",
-                String.format("Permission `%s` set `false` for %s", permissionNode, targetRole.getAsMention())
-            )).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Removal Failed", 
-                "Failed to remove node: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
-    }
-
-    private void viewEveryonePermissions(SlashCommandInteractionEvent event) {
-        try {
-            Map<String, Boolean> everyonePermissions = PermissionManager.getEveryonePermissions(event.getGuild().getId());
-            
-            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
-                    .setTitle("Default Permissions")
-                    .addField("Server", event.getGuild().getName(), true)
-                    .addField("Permission Count", String.valueOf(everyonePermissions.size()), true);
-
-            if (everyonePermissions.isEmpty()) {
-                embed.addField("Permissions", "No default permissions set", false);
-            } else {
-                StringBuilder permList = new StringBuilder();
-                for (Map.Entry<String, Boolean> entry : everyonePermissions.entrySet()) {
-                    String status = entry.getValue() ? CustomEmojis.SUCCESS : CustomEmojis.ERROR;
-                    permList.append(status).append(" `").append(entry.getKey()).append("`\n");
-                }
-                embed.addField("Permissions", permList.toString(), false);
-            }
-
-            event.replyEmbeds(embed.build()).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "View Failed", 
-                "Failed to view everyone permissions: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
-    }
-
-    private void setEveryonePermission(SlashCommandInteractionEvent event) {
-        OptionMapping nodeOption = event.getOption("node");
-        if (nodeOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Node", "Please specify a permission node to set.\n\n" +
-                "💡 **Usage:** `/permissions target-entity:@everyone action:set node:<node> value:<true/false>`\n" +
-                "Use `/permissions target:list-nodes` to see all available nodes."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        String permissionNode = nodeOption.getAsString();
-        
-        // Get the value option (defaults to true if not provided)
-        OptionMapping valueOption = event.getOption("value");
-        boolean value = valueOption == null || valueOption.getAsBoolean();
-        
-        try {
-            PermissionManager.setEveryonePermission(event.getGuild().getId(), permissionNode, value);
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Permission Set",
-                String.format("Permission `%s` set to `%s` for everyone in this server", permissionNode, value)
-            )).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Set Failed", 
-                "Failed to set everyone permission: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
-    }
-
-    private void removeEveryonePermission(SlashCommandInteractionEvent event) {
-        OptionMapping nodeOption = event.getOption("node");
-        if (nodeOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Node", "Please specify a permission node to remove."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        String permissionNode = nodeOption.getAsString();
-        
-        try {
-            PermissionManager.removeEveryonePermission(event.getGuild().getId(), permissionNode);
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Permission Removed",
-                String.format("Permission `%s` set `false` for everyone in this server", permissionNode)
-            )).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Remove Failed", 
-                "Failed to remove everyone permission: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
-    }
-
-    @Override
-    public String getName() {
-        return "permissions";
-    }
-
-    @Override
-    public String getDescription() {
-        return "Manage user, role, and server permissions";
-    }
-
-    @Override
-    public CommandCategory getCategory() {
-        return CommandCategory.CONFIGURATION;
-    }
-
-    @Override
-    public boolean requiresPermissions() {
-        return true;
-    }
-
-    // Static method for command registration
     public static CommandData getCommandData() {
-        OptionData targetOption = new OptionData(OptionType.STRING, "target", "Target type for permission management", false)
-                .addChoice("List all nodes", "list-nodes")
-                .addChoice("Check permission", "check");
+        OptionData actionOpt = new OptionData(OptionType.STRING, "action",
+                "What to do", false)
+                .addChoice("View permissions",   "view")
+                .addChoice("Set / override",     "set")
+                .addChoice("Remove override",    "remove");
 
-        OptionData actionOption = new OptionData(OptionType.STRING, "action", "Action to perform", false)
-                .addChoice("View permissions", "view")
-                .addChoice("Set permission", "set")
-                .addChoice("Remove permission", "remove");
+        OptionData nodeOpt = new OptionData(OptionType.STRING, "node",
+                "Permission node (e.g. mod.ban, admin.*) \u2014 start typing for autocomplete", false)
+                .setAutoComplete(true);
 
-        return Commands.slash("permissions", "Manage user, role, and server permissions")
-                .addOptions(targetOption)
-                .addOptions(actionOption)
-                .addOption(OptionType.MENTIONABLE, "target-entity", "User or role to manage permissions for (@everyone for server-wide)", false)
-                .addOption(OptionType.STRING, "node", "Permission node (e.g., moderation.ban, economy.admin)", false)
-                .addOption(OptionType.BOOLEAN, "value", "Allow (true) or deny (false) permission", false);
+        return Commands.slash("permissions", "Manage server permission nodes for users, roles, and @everyone")
+                .addOptions(
+                        actionOpt,
+                        new OptionData(OptionType.MENTIONABLE, "target",
+                                "User or role to manage (omit for @everyone)", false),
+                        nodeOpt,
+                        new OptionData(OptionType.BOOLEAN, "value",
+                                "true = allow, false = deny (default: true)", false)
+                );
     }
 }

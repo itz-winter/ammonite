@@ -7,516 +7,308 @@ import com.serverbot.utils.CustomEmojis;
 import com.serverbot.utils.EmbedUtils;
 import com.serverbot.utils.PermissionManager;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
+import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageEditData;
 
+import java.util.List;
 import java.util.Map;
 
 /**
- * Anti-spam and auto-moderation configuration command
+ * Anti-spam configuration command.
+ * Running /antispam with no action opens an ephemeral GUI panel.
+ * Toggle actions flip current state — no extra boolean needed.
  */
 public class AntiSpamCommand implements SlashCommand {
+
+    private static final int DEFAULT_MSG_LIMIT      = 10;
+    private static final int DEFAULT_TIME_WINDOW    = 10;
+    private static final int DEFAULT_MENTION_LIMIT  = 5;
+    private static final int DEFAULT_DUP_LIMIT      = 4;
+    private static final int DEFAULT_MUTE_DUR       = 10;
+    private static final int DEFAULT_TIMEOUT_DUR    = 10;
+    private static final int DEFAULT_BAN_DUR        = 0;
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).setEphemeral(true).queue();
+            return;
+        }
+        if (!PermissionManager.hasPermission(event.getMember(), "admin.antispam")) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("No Permission",
+                    "You need `admin.antispam` to configure anti-spam.")).setEphemeral(true).queue();
             return;
         }
 
-        Member member = event.getMember();
-        if (!PermissionManager.hasPermission(member, "admin.antispam")) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", "You need the `admin.antispam` permission to configure anti-spam settings."
-            )).setEphemeral(true).queue();
-            return;
-        }
+        OptionMapping actionOpt = event.getOption("action");
+        if (actionOpt == null) { openPanel(event); return; }
 
-        // Check if no required parameters provided - show help
-        if (event.getOption("setting") == null) {
-            showAntiSpamHelp(event);
-            return;
-        }
-
-        String setting = event.getOption("setting").getAsString();
-        
-        switch (setting) {
-            case "view" -> handleView(event);
-            case "message-limit" -> handleMessageLimit(event);
-            case "duplicate-limit" -> handleDuplicateLimit(event);
-            case "mention-limit" -> handleMentionLimit(event);
-            case "caps-limit" -> handleCapsLimit(event);
-            case "auto-delete" -> handleAutoDelete(event);
-            case "punishment" -> handlePunishment(event);
-            case "mute-duration" -> handleMuteDuration(event);
-            case "timeout-duration" -> handleTimeoutDuration(event);
-            case "ban-duration" -> handleBanDuration(event);
-            default -> {
-                event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Setting", 
-                    "Invalid setting: `" + setting + "`\n" +
-                    "Use `/antispam` without arguments to see all available settings and help."
-                )).setEphemeral(true).queue();
-            }
+        switch (actionOpt.getAsString()) {
+            case "toggle"         -> handleToggle(event);
+            case "auto-delete"    -> handleAutoDelete(event);
+            case "msg-limit"      -> handleMsgLimit(event);
+            case "time-window"    -> handleTimeWindow(event);
+            case "mention-limit"  -> handleMentionLimit(event);
+            case "dup-limit"      -> handleDupLimit(event);
+            case "punishment"     -> handlePunishment(event);
+            case "mute-dur"       -> handleMuteDuration(event);
+            case "timeout-dur"    -> handleTimeoutDuration(event);
+            case "ban-dur"        -> handleBanDuration(event);
+            default               -> openPanel(event);
         }
     }
 
-    private void showAntiSpamHelp(SlashCommandInteractionEvent event) {
-        EmbedBuilder embed = new EmbedBuilder()
-                .setTitle("AntiSpam Help")
-                .setDescription("Configure anti-spam and auto-moderation settings")
-                .setColor(0xFF4444)
-                .addField("**Basic Usage**",
-                    "`/antispam setting:view` - View current settings\n" +
-                    "`/antispam setting:message-limit amount:<1-50>` - Set message rate limit\n" +
-                    "`/antispam setting:duplicate-limit amount:<1-20>` - Set duplicate limit\n" +
-                    "`/antispam setting:punishment type:<warn/mute/timeout/kick/ban>` - Set punishment", false)
-                .addField("**All Settings**",
-                    "• `view` - View current configuration\n" +
-                    "• `message-limit` - Messages per 10 seconds (1-50)\n" +
-                    "• `duplicate-limit` - Duplicate message limit (1-20)\n" +
-                    "• `mention-limit` - Mentions per message (1-30)\n" +
-                    "• `caps-limit` - Max CAPS percentage (10-100)\n" +
-                    "• `auto-delete` - Auto-delete spam messages\n" +
-                    "• `punishment` - Action for violations\n" +
-                    "• `mute-duration` - Mute duration in minutes\n" +
-                    "• `timeout-duration` - Timeout duration in minutes\n" +
-                    "• `ban-duration` - Ban duration in minutes", false)
-                .addField("**Parameters**",
-                    "• `setting` - Which setting to configure (required)\n" +
-                    "• `amount` - Numeric value for limits\n" +
-                    "• `percentage` - CAPS percentage (for caps-limit)\n" +
-                    "• `enabled` - Enable/disable (for auto-delete)\n" +
-                    "• `type` - Punishment type (warn/mute/timeout/kick/ban)\n" +
-                    "• `duration` - Duration in minutes for timed punishments", false)
-                .addField("**Examples**",
-                    "`/antispam setting:message-limit amount:8` - Allow 8 messages per 10s\n" +
-                    "`/antispam setting:punishment type:mute` - Mute spammers\n" +
-                    "`/antispam setting:mute-duration duration:60` - 1 hour mute\n" +
-                    "`/antispam setting:auto-delete enabled:true` - Auto-delete spam", false)
-                .setFooter("Use -!help to dismiss future help messages • Requires admin.antispam permission");
+    // ── Panel ─────────────────────────────────────────────────────────────────
 
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+    private void openPanel(SlashCommandInteractionEvent event) {
+        Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
+        event.reply(buildPanel(settings, event.getGuild(), event.getUser().getId())).setEphemeral(true).queue();
     }
 
-    private void handleView(SlashCommandInteractionEvent event) {
-        try {
-            String guildId = event.getGuild().getId();
-            Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
-            
-            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
-                    .setTitle("AntiSpam Config")
-                    .setDescription("Current anti-spam settings for **" + event.getGuild().getName() + "**");
-
-            // Message limits
-            embed.addField("Message Limits", 
-                          "**Messages per 10s:** " + settings.getOrDefault("antiSpamMessageLimit", 10) + "\n" +
-                          "**Duplicate messages:** " + settings.getOrDefault("antiSpamDuplicateLimit", 5) + "\n" +
-                          "**Mentions per message:** " + settings.getOrDefault("antiSpamMentionLimit", 8) + "\n" +
-                          "**Max CAPS percentage:** " + settings.getOrDefault("antiSpamCapsLimit", 100) + "%", 
-                          false);
-
-            // Actions
-            String punishment = settings.getOrDefault("antiSpamPunishment", "warn").toString();
-            String actionsText = "**Auto-delete spam:** " + (Boolean.TRUE.equals(settings.get("antiSpamAutoDelete")) ? CustomEmojis.ON : CustomEmojis.OFF) + "\n" +
-                                "**Punishment:** " + punishment;
-            
-            // Add duration info if applicable
-            if (punishment.equals("mute")) {
-                actionsText += " (" + settings.getOrDefault("antiSpamMuteDuration", 30) + " min)";
-            } else if (punishment.equals("timeout")) {
-                actionsText += " (" + settings.getOrDefault("antiSpamTimeoutDuration", 10) + " min)";
-            } else if (punishment.equals("ban")) {
-                actionsText += " (" + settings.getOrDefault("antiSpamBanDuration", 1440) + " min)";
-            }
-            
-            embed.addField("Actions", actionsText, false);
-
-            // Status
-            Boolean automodEnabled = (Boolean) settings.get("enableAutomod");
-            embed.addField("Status", 
-                          "**Auto-moderation:** " + (Boolean.TRUE.equals(automodEnabled) ? CustomEmojis.ON + " Enabled" : CustomEmojis.OFF + " Disabled") + "\n" +
-                          "*Configure with `/settings enable-automod`*", 
-                          false);
-
-            event.replyEmbeds(embed.build()).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Settings Error", 
-                "Failed to retrieve anti-spam settings: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
+    public static MessageCreateData buildPanel(Map<String, Object> settings, Guild guild, String userId) {
+        return new MessageCreateBuilder()
+                .setEmbeds(buildPanelEmbed(settings, guild).build())
+                .setComponents(buildPanelRows(settings, userId))
+                .build();
     }
 
-    private void handleMessageLimit(SlashCommandInteractionEvent event) {
-        OptionMapping amountOption = event.getOption("amount");
-        if (amountOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameter [100]", 
-                "Please specify the message limit per 10 seconds.\n" +
-                "Error Code: **100** - Missing Setting Parameter\n" +
-                "Use `/error category:1` for full 1XX-series documentation."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        long amount = amountOption.getAsLong();
-        
-        if (amount < 1 || amount > 50) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Amount [101]", 
-                "Message limit must be between 1 and 50.\n" +
-                "Error Code: **101** - Invalid Message Limit\n" +
-                "Use `/error category:1` for full 1XX-series documentation."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        try {
-            ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamMessageLimit", amount);
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Message Limit Updated", 
-                "Users can now send up to **" + amount + " messages per 10 seconds** before triggering anti-spam."
-            )).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Update Failed [400]", 
-                "Failed to update message limit: " + e.getMessage() + "\n" +
-                "Error Code: **400** - Configuration Update Failed\n" +
-                "Use `/error category:4` for full 4XX-series documentation."
-            )).setEphemeral(true).queue();
-        }
+    public static MessageEditData buildPanelEdit(Map<String, Object> settings, Guild guild, String userId) {
+        return new MessageEditBuilder()
+                .setEmbeds(buildPanelEmbed(settings, guild).build())
+                .setComponents(buildPanelRows(settings, userId))
+                .build();
     }
 
-    private void handleDuplicateLimit(SlashCommandInteractionEvent event) {
-        OptionMapping amountOption = event.getOption("amount");
-        if (amountOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameter", "Please specify the duplicate message limit."
-            )).setEphemeral(true).queue();
-            return;
-        }
+    public static EmbedBuilder buildPanelEmbed(Map<String, Object> settings, Guild guild) {
+        boolean enabled    = Boolean.TRUE.equals(settings.get("antiSpamEnabled"));
+        boolean autoDelete = Boolean.TRUE.equals(settings.get("antiSpamAutoDelete"));
+        int     msgLimit   = getInt(settings, "antiSpamMessageLimit",    DEFAULT_MSG_LIMIT);
+        int     timeWindow = getInt(settings, "antiSpamTimeWindow",      DEFAULT_TIME_WINDOW);
+        int     menLimit   = getInt(settings, "antiSpamMentionLimit",    DEFAULT_MENTION_LIMIT);
+        int     dupLimit   = getInt(settings, "antiSpamDupLimit",        DEFAULT_DUP_LIMIT);
+        int     muteDur    = getInt(settings, "antiSpamMuteDuration",    DEFAULT_MUTE_DUR);
+        int     toDur      = getInt(settings, "antiSpamTimeoutDuration", DEFAULT_TIMEOUT_DUR);
+        int     banDur     = getInt(settings, "antiSpamBanDuration",     DEFAULT_BAN_DUR);
+        String  punishment = (String) settings.getOrDefault("antiSpamPunishment", "warn");
 
-        long amount = amountOption.getAsLong();
-        
-        if (amount < 1 || amount > 20) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Amount", "Duplicate limit must be between 1 and 20."
-            )).setEphemeral(true).queue();
-            return;
-        }
+        String punishDisplay = switch (punishment.toLowerCase()) {
+            case "mute"    -> "\uD83D\uDD07 Mute (" + muteDur + " min)";
+            case "timeout" -> "\u23F1\uFE0F Timeout (" + toDur + " min)";
+            case "kick"    -> "\uD83D\uDC62 Kick";
+            case "ban"     -> CustomEmojis.MOD_BAN + " Ban (" + (banDur == 0 ? "Permanent" : banDur + "h") + ")";
+            default        -> "\u26A0\uFE0F Warn";
+        };
 
-        try {
-            ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamDuplicateLimit", amount);
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Duplicate Limit Updated", 
-                "Users can send the same message up to **" + amount + " times** before triggering anti-spam."
-            )).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Update Failed", 
-                "Failed to update duplicate limit: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
+        return new EmbedBuilder()
+                .setTitle(CustomEmojis.SETTING + "  Anti-Spam \u2014 " + guild.getName())
+                .setColor(enabled ? 0x00FF00 : 0xFF4444)
+                .setThumbnail(guild.getIconUrl())
+                .addField("\uD83D\uDEE1\uFE0F  Status",
+                        (enabled ? CustomEmojis.ON : CustomEmojis.OFF)
+                        + "  Anti-spam is **" + (enabled ? "ENABLED" : "DISABLED") + "**", false)
+                .addField("\uD83D\uDCAC  Rate Limit",
+                        "Max **" + msgLimit + "** messages in **" + timeWindow + "s**", true)
+                .addField("\uD83D\uDCE2  Mention Limit",
+                        "Max **" + menLimit + "** mentions per message", true)
+                .addField("\uD83D\uDD04  Duplicate Limit",
+                        "Max **" + dupLimit + "** identical messages", true)
+                .addField("\u2694\uFE0F  Punishment", punishDisplay, true)
+                .addField("\uD83D\uDDD1\uFE0F  Auto-Delete",
+                        autoDelete ? CustomEmojis.ON + " **On**" : CustomEmojis.OFF + " **Off**", true)
+                .addField(CustomEmojis.INFO + "  Note",
+                        "Administrators and members with `automod.antispam.bypass` are exempt.", false)
+                .setFooter("Use buttons to configure  \u2022  Changes apply immediately");
     }
 
-    private void handleMentionLimit(SlashCommandInteractionEvent event) {
-        OptionMapping amountOption = event.getOption("amount");
-        if (amountOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameter", "Please specify the mention limit per message."
-            )).setEphemeral(true).queue();
-            return;
-        }
+    public static List<ActionRow> buildPanelRows(Map<String, Object> settings, String uid) {
+        boolean enabled    = Boolean.TRUE.equals(settings.get("antiSpamEnabled"));
+        boolean autoDelete = Boolean.TRUE.equals(settings.get("antiSpamAutoDelete"));
 
-        long amount = amountOption.getAsLong();
-        
-        if (amount < 1 || amount > 30) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Amount", "Mention limit must be between 1 and 30."
-            )).setEphemeral(true).queue();
-            return;
-        }
+        Emoji ON_E  = Emoji.fromFormatted(CustomEmojis.ON);
+        Emoji OFF_E = Emoji.fromFormatted(CustomEmojis.OFF);
+        Emoji REF_E = Emoji.fromFormatted(CustomEmojis.REFRESH);
 
-        try {
-            ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamMentionLimit", amount);
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Mention Limit Updated", 
-                "Messages can contain up to **" + amount + " mentions** before triggering anti-spam."
-            )).queue();
+        Button toggleBtn = enabled
+                ? Button.danger ("agui:toggle:"      + uid, "Anti-Spam: ON" ).withEmoji(ON_E)
+                : Button.success("agui:toggle:"      + uid, "Anti-Spam: OFF").withEmoji(OFF_E);
+        Button delBtn = autoDelete
+                ? Button.danger ("agui:auto-delete:" + uid, "Auto-Delete: ON" ).withEmoji(ON_E)
+                : Button.success("agui:auto-delete:" + uid, "Auto-Delete: OFF").withEmoji(OFF_E);
 
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Update Failed", 
-                "Failed to update mention limit: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
+        return List.of(
+                ActionRow.of(
+                        toggleBtn,
+                        delBtn,
+                        Button.secondary("agui:refresh:" + uid, "Refresh").withEmoji(REF_E)
+                ),
+                ActionRow.of(
+                        Button.secondary("agui:msg-limit:"     + uid, "Msg Limit"    ).withEmoji(Emoji.fromUnicode("\uD83D\uDCAC")),
+                        Button.secondary("agui:time-window:"   + uid, "Time Window"  ).withEmoji(Emoji.fromUnicode("\u23F1\uFE0F")),
+                        Button.secondary("agui:mention-limit:" + uid, "Mention Limit").withEmoji(Emoji.fromUnicode("\uD83D\uDCE2")),
+                        Button.secondary("agui:dup-limit:"     + uid, "Dup Limit"    ).withEmoji(Emoji.fromUnicode("\uD83D\uDD04")),
+                        Button.secondary("agui:punishment:"    + uid, "Punishment"   ).withEmoji(Emoji.fromUnicode("\u2694\uFE0F"))
+                ),
+                ActionRow.of(
+                        Button.secondary("agui:mute-dur:"    + uid, "Mute Duration"   ).withEmoji(Emoji.fromUnicode("\uD83D\uDD07")),
+                        Button.secondary("agui:timeout-dur:" + uid, "Timeout Duration").withEmoji(Emoji.fromUnicode("\u23F0")),
+                        Button.secondary("agui:ban-dur:"     + uid, "Ban Duration"    ).withEmoji(Emoji.fromFormatted(CustomEmojis.MOD_BAN))
+                )
+        );
     }
 
-    private void handleCapsLimit(SlashCommandInteractionEvent event) {
-        OptionMapping amountOption = event.getOption("percentage");
-        if (amountOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameter", "Please specify the maximum CAPS percentage."
-            )).setEphemeral(true).queue();
-            return;
-        }
+    // ── Quick actions ─────────────────────────────────────────────────────────
 
-        long amount = amountOption.getAsLong();
-        
-        if (amount < 10 || amount > 100) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Percentage", "CAPS limit must be between 10% and 100%."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        try {
-            ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamCapsLimit", amount);
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "CAPS Limit Updated", 
-                "Messages with more than **" + amount + "% CAPS** will trigger anti-spam."
-            )).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Update Failed", 
-                "Failed to update CAPS limit: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
+    public void handleToggle(SlashCommandInteractionEvent event) {
+        String guildId = event.getGuild().getId();
+        boolean next = !Boolean.TRUE.equals(ServerBot.getStorageManager().getGuildSettings(guildId).get("antiSpamEnabled"));
+        ServerBot.getStorageManager().updateGuildSettings(guildId, "antiSpamEnabled", next);
+        event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+                "Anti-Spam " + (next ? "Enabled " + CustomEmojis.ON : "Disabled " + CustomEmojis.OFF),
+                "Anti-spam is now **" + (next ? "on" : "off") + "**.")).queue();
     }
 
-    private void handleAutoDelete(SlashCommandInteractionEvent event) {
-        OptionMapping enableOption = event.getOption("enabled");
-        if (enableOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameter", "Please specify whether to enable auto-deletion of spam messages."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        boolean enabled = enableOption.getAsBoolean();
-        
-        try {
-            ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamAutoDelete", enabled);
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Auto-Delete " + (enabled ? "Enabled" : "Disabled"), 
-                "Spam messages will " + (enabled ? "**automatically be deleted**" : "**not be automatically deleted**") + "."
-            )).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Update Failed", 
-                "Failed to update auto-delete setting: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
+    public void handleAutoDelete(SlashCommandInteractionEvent event) {
+        String guildId = event.getGuild().getId();
+        Map<String, Object> s = ServerBot.getStorageManager().getGuildSettings(guildId);
+        OptionMapping opt = event.getOption("enabled");
+        boolean next = opt != null ? opt.getAsBoolean() : !Boolean.TRUE.equals(s.get("antiSpamAutoDelete"));
+        ServerBot.getStorageManager().updateGuildSettings(guildId, "antiSpamAutoDelete", next);
+        event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+                "Auto-Delete " + (next ? "Enabled " + CustomEmojis.ON : "Disabled " + CustomEmojis.OFF),
+                "Spam will " + (next ? "now be auto-deleted." : "no longer be auto-deleted."))).queue();
     }
 
-    private void handlePunishment(SlashCommandInteractionEvent event) {
-        OptionMapping typeOption = event.getOption("type");
-        if (typeOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameter", "Please specify the punishment type."
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        String punishment = typeOption.getAsString().toLowerCase();
-        
-        if (!punishment.matches("warn|mute|timeout|kick|ban")) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Punishment", "Punishment must be one of: warn, mute, timeout, kick, ban"
-            )).setEphemeral(true).queue();
-            return;
-        }
-
-        try {
-            ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamPunishment", punishment);
-            
-            String description = switch (punishment) {
-                case "warn" -> "Users will receive a **warning** for spam violations.";
-                case "mute" -> "Users will be **temporarily muted** for spam violations.";
-                case "timeout" -> "Users will be **timed out** for spam violations.";
-                case "kick" -> "Users will be **kicked** for spam violations.";
-                case "ban" -> "Users will be **banned** for spam violations.";
-                default -> "Punishment updated.";
-            };
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Punishment Updated", description
-            )).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Update Failed", 
-                "Failed to update punishment setting: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
+    public void handleMsgLimit(SlashCommandInteractionEvent event) {
+        OptionMapping opt = event.getOption("value");
+        if (opt == null) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Value", "Provide a number 1\u201350.")).setEphemeral(true).queue(); return; }
+        int v = opt.getAsInt();
+        if (v < 1 || v > 50) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range", "Must be 1\u201350.")).setEphemeral(true).queue(); return; }
+        ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamMessageLimit", v);
+        event.replyEmbeds(EmbedUtils.createSuccessEmbed("Message Limit Set", "Max **" + v + "** messages per window.")).queue();
     }
 
-    private void handleMuteDuration(SlashCommandInteractionEvent event) {
-        OptionMapping durationOption = event.getOption("duration");
-        if (durationOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameter", "Please specify the mute duration in minutes."
-            )).setEphemeral(true).queue();
-            return;
-        }
-        
-        int duration = durationOption.getAsInt();
-        if (duration < 1 || duration > 10080) { // max 7 days
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Duration", "Mute duration must be between 1 and 10080 minutes (7 days)."
-            )).setEphemeral(true).queue();
-            return;
-        }
-        
-        try {
-            ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamMuteDuration", duration);
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Mute Duration Updated", 
-                "Anti-spam mute duration set to **" + duration + " minutes**."
-            )).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Update Failed", 
-                "Failed to update mute duration: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
+    public void handleTimeWindow(SlashCommandInteractionEvent event) {
+        OptionMapping opt = event.getOption("value");
+        if (opt == null) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Value", "Provide a number 1\u201360.")).setEphemeral(true).queue(); return; }
+        int v = opt.getAsInt();
+        if (v < 1 || v > 60) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range", "Must be 1\u201360 seconds.")).setEphemeral(true).queue(); return; }
+        ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamTimeWindow", v);
+        event.replyEmbeds(EmbedUtils.createSuccessEmbed("Time Window Set", "Sliding window is now **" + v + "s**.")).queue();
     }
 
-    private void handleTimeoutDuration(SlashCommandInteractionEvent event) {
-        OptionMapping durationOption = event.getOption("duration");
-        if (durationOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameter", "Please specify the timeout duration in minutes."
-            )).setEphemeral(true).queue();
-            return;
-        }
-        
-        int duration = durationOption.getAsInt();
-        if (duration < 1 || duration > 40320) { // max 28 days
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Duration", "Timeout duration must be between 1 and 40320 minutes (28 days)."
-            )).setEphemeral(true).queue();
-            return;
-        }
-        
-        try {
-            ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamTimeoutDuration", duration);
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Timeout Duration Updated", 
-                "Anti-spam timeout duration set to **" + duration + " minutes**."
-            )).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Update Failed", 
-                "Failed to update timeout duration: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
+    public void handleMentionLimit(SlashCommandInteractionEvent event) {
+        OptionMapping opt = event.getOption("value");
+        if (opt == null) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Value", "Provide a number 1\u201330.")).setEphemeral(true).queue(); return; }
+        int v = opt.getAsInt();
+        if (v < 1 || v > 30) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range", "Must be 1\u201330.")).setEphemeral(true).queue(); return; }
+        ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamMentionLimit", v);
+        event.replyEmbeds(EmbedUtils.createSuccessEmbed("Mention Limit Set", "Max **" + v + "** mentions per message.")).queue();
     }
 
-    private void handleBanDuration(SlashCommandInteractionEvent event) {
-        OptionMapping durationOption = event.getOption("duration");
-        if (durationOption == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Missing Parameter", "Please specify the ban duration in minutes."
-            )).setEphemeral(true).queue();
-            return;
-        }
-        
-        int duration = durationOption.getAsInt();
-        if (duration < 1 || duration > 525600) { // max 1 year
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Duration", "Ban duration must be between 1 and 525600 minutes (1 year)."
-            )).setEphemeral(true).queue();
-            return;
-        }
-        
-        try {
-            ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamBanDuration", duration);
-            
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Ban Duration Updated", 
-                "Anti-spam ban duration set to **" + duration + " minutes**."
-            )).queue();
-
-        } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Update Failed", 
-                "Failed to update ban duration: " + e.getMessage()
-            )).setEphemeral(true).queue();
-        }
+    public void handleDupLimit(SlashCommandInteractionEvent event) {
+        OptionMapping opt = event.getOption("value");
+        if (opt == null) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Value", "Provide a number 2\u201320.")).setEphemeral(true).queue(); return; }
+        int v = opt.getAsInt();
+        if (v < 2 || v > 20) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range", "Must be 2\u201320.")).setEphemeral(true).queue(); return; }
+        ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamDupLimit", v);
+        event.replyEmbeds(EmbedUtils.createSuccessEmbed("Duplicate Limit Set", "Max **" + v + "** identical messages.")).queue();
     }
 
-    @Override
-    public String getName() {
-        return "antispam";
+    public void handlePunishment(SlashCommandInteractionEvent event) {
+        OptionMapping opt = event.getOption("type");
+        if (opt == null) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Type", "Choose warn / mute / timeout / kick / ban.")).setEphemeral(true).queue(); return; }
+        String type = opt.getAsString().toLowerCase();
+        ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamPunishment", type);
+        event.replyEmbeds(EmbedUtils.createSuccessEmbed("Punishment Set", "Spammers will be **" + type + "d**.")).queue();
     }
 
-    @Override
-    public String getDescription() {
-        return "Configure anti-spam and auto-moderation settings";
+    public void handleMuteDuration(SlashCommandInteractionEvent event) {
+        OptionMapping opt = event.getOption("value");
+        if (opt == null) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Value", "Provide minutes (1\u20131440).")).setEphemeral(true).queue(); return; }
+        int v = opt.getAsInt();
+        if (v < 1 || v > 1440) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range", "1\u20131440 minutes.")).setEphemeral(true).queue(); return; }
+        ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamMuteDuration", v);
+        event.replyEmbeds(EmbedUtils.createSuccessEmbed("Mute Duration Set", "Mute duration is now **" + v + " min**.")).queue();
     }
 
-    @Override
-    public CommandCategory getCategory() {
-        return CommandCategory.CONFIGURATION;
+    public void handleTimeoutDuration(SlashCommandInteractionEvent event) {
+        OptionMapping opt = event.getOption("value");
+        if (opt == null) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Value", "Provide minutes (1\u201440320).")).setEphemeral(true).queue(); return; }
+        int v = opt.getAsInt();
+        if (v < 1 || v > 40320) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range", "1\u201440320 minutes (28 days).")).setEphemeral(true).queue(); return; }
+        ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamTimeoutDuration", v);
+        event.replyEmbeds(EmbedUtils.createSuccessEmbed("Timeout Duration Set", "Timeout duration is now **" + v + " min**.")).queue();
     }
 
-    @Override
-    public boolean requiresPermissions() {
-        return true;
+    public void handleBanDuration(SlashCommandInteractionEvent event) {
+        OptionMapping opt = event.getOption("value");
+        if (opt == null) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Value", "Provide hours (0\u20138760, 0 = permanent).")).setEphemeral(true).queue(); return; }
+        int v = opt.getAsInt();
+        if (v < 0 || v > 8760) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range", "0\u20138760 hours (0 = permanent).")).setEphemeral(true).queue(); return; }
+        ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamBanDuration", v);
+        event.replyEmbeds(EmbedUtils.createSuccessEmbed("Ban Duration Set",
+                v == 0 ? "Bans will be **permanent**." : "Ban duration is now **" + v + "h**.")).queue();
     }
 
-    // Static method for command registration
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    public static int getInt(Map<String, Object> settings, String key, int def) {
+        Object v = settings.get(key);
+        if (v == null) return def;
+        if (v instanceof Number n) return n.intValue();
+        try { return Integer.parseInt(v.toString()); } catch (Exception e) { return def; }
+    }
+
+    // ── Metadata ──────────────────────────────────────────────────────────────
+
+    @Override public String getName()              { return "antispam"; }
+    @Override public String getDescription()       { return "Configure anti-spam \u2014 run with no args for the GUI panel"; }
+    @Override public CommandCategory getCategory() { return CommandCategory.CONFIGURATION; }
+    @Override public boolean requiresPermissions() { return true; }
+
     public static CommandData getCommandData() {
-        OptionData settingOption = new OptionData(OptionType.STRING, "setting", "Anti-spam setting to configure", true);
-        settingOption.addChoice("View Settings", "view");
-        settingOption.addChoice("Message Limit", "message-limit");
-        settingOption.addChoice("Duplicate Limit", "duplicate-limit");
-        settingOption.addChoice("Mention Limit", "mention-limit");
-        settingOption.addChoice("CAPS Limit", "caps-limit");
-        settingOption.addChoice("Auto-Delete", "auto-delete");
-        settingOption.addChoice("Punishment Type", "punishment");
-        settingOption.addChoice("Mute Duration", "mute-duration");
-        settingOption.addChoice("Timeout Duration", "timeout-duration");
-        settingOption.addChoice("Ban Duration", "ban-duration");
+        OptionData actionOpt = new OptionData(OptionType.STRING, "action",
+                "Action to perform \u2014 omit to open the interactive GUI panel", false)
+                .addChoice("Toggle Anti-Spam",    "toggle")
+                .addChoice("Toggle Auto-Delete",  "auto-delete")
+                .addChoice("Set Message Limit",   "msg-limit")
+                .addChoice("Set Time Window",     "time-window")
+                .addChoice("Set Mention Limit",   "mention-limit")
+                .addChoice("Set Duplicate Limit", "dup-limit")
+                .addChoice("Set Punishment",      "punishment")
+                .addChoice("Set Mute Duration",   "mute-dur")
+                .addChoice("Set Timeout Duration","timeout-dur")
+                .addChoice("Set Ban Duration",    "ban-dur");
 
-        OptionData punishmentOption = new OptionData(OptionType.STRING, "type", "Punishment type for violations", false);
-        punishmentOption.addChoice("Warn", "warn");
-        punishmentOption.addChoice("Mute", "mute");
-        punishmentOption.addChoice("Timeout", "timeout");
-        punishmentOption.addChoice("Kick", "kick");
-        punishmentOption.addChoice("Ban", "ban");
+        OptionData typeOpt = new OptionData(OptionType.STRING, "type",
+                "Punishment type (for punishment action)", false)
+                .addChoice("Warn",    "warn")
+                .addChoice("Mute",    "mute")
+                .addChoice("Timeout", "timeout")
+                .addChoice("Kick",    "kick")
+                .addChoice("Ban",     "ban");
 
-        return Commands.slash("antispam", "Configure anti-spam and auto-moderation settings")
+        return Commands.slash("antispam",
+                "Configure anti-spam / auto-moderation \u2014 run with no args for the GUI panel")
                 .addOptions(
-                    settingOption,
-                    new OptionData(OptionType.INTEGER, "amount", "Amount/limit for numeric settings", false),
-                    new OptionData(OptionType.INTEGER, "percentage", "Percentage for CAPS limit (10-100)", false),
-                    new OptionData(OptionType.BOOLEAN, "enabled", "Enable/disable for boolean settings", false),
-                    punishmentOption,
-                    new OptionData(OptionType.INTEGER, "duration", "Duration in minutes for timed punishments", false)
+                        actionOpt,
+                        new OptionData(OptionType.INTEGER, "value",
+                                "Numeric value (for limit/duration actions)", false),
+                        typeOpt,
+                        new OptionData(OptionType.BOOLEAN, "enabled",
+                                "Explicitly on/off \u2014 omit to toggle (for auto-delete)", false)
                 );
     }
 }
