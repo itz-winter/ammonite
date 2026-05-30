@@ -31,13 +31,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * Also handles button/select-menu interactions for each setup step.
  *
  * Setup flow (steps):
- *  1. Intro — Yes/No
- *  2. Moderation log channel
- *  3. Message log channel
- *  4. Join/leave log channel
- *  5. Suspicious notify list
- *  6. Feature toggle
- *  7. Completion summary
+ * 1. Intro — Yes/No
+ * 2. Moderation log channel
+ * 3. Message log channel
+ * 4. Join/leave log channel
+ * 5. Suspicious notify list
+ * 6. Feature toggle
+ * 7. Completion summary
  */
 public class AutoConfigListener extends ListenerAdapter {
 
@@ -61,7 +61,8 @@ public class AutoConfigListener extends ListenerAdapter {
         if (target == null && !guild.getTextChannels().isEmpty()) {
             target = guild.getTextChannels().get(0);
         }
-        if (target == null) return;
+        if (target == null)
+            return;
 
         sendSetupPrompt(target, guild);
     }
@@ -79,9 +80,10 @@ public class AutoConfigListener extends ListenerAdapter {
 
         channel.sendMessageEmbeds(eb.build())
                 .addComponents(ActionRow.of(
-                        Button.success("ac_start:" + guild.getId(), "Yes, let's go!").withEmoji(Emoji.fromFormatted(CustomEmojis.SUCCESS)),
-                        Button.danger("ac_skip:" + guild.getId(), "No thanks").withEmoji(Emoji.fromFormatted(CustomEmojis.ERROR))
-                ))
+                        Button.success("ac_start:" + guild.getId(), "Yes, let's go!")
+                                .withEmoji(Emoji.fromFormatted(CustomEmojis.SUCCESS)),
+                        Button.danger("ac_skip:" + guild.getId(), "No thanks")
+                                .withEmoji(Emoji.fromFormatted(CustomEmojis.ERROR))))
                 .queue();
     }
 
@@ -90,15 +92,18 @@ public class AutoConfigListener extends ListenerAdapter {
     @Override
     public void onButtonInteraction(ButtonInteractionEvent event) {
         String id = event.getComponentId();
-        if (!id.startsWith("ac_")) return;
+        if (!id.startsWith("ac_"))
+            return;
 
         String[] parts = id.split(":", 2);
-        if (parts.length < 2) return;
+        if (parts.length < 2)
+            return;
         String action = parts[0];
         String guildId = parts[1];
 
         // Only server owner may interact
-        if (event.getGuild() == null) return;
+        if (event.getGuild() == null)
+            return;
         if (!event.getUser().getId().equals(event.getGuild().getOwnerId())) {
             event.reply("Only the server owner can use the setup wizard.").setEphemeral(true).queue();
             return;
@@ -107,82 +112,113 @@ public class AutoConfigListener extends ListenerAdapter {
         switch (action) {
             case "ac_start" -> {
                 activeSetups.put(guildId, new SetupState(guildId));
-                event.getMessage().delete().queue(s -> {}, err -> {});
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
                 sendStep2ModLog(event, guildId);
             }
             case "ac_skip" -> {
-                event.getMessage().delete().queue(s -> {}, err -> {});
-                event.reply("Alright! If you change your mind, you can access the setup process later using `/autoconfig`.").setEphemeral(true).queue();
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
+                event.reply(
+                        "Alright! If you change your mind, you can access the setup process later using `/autoconfig`.")
+                        .setEphemeral(true).queue();
             }
 
             // Step 2: mod log — yes/no
             case "ac_modlog_yes" -> {
                 event.deferEdit().queue();
-                event.getMessage().delete().queue(s -> {}, err -> {});
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
                 sendModLogChannelSelect(event.getChannel().asTextChannel(), guildId);
             }
             case "ac_modlog_no" -> {
-                event.getMessage().delete().queue(s -> {}, err -> {});
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
                 sendStep3MsgLog(event, guildId);
             }
 
             // Step 3: message log — yes/no
             case "ac_msglog_yes" -> {
                 event.deferEdit().queue();
-                event.getMessage().delete().queue(s -> {}, err -> {});
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
                 sendMsgLogChannelSelect(event.getChannel().asTextChannel(), guildId);
             }
             case "ac_msglog_no" -> {
-                event.getMessage().delete().queue(s -> {}, err -> {});
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
                 sendStep4JoinLeaveLog(event, guildId);
             }
 
             // Step 4: join/leave log — yes/no
             case "ac_joinlog_yes" -> {
                 event.deferEdit().queue();
-                event.getMessage().delete().queue(s -> {}, err -> {});
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
                 sendJoinLogChannelSelect(event.getChannel().asTextChannel(), guildId);
             }
             case "ac_joinlog_no" -> {
-                event.getMessage().delete().queue(s -> {}, err -> {});
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
                 sendStep5SuspiciousNotify(event, guildId);
             }
 
             // Step 5: suspicious notify — yes/no
             case "ac_suspicious_yes" -> {
                 event.deferEdit().queue();
-                event.getMessage().delete().queue(s -> {}, err -> {});
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
                 sendSuspiciousNotifySelect(event.getChannel().asTextChannel(), guildId);
             }
             case "ac_suspicious_no" -> {
-                event.getMessage().delete().queue(s -> {}, err -> {});
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
                 sendStep6FeatureToggle(event, guildId);
             }
 
             // Step 6: feature toggle — yes/no
             case "ac_features_yes" -> {
                 event.deferEdit().queue();
-                event.getMessage().delete().queue(s -> {}, err -> {});
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
                 sendFeatureToggleSelect(event.getChannel().asTextChannel(), guildId);
             }
             case "ac_features_no" -> {
-                event.getMessage().delete().queue(s -> {}, err -> {});
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
                 sendStep7Complete(event.getChannel().asTextChannel(), guildId);
             }
 
             // Step 5 done button (after selecting suspicious users/roles)
             case "ac_suspicious_done" -> {
-                event.getMessage().delete().queue(s -> {}, err -> {});
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
                 sendStep6FeatureToggle(event, guildId);
             }
 
             // Step 6 done button (after toggling features)
             case "ac_features_done" -> {
-                event.getMessage().delete().queue(s -> {}, err -> {});
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
                 sendStep7Complete(event.getChannel().asTextChannel(), guildId);
             }
 
-            default -> {}
+            default -> {
+            }
         }
     }
 
@@ -191,12 +227,15 @@ public class AutoConfigListener extends ListenerAdapter {
     @Override
     public void onEntitySelectInteraction(EntitySelectInteractionEvent event) {
         String id = event.getComponentId();
-        if (!id.startsWith("ac_")) return;
-        if (event.getGuild() == null) return;
+        if (!id.startsWith("ac_"))
+            return;
+        if (event.getGuild() == null)
+            return;
 
         String guildId = event.getGuild().getId();
         SetupState state = activeSetups.get(guildId);
-        if (state == null) return;
+        if (state == null)
+            return;
 
         switch (id) {
             case "ac_select_modlog" -> {
@@ -208,8 +247,11 @@ public class AutoConfigListener extends ListenerAdapter {
                 // Also set legacy logChannelId for /log command compatibility
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "logChannelId", selected.getId());
                 ServerBot.getStorageManager().saveGuildSettings();
-                event.getMessage().delete().queue(s -> {}, err -> {});
-                event.reply(CustomEmojis.SUCCESS + " Moderation log channel set to <#" + selected.getId() + ">").setEphemeral(true).queue();
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
+                event.reply(CustomEmojis.SUCCESS + " Moderation log channel set to <#" + selected.getId() + ">")
+                        .setEphemeral(true).queue();
                 sendStep3MsgLogDirect(event.getChannel().asTextChannel(), guildId);
             }
             case "ac_select_msglog" -> {
@@ -219,8 +261,11 @@ public class AutoConfigListener extends ListenerAdapter {
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "message_log_channel", selected.getId());
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "autoLog_message", true);
                 ServerBot.getStorageManager().saveGuildSettings();
-                event.getMessage().delete().queue(s -> {}, err -> {});
-                event.reply(CustomEmojis.SUCCESS + " Message log channel set to <#" + selected.getId() + ">").setEphemeral(true).queue();
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
+                event.reply(CustomEmojis.SUCCESS + " Message log channel set to <#" + selected.getId() + ">")
+                        .setEphemeral(true).queue();
                 sendStep4JoinLeaveLogDirect(event.getChannel().asTextChannel(), guildId);
             }
             case "ac_select_joinlog" -> {
@@ -230,8 +275,11 @@ public class AutoConfigListener extends ListenerAdapter {
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "member_log_channel", selected.getId());
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "autoLog_member", true);
                 ServerBot.getStorageManager().saveGuildSettings();
-                event.getMessage().delete().queue(s -> {}, err -> {});
-                event.reply(CustomEmojis.SUCCESS + " Join/leave log channel set to <#" + selected.getId() + ">").setEphemeral(true).queue();
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
+                event.reply(CustomEmojis.SUCCESS + " Join/leave log channel set to <#" + selected.getId() + ">")
+                        .setEphemeral(true).queue();
                 sendStep5SuspiciousNotifyDirect(event.getChannel().asTextChannel(), guildId);
             }
             case "ac_select_suspicious" -> {
@@ -242,11 +290,15 @@ public class AutoConfigListener extends ListenerAdapter {
                 state.suspiciousNotifyIds = ids;
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "suspiciousNotifyList", ids);
                 ServerBot.getStorageManager().saveGuildSettings();
-                event.getMessage().delete().queue(s -> {}, err -> {});
-                event.reply(CustomEmojis.SUCCESS + " Suspicious notify list updated (" + ids.size() + " entries).").setEphemeral(true).queue();
+                event.getMessage().delete().queue(s -> {
+                }, err -> {
+                });
+                event.reply(CustomEmojis.SUCCESS + " Suspicious notify list updated (" + ids.size() + " entries).")
+                        .setEphemeral(true).queue();
                 sendStep6FeatureToggleDirect(event.getChannel().asTextChannel(), guildId);
             }
-            default -> {}
+            default -> {
+            }
         }
     }
 
@@ -254,12 +306,15 @@ public class AutoConfigListener extends ListenerAdapter {
 
     @Override
     public void onStringSelectInteraction(StringSelectInteractionEvent event) {
-        if (!event.getComponentId().equals("ac_select_features")) return;
-        if (event.getGuild() == null) return;
+        if (!event.getComponentId().equals("ac_select_features"))
+            return;
+        if (event.getGuild() == null)
+            return;
 
         String guildId = event.getGuild().getId();
         SetupState state = activeSetups.get(guildId);
-        if (state == null) return;
+        if (state == null)
+            return;
 
         List<String> disabled = event.getValues(); // the features the user wants DISABLED
         state.disabledFeatures = disabled;
@@ -267,12 +322,11 @@ public class AutoConfigListener extends ListenerAdapter {
         // Use the correct setting keys that the rest of the codebase reads
         // (enableEconomy, enableLeveling, etc.)
         Map<String, String> featureToSettingKey = Map.of(
-            "economy", "enableEconomy",
-            "leveling", "enableLeveling",
-            "games", "enableGames",
-            "tickets", "enableTickets",
-            "proxy", "enableProxy"
-        );
+                "economy", "enableEconomy",
+                "leveling", "enableLeveling",
+                "games", "enableGames",
+                "tickets", "enableTickets",
+                "proxy", "enableProxy");
 
         for (String feature : disabled) {
             String key = featureToSettingKey.getOrDefault(feature, feature + "Enabled");
@@ -287,8 +341,11 @@ public class AutoConfigListener extends ListenerAdapter {
         }
         ServerBot.getStorageManager().saveGuildSettings();
 
-        event.getMessage().delete().queue(s -> {}, err -> {});
-        event.reply(CustomEmojis.SUCCESS + " Features updated. Disabled: " + (disabled.isEmpty() ? "none" : String.join(", ", disabled))).setEphemeral(true).queue();
+        event.getMessage().delete().queue(s -> {
+        }, err -> {
+        });
+        event.reply(CustomEmojis.SUCCESS + " Features updated. Disabled: "
+                + (disabled.isEmpty() ? "none" : String.join(", ", disabled))).setEphemeral(true).queue();
         sendStep7Complete(event.getChannel().asTextChannel(), guildId);
     }
 
@@ -297,13 +354,14 @@ public class AutoConfigListener extends ListenerAdapter {
     private void sendStep2ModLog(ButtonInteractionEvent event, String guildId) {
         EmbedBuilder eb = new EmbedBuilder()
                 .setTitle(CustomEmojis.SETTING + " Step 1/6 — Moderation Log Channel")
-                .setDescription("Would you like to set up a log channel for moderation actions, such as bans, kicks, and warnings?")
+                .setDescription(
+                        "Would you like to set up a log channel for moderation actions, such as bans, kicks, and warnings?")
                 .setColor(EmbedUtils.INFO_COLOR);
         event.getChannel().asTextChannel().sendMessageEmbeds(eb.build())
                 .addComponents(ActionRow.of(
                         Button.success("ac_modlog_yes:" + guildId, "Yes"),
-                        Button.danger("ac_modlog_no:" + guildId, "No")
-                )).queue();
+                        Button.danger("ac_modlog_no:" + guildId, "No")))
+                .queue();
     }
 
     private void sendModLogChannelSelect(TextChannel channel, String guildId) {
@@ -312,8 +370,8 @@ public class AutoConfigListener extends ListenerAdapter {
                         EntitySelectMenu.create("ac_select_modlog", EntitySelectMenu.SelectTarget.CHANNEL)
                                 .setPlaceholder("Select a channel")
                                 .setRequiredRange(1, 1)
-                                .build()
-                )).queue();
+                                .build()))
+                .queue();
     }
 
     private void sendStep3MsgLog(ButtonInteractionEvent event, String guildId) {
@@ -323,13 +381,14 @@ public class AutoConfigListener extends ListenerAdapter {
     private void sendStep3MsgLogDirect(TextChannel channel, String guildId) {
         EmbedBuilder eb = new EmbedBuilder()
                 .setTitle(CustomEmojis.SETTING + " Step 2/6 — Message Log Channel")
-                .setDescription("Would you like to set up a log channel for message logging, such as message edits and deletions?")
+                .setDescription(
+                        "Would you like to set up a log channel for message logging, such as message edits and deletions?")
                 .setColor(EmbedUtils.INFO_COLOR);
         channel.sendMessageEmbeds(eb.build())
                 .addComponents(ActionRow.of(
                         Button.success("ac_msglog_yes:" + guildId, "Yes"),
-                        Button.danger("ac_msglog_no:" + guildId, "No")
-                )).queue();
+                        Button.danger("ac_msglog_no:" + guildId, "No")))
+                .queue();
     }
 
     private void sendMsgLogChannelSelect(TextChannel channel, String guildId) {
@@ -338,8 +397,8 @@ public class AutoConfigListener extends ListenerAdapter {
                         EntitySelectMenu.create("ac_select_msglog", EntitySelectMenu.SelectTarget.CHANNEL)
                                 .setPlaceholder("Select a channel")
                                 .setRequiredRange(1, 1)
-                                .build()
-                )).queue();
+                                .build()))
+                .queue();
     }
 
     private void sendStep4JoinLeaveLog(ButtonInteractionEvent event, String guildId) {
@@ -354,8 +413,8 @@ public class AutoConfigListener extends ListenerAdapter {
         channel.sendMessageEmbeds(eb.build())
                 .addComponents(ActionRow.of(
                         Button.success("ac_joinlog_yes:" + guildId, "Yes"),
-                        Button.danger("ac_joinlog_no:" + guildId, "No")
-                )).queue();
+                        Button.danger("ac_joinlog_no:" + guildId, "No")))
+                .queue();
     }
 
     private void sendJoinLogChannelSelect(TextChannel channel, String guildId) {
@@ -364,8 +423,8 @@ public class AutoConfigListener extends ListenerAdapter {
                         EntitySelectMenu.create("ac_select_joinlog", EntitySelectMenu.SelectTarget.CHANNEL)
                                 .setPlaceholder("Select a channel")
                                 .setRequiredRange(1, 1)
-                                .build()
-                )).queue();
+                                .build()))
+                .queue();
     }
 
     private void sendStep5SuspiciousNotify(ButtonInteractionEvent event, String guildId) {
@@ -381,18 +440,20 @@ public class AutoConfigListener extends ListenerAdapter {
         channel.sendMessageEmbeds(eb.build())
                 .addComponents(ActionRow.of(
                         Button.success("ac_suspicious_yes:" + guildId, "Yes"),
-                        Button.danger("ac_suspicious_no:" + guildId, "No")
-                )).queue();
+                        Button.danger("ac_suspicious_no:" + guildId, "No")))
+                .queue();
     }
 
     private void sendSuspiciousNotifySelect(TextChannel channel, String guildId) {
         channel.sendMessage("Please select the users and/or roles for suspicious account notifications:")
                 .addComponents(ActionRow.of(
-                        EntitySelectMenu.create("ac_select_suspicious", EntitySelectMenu.SelectTarget.USER, EntitySelectMenu.SelectTarget.ROLE)
+                        EntitySelectMenu
+                                .create("ac_select_suspicious", EntitySelectMenu.SelectTarget.USER,
+                                        EntitySelectMenu.SelectTarget.ROLE)
                                 .setPlaceholder("Select users/roles")
                                 .setRequiredRange(1, 10)
-                                .build()
-                )).queue();
+                                .build()))
+                .queue();
     }
 
     private void sendStep6FeatureToggle(ButtonInteractionEvent event, String guildId) {
@@ -407,8 +468,8 @@ public class AutoConfigListener extends ListenerAdapter {
         channel.sendMessageEmbeds(eb.build())
                 .addComponents(ActionRow.of(
                         Button.success("ac_features_yes:" + guildId, "Yes"),
-                        Button.danger("ac_features_no:" + guildId, "No")
-                )).queue();
+                        Button.danger("ac_features_no:" + guildId, "No")))
+                .queue();
     }
 
     private void sendFeatureToggleSelect(TextChannel channel, String guildId) {
@@ -433,17 +494,24 @@ public class AutoConfigListener extends ListenerAdapter {
 
         EmbedBuilder eb = new EmbedBuilder()
                 .setTitle(CustomEmojis.SUCCESS + " Setup Complete!")
-                .setDescription("You have completed the initial setup for the bot! Here's a summary of your configuration:")
+                .setDescription(
+                        "You have completed the initial setup for the bot! Here's a summary of your configuration:")
                 .setColor(EmbedUtils.SUCCESS_COLOR)
                 .setTimestamp(Instant.now());
 
         if (state != null) {
-            eb.addField("Moderation Log", state.modLogChannelId != null ? "<#" + state.modLogChannelId + ">" : "Not set", true);
-            eb.addField("Message Log", state.msgLogChannelId != null ? "<#" + state.msgLogChannelId + ">" : "Not set", true);
-            eb.addField("Join/Leave Log", state.joinLogChannelId != null ? "<#" + state.joinLogChannelId + ">" : "Not set", true);
-            eb.addField("Suspicious Notify", state.suspiciousNotifyIds != null ? state.suspiciousNotifyIds.size() + " entries" : "Not set", true);
+            eb.addField("Moderation Log",
+                    state.modLogChannelId != null ? "<#" + state.modLogChannelId + ">" : "Not set", true);
+            eb.addField("Message Log", state.msgLogChannelId != null ? "<#" + state.msgLogChannelId + ">" : "Not set",
+                    true);
+            eb.addField("Join/Leave Log",
+                    state.joinLogChannelId != null ? "<#" + state.joinLogChannelId + ">" : "Not set", true);
+            eb.addField("Suspicious Notify",
+                    state.suspiciousNotifyIds != null ? state.suspiciousNotifyIds.size() + " entries" : "Not set",
+                    true);
             eb.addField("Disabled Features", state.disabledFeatures != null && !state.disabledFeatures.isEmpty()
-                    ? String.join(", ", state.disabledFeatures) : "None", true);
+                    ? String.join(", ", state.disabledFeatures)
+                    : "None", true);
         }
 
         eb.addField("Need to change something?",
@@ -452,7 +520,8 @@ public class AutoConfigListener extends ListenerAdapter {
                         "• `/suspiciousnotify` — Suspicious notifications\n" +
                         "• `/config` — Feature toggles\n" +
                         "• `/help` — Full command reference\n" +
-                        "• `/autoconfig` — Run this wizard again", false);
+                        "• `/autoconfig` — Run this wizard again",
+                false);
 
         channel.sendMessageEmbeds(eb.build()).queue();
     }

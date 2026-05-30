@@ -20,8 +20,7 @@ public class ShuffleCommand implements SlashCommand {
 
         if (!musicManager.isConnected(event.getGuild())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Not Playing", "The bot is not currently playing music."
-            )).setEphemeral(true).queue();
+                    "Not Playing", "The bot is not currently playing music.")).setEphemeral(true).queue();
             return;
         }
 
@@ -31,14 +30,12 @@ public class ShuffleCommand implements SlashCommand {
 
         if (newState) {
             event.replyEmbeds(EmbedUtils.createMusicEmbed(
-                "🔀 Shuffle Enabled",
-                "The queue will now be shuffled."
-            )).queue();
+                    "🔀 Shuffle Enabled",
+                    "The queue will now be shuffled.")).queue();
         } else {
             event.replyEmbeds(EmbedUtils.createMusicEmbed(
-                "🔀 Shuffle Disabled",
-                "Shuffle mode has been turned off."
-            )).queue();
+                    "🔀 Shuffle Disabled",
+                    "Shuffle mode has been turned off.")).queue();
         }
     }
 
@@ -47,11 +44,17 @@ public class ShuffleCommand implements SlashCommand {
     }
 
     @Override
-    public String getName() { return "shuffle"; }
+    public String getName() {
+        return "shuffle";
+    }
 
     @Override
-    public String getDescription() { return "Sets whether the playlist should be shuffled."; }
+    public String getDescription() {
+        return "Sets whether the playlist should be shuffled.";
+    }
 
     @Override
-    public CommandCategory getCategory() { return CommandCategory.MUSIC; }
+    public CommandCategory getCategory() {
+        return CommandCategory.MUSIC;
+    }
 }

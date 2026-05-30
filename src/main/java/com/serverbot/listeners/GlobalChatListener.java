@@ -37,16 +37,20 @@ public class GlobalChatListener extends ListenerAdapter {
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
         // Ignore bots and webhooks
-        if (event.getAuthor().isBot() || event.isWebhookMessage()) return;
+        if (event.getAuthor().isBot() || event.isWebhookMessage())
+            return;
         // Only guild messages
-        if (!event.isFromGuild()) return;
+        if (!event.isFromGuild())
+            return;
 
         GlobalChatService service = ServerBot.getGlobalChatService();
-        if (service == null) return;
+        if (service == null)
+            return;
 
         String textChannelId = event.getChannel().getId();
         GlobalChatChannel gc = service.getGlobalChannelByTextChannel(textChannelId);
-        if (gc == null) return; // not a linked channel
+        if (gc == null)
+            return; // not a linked channel
 
         // Permission check: globalchat.use
         Member member = event.getMember();
@@ -56,8 +60,11 @@ public class GlobalChatListener extends ListenerAdapter {
 
         // Check if source server is muted
         if (gc.isServerMuted(event.getGuild().getId())) {
-            event.getMessage().reply("🔇 This server is currently muted from the **" + gc.getName() + "** global chat and cannot send messages.")
-                    .queue(null, err -> {});
+            event.getMessage()
+                    .reply("🔇 This server is currently muted from the **" + gc.getName()
+                            + "** global chat and cannot send messages.")
+                    .queue(null, err -> {
+                    });
             return;
         }
 
@@ -67,8 +74,11 @@ public class GlobalChatListener extends ListenerAdapter {
         Long lastSend = userCooldowns.get(userId);
         if (lastSend != null && (now - lastSend) < COOLDOWN_MS) {
             long remainingSeconds = (COOLDOWN_MS - (now - lastSend) + 999) / 1000;
-            event.getMessage().reply("⏳ You're sending messages too fast! Please wait **" + remainingSeconds + "** second(s) before sending another global chat message.")
-                    .queue(null, err -> {});
+            event.getMessage()
+                    .reply("⏳ You're sending messages too fast! Please wait **" + remainingSeconds
+                            + "** second(s) before sending another global chat message.")
+                    .queue(null, err -> {
+                    });
             return;
         }
         userCooldowns.put(userId, now);
@@ -77,7 +87,8 @@ public class GlobalChatListener extends ListenerAdapter {
         String content = message.getContentRaw();
 
         // Skip empty messages (e.g. image-only, sticker-only)
-        if (content.isEmpty() && message.getAttachments().isEmpty()) return;
+        if (content.isEmpty() && message.getAttachments().isEmpty())
+            return;
 
         // Enforce content length limit
         if (content.length() > MAX_CONTENT_LENGTH) {
@@ -88,8 +99,10 @@ public class GlobalChatListener extends ListenerAdapter {
         StringBuilder sb = new StringBuilder(content);
         int attachmentCount = 0;
         for (Message.Attachment att : message.getAttachments()) {
-            if (attachmentCount >= MAX_ATTACHMENTS) break;
-            if (sb.length() > 0) sb.append("\n");
+            if (attachmentCount >= MAX_ATTACHMENTS)
+                break;
+            if (sb.length() > 0)
+                sb.append("\n");
             sb.append(att.getUrl());
             attachmentCount++;
         }
@@ -108,12 +121,14 @@ public class GlobalChatListener extends ListenerAdapter {
             if (replyContent.isEmpty() && !referencedMessage.getAttachments().isEmpty()) {
                 replyContent = "[attachment]";
             }
-            // For webhook messages (relayed), extract the original author from the display name
+            // For webhook messages (relayed), extract the original author from the display
+            // name
             if (referencedMessage.isWebhookMessage()) {
                 replyAuthor = referencedMessage.getAuthor().getName();
             } else {
                 Member replyMember = referencedMessage.getMember();
-                replyAuthor = replyMember != null ? replyMember.getEffectiveName() : referencedMessage.getAuthor().getName();
+                replyAuthor = replyMember != null ? replyMember.getEffectiveName()
+                        : referencedMessage.getAuthor().getName();
             }
             referencedMessageId = referencedMessage.getId();
         }
@@ -129,7 +144,8 @@ public class GlobalChatListener extends ListenerAdapter {
             for (net.dv8tion.jda.api.entities.Role role : member.getRoles()) {
                 String roleName = role.getName().toLowerCase();
                 if (roleName.contains("/") || com.serverbot.commands.utility.PronounsCommand.isPronounRole(roleName)) {
-                    if (pronounBuilder.length() > 0) pronounBuilder.append(", ");
+                    if (pronounBuilder.length() > 0)
+                        pronounBuilder.append(", ");
                     pronounBuilder.append(role.getName());
                 }
             }
@@ -143,18 +159,23 @@ public class GlobalChatListener extends ListenerAdapter {
     @Override
     public void onMessageReactionAdd(MessageReactionAddEvent event) {
         // Ignore bots
-        if (event.getUser() != null && event.getUser().isBot()) return;
-        if (!event.isFromGuild()) return;
+        if (event.getUser() != null && event.getUser().isBot())
+            return;
+        if (!event.isFromGuild())
+            return;
 
         GlobalChatService service = ServerBot.getGlobalChatService();
-        if (service == null) return;
+        if (service == null)
+            return;
 
         String textChannelId = event.getChannel().getId();
         GlobalChatChannel gc = service.getGlobalChannelByTextChannel(textChannelId);
-        if (gc == null) return; // not a linked channel
+        if (gc == null)
+            return; // not a linked channel
 
         // Check if this message is tracked (either source or relayed)
-        if (!service.isGlobalChatMessage(event.getMessageId())) return;
+        if (!service.isGlobalChatMessage(event.getMessageId()))
+            return;
 
         try {
             service.relayReaction(event.getMessageId(), textChannelId, event.getEmoji(), event.getJDA());
@@ -165,22 +186,28 @@ public class GlobalChatListener extends ListenerAdapter {
 
     @Override
     public void onMessageDelete(MessageDeleteEvent event) {
-        if (!event.isFromGuild()) return;
+        if (!event.isFromGuild())
+            return;
 
         GlobalChatService service = ServerBot.getGlobalChatService();
-        if (service == null) return;
+        if (service == null)
+            return;
 
         String textChannelId = event.getChannel().getId();
         GlobalChatChannel gc = service.getGlobalChannelByTextChannel(textChannelId);
-        if (gc == null) return; // not a linked channel
+        if (gc == null)
+            return; // not a linked channel
 
         String messageId = event.getMessageId();
 
-        // Skip if this deletion was triggered by the bot itself (prevents cascading loops)
-        if (service.isDeletePending(messageId)) return;
+        // Skip if this deletion was triggered by the bot itself (prevents cascading
+        // loops)
+        if (service.isDeletePending(messageId))
+            return;
 
         // Check if this message is tracked (either source or relayed)
-        if (!service.isGlobalChatMessage(messageId)) return;
+        if (!service.isGlobalChatMessage(messageId))
+            return;
 
         try {
             service.deleteRelayedMessages(messageId, textChannelId, event.getJDA());

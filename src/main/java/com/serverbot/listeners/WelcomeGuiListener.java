@@ -20,18 +20,20 @@ import java.util.Map;
 /**
  * Handles button and modal interactions for the /welcome GUI panel.
  *
- * Button IDs:  wgui:{action}:{userId}
- * Modal IDs:   wgm:{action}:{userId}
+ * Button IDs: wgui:{action}:{userId}
+ * Modal IDs: wgm:{action}:{userId}
  */
 public class WelcomeGuiListener extends ListenerAdapter {
 
     @Override
     public void onButtonInteraction(ButtonInteractionEvent event) {
         String id = event.getComponentId();
-        if (!id.startsWith("wgui:")) return;
+        if (!id.startsWith("wgui:"))
+            return;
 
         String[] parts = id.split(":", 3);
-        if (parts.length < 3) return;
+        if (parts.length < 3)
+            return;
         String action = parts[1];
         String userId = parts[2];
 
@@ -43,20 +45,23 @@ public class WelcomeGuiListener extends ListenerAdapter {
 
         // Permission re-check
         if (!event.isFromGuild() || !PermissionManager.hasPermission(event.getMember(), "admin.welcome")) {
-            event.reply(CustomEmojis.ERROR + " You no longer have permission to configure welcome settings.").setEphemeral(true).queue();
+            event.reply(CustomEmojis.ERROR + " You no longer have permission to configure welcome settings.")
+                    .setEphemeral(true).queue();
             return;
         }
 
-        Guild guild   = event.getGuild();
+        Guild guild = event.getGuild();
         String guildId = guild.getId();
         Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
 
         switch (action) {
             case "toggle" -> {
                 boolean current = Boolean.TRUE.equals(settings.get("welcomeEnabled"));
-                boolean next    = !current;
+                boolean next = !current;
                 if (next && settings.get("welcomeChannelId") == null) {
-                    event.reply(CustomEmojis.WARN + " Please set a welcome channel first (use the **Set Channel** button).").setEphemeral(true).queue();
+                    event.reply(
+                            CustomEmojis.WARN + " Please set a welcome channel first (use the **Set Channel** button).")
+                            .setEphemeral(true).queue();
                     return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeEnabled", next);
@@ -67,32 +72,36 @@ public class WelcomeGuiListener extends ListenerAdapter {
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeDMEnabled", next);
                 refreshPanel(event, guildId, guild, userId);
             }
-            case "channel"   -> event.replyModal(channelModal(userId, settings)).queue();
-            case "message"   -> event.replyModal(messageModal(userId, settings)).queue();
-            case "color"     -> event.replyModal(colorModal(userId, settings)).queue();
-            case "autorole"  -> event.replyModal(autoRoleModal(userId, settings)).queue();
+            case "channel" -> event.replyModal(channelModal(userId, settings)).queue();
+            case "message" -> event.replyModal(messageModal(userId, settings)).queue();
+            case "color" -> event.replyModal(colorModal(userId, settings)).queue();
+            case "autorole" -> event.replyModal(autoRoleModal(userId, settings)).queue();
             case "dmmessage" -> event.replyModal(dmMessageModal(userId, settings)).queue();
-            case "test"      -> handleTest(event, settings, guild, userId, false);
-            case "dmtest"    -> handleTest(event, settings, guild, userId, true);
-            case "refresh"   -> refreshPanel(event, guildId, guild, userId);
-            default          -> event.reply("Unknown action.").setEphemeral(true).queue();
+            case "test" -> handleTest(event, settings, guild, userId, false);
+            case "dmtest" -> handleTest(event, settings, guild, userId, true);
+            case "refresh" -> refreshPanel(event, guildId, guild, userId);
+            default -> event.reply("Unknown action.").setEphemeral(true).queue();
         }
     }
 
     @Override
     public void onModalInteraction(ModalInteractionEvent event) {
         String id = event.getModalId();
-        if (!id.startsWith("wgm:")) return;
+        if (!id.startsWith("wgm:"))
+            return;
 
         String[] parts = id.split(":", 3);
-        if (parts.length < 3) return;
+        if (parts.length < 3)
+            return;
         String action = parts[1];
         String userId = parts[2];
 
-        if (!event.getUser().getId().equals(userId)) return;
-        if (!event.isFromGuild()) return;
+        if (!event.getUser().getId().equals(userId))
+            return;
+        if (!event.isFromGuild())
+            return;
 
-        Guild  guild   = event.getGuild();
+        Guild guild = event.getGuild();
         String guildId = guild.getId();
 
         switch (action) {
@@ -102,7 +111,10 @@ public class WelcomeGuiListener extends ListenerAdapter {
                 String chanId = input.replaceAll("[<#>]", "").trim();
                 TextChannel tc = null;
                 // Try by ID
-                try { tc = guild.getTextChannelById(chanId); } catch (Exception ignored) {}
+                try {
+                    tc = guild.getTextChannelById(chanId);
+                } catch (Exception ignored) {
+                }
                 // Try by name
                 if (tc == null) {
                     String lname = chanId.toLowerCase();
@@ -111,7 +123,9 @@ public class WelcomeGuiListener extends ListenerAdapter {
                             .findFirst().orElse(null);
                 }
                 if (tc == null) {
-                    event.reply(CustomEmojis.ERROR + " Channel not found. Use a channel mention `#channel`, name, or ID.").setEphemeral(true).queue();
+                    event.reply(
+                            CustomEmojis.ERROR + " Channel not found. Use a channel mention `#channel`, name, or ID.")
+                            .setEphemeral(true).queue();
                     return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeChannelId", tc.getId());
@@ -121,7 +135,8 @@ public class WelcomeGuiListener extends ListenerAdapter {
             case "message" -> {
                 String msg = event.getValue("msg_input").getAsString();
                 if (msg.length() > 1000) {
-                    event.reply(CustomEmojis.ERROR + " Message too long (max 1000 characters).").setEphemeral(true).queue();
+                    event.reply(CustomEmojis.ERROR + " Message too long (max 1000 characters).").setEphemeral(true)
+                            .queue();
                     return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeMessage", msg);
@@ -130,9 +145,11 @@ public class WelcomeGuiListener extends ListenerAdapter {
             }
             case "color" -> {
                 String color = event.getValue("color_input").getAsString().trim();
-                if (!color.startsWith("#")) color = "#" + color;
+                if (!color.startsWith("#"))
+                    color = "#" + color;
                 if (!color.matches("#[0-9A-Fa-f]{6}")) {
-                    event.reply(CustomEmojis.ERROR + " Invalid color. Use hex format like `#FF0000`.").setEphemeral(true).queue();
+                    event.reply(CustomEmojis.ERROR + " Invalid color. Use hex format like `#FF0000`.")
+                            .setEphemeral(true).queue();
                     return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeEmbedColor", color.toUpperCase());
@@ -156,7 +173,9 @@ public class WelcomeGuiListener extends ListenerAdapter {
                             .findFirst().orElse(null);
                 }
                 if (role == null) {
-                    event.reply(CustomEmojis.ERROR + " Role not found. Use a role mention `@Role`, name, or ID. Type `clear` to remove.").setEphemeral(true).queue();
+                    event.reply(CustomEmojis.ERROR
+                            + " Role not found. Use a role mention `@Role`, name, or ID. Type `clear` to remove.")
+                            .setEphemeral(true).queue();
                     return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeAutoRoleId", role.getId());
@@ -166,7 +185,8 @@ public class WelcomeGuiListener extends ListenerAdapter {
             case "dmmessage" -> {
                 String msg = event.getValue("msg_input").getAsString();
                 if (msg.length() > 1000) {
-                    event.reply(CustomEmojis.ERROR + " Message too long (max 1000 characters).").setEphemeral(true).queue();
+                    event.reply(CustomEmojis.ERROR + " Message too long (max 1000 characters).").setEphemeral(true)
+                            .queue();
                     return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeDMMessage", msg);
@@ -183,14 +203,15 @@ public class WelcomeGuiListener extends ListenerAdapter {
         event.editMessage(WelcomeCommand.buildPanelEdit(fresh, guild, userId)).queue();
     }
 
-    private void handleTest(ButtonInteractionEvent event, Map<String, Object> settings, Guild guild, String userId, boolean dm) {
-        String raw   = dm && settings.containsKey("welcomeDMMessage")
+    private void handleTest(ButtonInteractionEvent event, Map<String, Object> settings, Guild guild, String userId,
+            boolean dm) {
+        String raw = dm && settings.containsKey("welcomeDMMessage")
                 ? (String) settings.get("welcomeDMMessage")
                 : (String) settings.getOrDefault("welcomeMessage", "Welcome to {server}, {user}! \uD83C\uDF89");
-        String msg   = raw
-                .replace("{user}",        event.getUser().getAsMention())
-                .replace("{username}",    event.getUser().getEffectiveName())
-                .replace("{server}",      guild.getName())
+        String msg = raw
+                .replace("{user}", event.getUser().getAsMention())
+                .replace("{username}", event.getUser().getEffectiveName())
+                .replace("{server}", guild.getName())
                 .replace("{membercount}", String.valueOf(guild.getMemberCount()));
         String color = (String) settings.getOrDefault("welcomeEmbedColor", "#00FF00");
 
@@ -205,9 +226,10 @@ public class WelcomeGuiListener extends ListenerAdapter {
             event.getUser().openPrivateChannel()
                     .flatMap(ch -> ch.sendMessageEmbeds(eb.build()))
                     .queue(
-                            s -> event.reply(CustomEmojis.SUCCESS + " Test DM sent to your inbox.").setEphemeral(true).queue(),
-                            f -> event.reply(CustomEmojis.ERROR + " Could not send DM \u2014 are your DMs open?").setEphemeral(true).queue()
-                    );
+                            s -> event.reply(CustomEmojis.SUCCESS + " Test DM sent to your inbox.").setEphemeral(true)
+                                    .queue(),
+                            f -> event.reply(CustomEmojis.ERROR + " Could not send DM \u2014 are your DMs open?")
+                                    .setEphemeral(true).queue());
         } else {
             event.replyEmbeds(eb.build()).queue();
         }
@@ -221,7 +243,8 @@ public class WelcomeGuiListener extends ListenerAdapter {
                 .setPlaceholder("#welcome")
                 .setRequired(true)
                 .setMaxLength(100);
-        if (!cur.isEmpty()) input.setValue(cur);
+        if (!cur.isEmpty())
+            input.setValue(cur);
         return Modal.create("wgm:channel:" + uid, "Set Welcome Channel")
                 .addComponents(Label.of("Channel (#name, name, or ID)", input.build()))
                 .build();
@@ -257,7 +280,8 @@ public class WelcomeGuiListener extends ListenerAdapter {
                 .setPlaceholder("@Member  or  clear")
                 .setRequired(false)
                 .setMaxLength(100);
-        if (!cur.isEmpty()) input.setValue(cur);
+        if (!cur.isEmpty())
+            input.setValue(cur);
         return Modal.create("wgm:autorole:" + uid, "Set Auto-Role")
                 .addComponents(Label.of("Role (mention, name, ID) \u2014 type 'clear' to remove", input.build()))
                 .build();

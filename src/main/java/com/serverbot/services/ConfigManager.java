@@ -18,27 +18,27 @@ import java.nio.file.StandardCopyOption;
  * Manages bot configuration loading and saving
  */
 public class ConfigManager {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ConfigManager.class);
     private static final String CONFIG_FILE = "config.json";
     private final Gson gson;
     private BotConfig config;
-    
+
     public ConfigManager() {
         this.gson = new GsonBuilder().setPrettyPrinting().setLenient().create();
         loadConfig();
     }
-    
+
     private void loadConfig() {
         File configFile = new File(CONFIG_FILE);
-        
+
         if (!configFile.exists()) {
             logger.info("Config file not found, creating default configuration...");
             config = new BotConfig();
             saveConfig();
             return;
         }
-        
+
         try (FileReader reader = new FileReader(configFile)) {
             config = gson.fromJson(reader, BotConfig.class);
             if (config == null) {
@@ -46,7 +46,7 @@ public class ConfigManager {
                 config = new BotConfig();
             }
             logger.info("Configuration loaded successfully from {}", CONFIG_FILE);
-            
+
             // Re-save to backfill any new fields that were added since the last version.
             // This ensures the on-disk config.json always contains every known key with
             // its default value so operators can discover and edit them.
@@ -68,7 +68,7 @@ public class ConfigManager {
             config = new BotConfig();
         }
     }
-    
+
     public void saveConfig() {
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
             gson.toJson(config, writer);
@@ -77,11 +77,11 @@ public class ConfigManager {
             logger.error("Failed to save configuration file", e);
         }
     }
-    
+
     public BotConfig getConfig() {
         return config;
     }
-    
+
     public void reloadConfig() {
         logger.info("Reloading configuration...");
         loadConfig();

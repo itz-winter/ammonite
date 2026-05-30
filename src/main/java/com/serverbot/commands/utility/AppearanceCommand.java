@@ -22,37 +22,35 @@ public class AppearanceCommand implements SlashCommand {
         // Check if user is bot owner
         if (!PermissionUtils.isBotOwner(event.getUser())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Bot Owner Only", "Only the bot owner can change the bot appearance."
-            )).setEphemeral(true).queue();
+                    "Bot Owner Only", "Only the bot owner can change the bot appearance.")).setEphemeral(true).queue();
             return;
         }
 
         String statusType = event.getOption("status").getAsString();
-        
+
         OnlineStatus status;
         String statusText;
-        
+
         switch (statusType.toLowerCase()) {
             case "online" -> {
                 status = OnlineStatus.ONLINE;
-                statusText = "Online "+CustomEmojis.ONLINE;
+                statusText = "Online " + CustomEmojis.ONLINE;
             }
             case "dnd", "do-not-disturb" -> {
                 status = OnlineStatus.DO_NOT_DISTURB;
-                statusText = "Do Not Disturb "+CustomEmojis.DND;
+                statusText = "Do Not Disturb " + CustomEmojis.DND;
             }
             case "idle", "away" -> {
                 status = OnlineStatus.IDLE;
-                statusText = "Idle "+CustomEmojis.IDLE;
+                statusText = "Idle " + CustomEmojis.IDLE;
             }
             case "offline" -> {
                 status = OnlineStatus.OFFLINE;
-                statusText = "Offline "+CustomEmojis.OFFLINE;
+                statusText = "Offline " + CustomEmojis.OFFLINE;
             }
             default -> {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Status", "Valid statuses are: online, dnd, idle, offline"
-                )).setEphemeral(true).queue();
+                        "Invalid Status", "Valid statuses are: online, dnd, idle, offline")).setEphemeral(true).queue();
                 return;
             }
         }
@@ -60,24 +58,23 @@ public class AppearanceCommand implements SlashCommand {
         try {
             event.getJDA().getPresence().setStatus(status);
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Appearance Updated", "Bot appearance has been set to: **" + statusText + "**"
-            )).setEphemeral(true).queue();
+                    "Appearance Updated", "Bot appearance has been set to: **" + statusText + "**")).setEphemeral(true)
+                    .queue();
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Appearance Update Failed", "Failed to update bot appearance: " + e.getMessage()
-            )).setEphemeral(true).queue();
+                    "Appearance Update Failed", "Failed to update bot appearance: " + e.getMessage()))
+                    .setEphemeral(true).queue();
         }
     }
 
     public static CommandData getCommandData() {
         return Commands.slash("appearance", "Set bot online appearance")
                 .addOptions(
-                    new OptionData(OptionType.STRING, "status", "The status to set", true)
-                        .addChoice("Online", "online")
-                        .addChoice("Do Not Disturb", "dnd")
-                        .addChoice("Idle", "idle")
-                        .addChoice("Offline", "offline")
-                );
+                        new OptionData(OptionType.STRING, "status", "The status to set", true)
+                                .addChoice("Online", "online")
+                                .addChoice("Do Not Disturb", "dnd")
+                                .addChoice("Idle", "idle")
+                                .addChoice("Offline", "offline"));
     }
 
     @Override

@@ -28,31 +28,29 @@ public class WarnsCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         Member member = event.getMember();
-        User targetUser = event.getOption("user") != null ? 
-                event.getOption("user").getAsUser() : event.getUser();
+        User targetUser = event.getOption("user") != null ? event.getOption("user").getAsUser() : event.getUser();
 
         // Check permissions - can view own warnings or need mod perms for others
         if (!targetUser.equals(event.getUser()) && !PermissionManager.hasPermission(member, "mod.warns")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", "You need the `mod.warns` permission to view other users' warnings."
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions", "You need the `mod.warns` permission to view other users' warnings."))
+                    .setEphemeral(true).queue();
             return;
         }
 
         try {
-            List<Map<String, Object>> warnings = ServerBot.getStorageManager().getWarnings(event.getGuild().getId(), targetUser.getId());
-            
+            List<Map<String, Object>> warnings = ServerBot.getStorageManager().getWarnings(event.getGuild().getId(),
+                    targetUser.getId());
+
             if (warnings.isEmpty()) {
                 String target = targetUser.equals(event.getUser()) ? "You have" : targetUser.getName() + " has";
                 event.replyEmbeds(EmbedUtils.createInfoEmbed(
-                    "No Warnings", target + " no active warnings."
-                )).setEphemeral(true).queue();
+                        "No Warnings", target + " no active warnings.")).setEphemeral(true).queue();
                 return;
             }
 
@@ -63,33 +61,35 @@ public class WarnsCommand implements SlashCommand {
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
                     .withZone(ZoneId.systemDefault());
-            
+
             int displayCount = Math.min(warnings.size(), 10);
-            
+
             for (int i = 0; i < displayCount; i++) {
                 Map<String, Object> warning = warnings.get(i);
                 String reason = (String) warning.get("reason");
                 String moderatorId = (String) warning.get("moderatorId");
                 long timestamp = (Long) warning.get("timestamp");
-                
+
                 String moderatorName = "*unknown*";
                 try {
                     User mod = event.getJDA().getUserById(moderatorId);
-                    if (mod != null) moderatorName = mod.getName();
-                } catch (Exception ignored) {}
-                
+                    if (mod != null)
+                        moderatorName = mod.getName();
+                } catch (Exception ignored) {
+                }
+
                 String dateStr = formatter.format(Instant.ofEpochMilli(timestamp));
-                
+
                 String fieldTitle = "Warn #" + (i + 1);
                 String fieldValue = "**Reason:** " + reason + "\n" +
-                                   "**Moderator:** " + moderatorName + "\n" +
-                                   "**Date:** " + dateStr;
-                
+                        "**Moderator:** " + moderatorName + "\n" +
+                        "**Date:** " + dateStr;
+
                 embed.addField(fieldTitle, fieldValue, false);
             }
 
-            embed.addField("Stats", 
-                          "**Total Active Warnings:** " + warnings.size(), true);
+            embed.addField("Stats",
+                    "**Total Active Warnings:** " + warnings.size(), true);
 
             if (warnings.size() > displayCount) {
                 embed.setFooter("Showing " + displayCount + " most recent warnings out of " + warnings.size());
@@ -101,8 +101,7 @@ public class WarnsCommand implements SlashCommand {
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Storage Error", "Failed to retrieve warnings: " + e.getMessage()
-            )).setEphemeral(true).queue();
+                    "Storage Error", "Failed to retrieve warnings: " + e.getMessage())).setEphemeral(true).queue();
         }
     }
 

@@ -29,49 +29,47 @@ public class KickCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage(
-                "Guild Only", "This command can only be used in servers.", USAGE
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.", USAGE)).setEphemeral(true).queue();
             return;
         }
 
         Member moderator = event.getMember();
         if (!PermissionManager.hasPermission(moderator, "mod.kick")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", 
-                "You need the `mod.kick` permission to use this command.\n\n" +
-                "Ask a server admin to grant you the `mod.kick` permission."
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions",
+                    "You need the `mod.kick` permission to use this command.\n\n" +
+                            "Ask a server admin to grant you the `mod.kick` permission."))
+                    .setEphemeral(true).queue();
             return;
         }
 
         User target = event.getOption("user").getAsUser();
-        String reason = event.getOption("reason") != null ? 
-                event.getOption("reason").getAsString() : "No reason provided";
+        String reason = event.getOption("reason") != null ? event.getOption("reason").getAsString()
+                : "No reason provided";
 
         Member targetMember = event.getGuild().getMember(target);
-        
+
         if (targetMember == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage(
-                "User Not Found", "This user is not in the server.", USAGE, EXAMPLE
-            )).setEphemeral(true).queue();
+                    "User Not Found", "This user is not in the server.", USAGE, EXAMPLE)).setEphemeral(true).queue();
             return;
         }
 
         if (!moderator.canInteract(targetMember)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Cannot Kick User", 
-                "You cannot kick this user due to role hierarchy.\n\n" +
-                "Your highest role must be above the target user's highest role."
-            )).setEphemeral(true).queue();
+                    "Cannot Kick User",
+                    "You cannot kick this user due to role hierarchy.\n\n" +
+                            "Your highest role must be above the target user's highest role."))
+                    .setEphemeral(true).queue();
             return;
         }
 
         if (!event.getGuild().getSelfMember().canInteract(targetMember)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Cannot Kick User", 
-                "I cannot kick this user due to role hierarchy.\n\n" +
-                "Move my role higher than the target user's highest role."
-            )).setEphemeral(true).queue();
+                    "Cannot Kick User",
+                    "I cannot kick this user due to role hierarchy.\n\n" +
+                            "Move my role higher than the target user's highest role."))
+                    .setEphemeral(true).queue();
             return;
         }
 
@@ -82,18 +80,16 @@ public class KickCommand implements SlashCommand {
         event.getGuild().kick(targetMember).reason(reason)
                 .queue(success -> {
                     event.getHook().sendMessageEmbeds(EmbedUtils.createModerationEmbed(
-                        "User Kicked", target, moderator.getUser(), reason
-                    )).queue();
+                            "User Kicked", target, moderator.getUser(), reason)).queue();
 
                     // Send DM notification if configured
                     PunishmentNotificationService.getInstance().sendPunishmentNotification(
-                        event.getGuild().getId(), 
-                        target.getId(), 
-                        PunishmentNotificationService.PunishmentType.KICK, 
-                        reason, 
-                        null, // No duration for kicks
-                        moderator.getEffectiveName()
-                    );
+                            event.getGuild().getId(),
+                            target.getId(),
+                            PunishmentNotificationService.PunishmentType.KICK,
+                            reason,
+                            null, // No duration for kicks
+                            moderator.getEffectiveName());
 
                     // Log to database and AutoLog channel
                     logKick(event.getGuild().getId(), target.getId(), moderator.getId(), reason);
@@ -101,8 +97,7 @@ public class KickCommand implements SlashCommand {
 
                 }, error -> {
                     event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                        "Kick Failed", "Failed to kick user: " + error.getMessage()
-                    )).setEphemeral(true).queue();
+                            "Kick Failed", "Failed to kick user: " + error.getMessage())).setEphemeral(true).queue();
                 });
     }
 

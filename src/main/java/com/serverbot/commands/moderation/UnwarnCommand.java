@@ -26,47 +26,46 @@ public class UnwarnCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         Member moderator = event.getMember();
         if (!PermissionManager.hasPermission(moderator, "mod.unwarn")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", "You need the `mod.unwarn` permission to remove warnings."
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions", "You need the `mod.unwarn` permission to remove warnings."))
+                    .setEphemeral(true).queue();
             return;
         }
 
         User targetUser = event.getOption("user").getAsUser();
-        String reason = event.getOption("reason") != null ? 
-                event.getOption("reason").getAsString() : "No reason provided";
+        String reason = event.getOption("reason") != null ? event.getOption("reason").getAsString()
+                : "No reason provided";
 
         try {
-            List<Map<String, Object>> warnings = ServerBot.getStorageManager().getWarnings(event.getGuild().getId(), targetUser.getId());
-            
+            List<Map<String, Object>> warnings = ServerBot.getStorageManager().getWarnings(event.getGuild().getId(),
+                    targetUser.getId());
+
             if (warnings.isEmpty()) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "No Warnings", targetUser.getName() + " has no active warnings to remove."
-                )).setEphemeral(true).queue();
+                        "No Warnings", targetUser.getName() + " has no active warnings to remove.")).setEphemeral(true)
+                        .queue();
                 return;
             }
 
             // Remove the most recent warning
             Map<String, Object> removedWarning = warnings.get(warnings.size() - 1);
-            
+
             // Clear all warnings and re-add all but the last one
             ServerBot.getStorageManager().clearWarnings(event.getGuild().getId(), targetUser.getId());
-            
+
             for (int i = 0; i < warnings.size() - 1; i++) {
                 Map<String, Object> warning = warnings.get(i);
                 ServerBot.getStorageManager().addWarning(
-                    event.getGuild().getId(), 
-                    targetUser.getId(), 
-                    (String) warning.get("reason"), 
-                    (String) warning.get("moderatorId")
-                );
+                        event.getGuild().getId(),
+                        targetUser.getId(),
+                        (String) warning.get("reason"),
+                        (String) warning.get("moderatorId"));
             }
 
             // Log the unwarn action
@@ -77,27 +76,27 @@ public class UnwarnCommand implements SlashCommand {
             logEntry.put("reason", reason);
             logEntry.put("removedWarningReason", removedWarning.get("reason"));
             logEntry.put("timestamp", System.currentTimeMillis());
-            
+
             ServerBot.getStorageManager().addModerationLog(event.getGuild().getId(), logEntry);
 
             // Log to AutoLog channel
-            AutoLogUtils.logUnwarn(event.getGuild(), targetUser, moderator.getUser(), reason, (String) removedWarning.get("reason"));
+            AutoLogUtils.logUnwarn(event.getGuild(), targetUser, moderator.getUser(), reason,
+                    (String) removedWarning.get("reason"));
 
             int remainingWarnings = warnings.size() - 1;
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Warning Removed",
-                "Successfully removed a warning from " + targetUser.getAsMention() + 
-                "\n**Removed Warning:** " + removedWarning.get("reason") +
-                "\n**Reason for Removal:** " + reason +
-                "\n**Remaining Warnings:** " + remainingWarnings +
-                "\n**Moderator:** " + moderator.getAsMention()
-            )).queue();
+                    "Warning Removed",
+                    "Successfully removed a warning from " + targetUser.getAsMention() +
+                            "\n**Removed Warning:** " + removedWarning.get("reason") +
+                            "\n**Reason for Removal:** " + reason +
+                            "\n**Remaining Warnings:** " + remainingWarnings +
+                            "\n**Moderator:** " + moderator.getAsMention()))
+                    .queue();
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Unwarn Failed", 
-                "Failed to remove warning: " + e.getMessage()
-            )).setEphemeral(true).queue();
+                    "Unwarn Failed",
+                    "Failed to remove warning: " + e.getMessage())).setEphemeral(true).queue();
         }
     }
 

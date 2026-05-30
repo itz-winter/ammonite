@@ -16,7 +16,8 @@ import java.net.URI;
 
 /**
  * Audio track for Newgrounds audio.
- * Streams the MP3 directly from Newgrounds' CDN using LavaPlayer's MP3 container.
+ * Streams the MP3 directly from Newgrounds' CDN using LavaPlayer's MP3
+ * container.
  */
 public class NewgroundsAudioTrack extends DelegatedAudioTrack {
 

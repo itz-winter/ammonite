@@ -23,7 +23,8 @@ import java.util.stream.Collectors;
 
 /**
  * Permission management command with autocomplete on the node option.
- * Supports viewing, setting, and removing permissions for users, roles, and @everyone.
+ * Supports viewing, setting, and removing permissions for users, roles,
+ * and @everyone.
  */
 public class PermissionsCommand implements SlashCommand {
 
@@ -46,17 +47,20 @@ public class PermissionsCommand implements SlashCommand {
         }
 
         switch (actionOpt.getAsString()) {
-            case "view"   -> handleView(event);
-            case "set"    -> handleSet(event);
+            case "view" -> handleView(event);
+            case "set" -> handleSet(event);
             case "remove" -> handleRemove(event);
-            default       -> showHelp(event);
+            default -> showHelp(event);
         }
     }
 
     @Override
     public void handleAutoComplete(CommandAutoCompleteInteractionEvent event) {
         String focused = event.getFocusedOption().getName();
-        if (!"node".equals(focused)) { event.replyChoices().queue(); return; }
+        if (!"node".equals(focused)) {
+            event.replyChoices().queue();
+            return;
+        }
 
         String input = event.getFocusedOption().getValue().toLowerCase();
         List<Command.Choice> choices = PermissionManager.getAllPermissionNodes().stream()
@@ -77,7 +81,8 @@ public class PermissionsCommand implements SlashCommand {
         if (targetOpt == null) {
             // Show @everyone permissions
             Map<String, Boolean> perms = PermissionManager.getEveryonePermissions(guildId);
-            event.replyEmbeds(buildPermEmbed("@everyone", null, perms, event.getGuild().getName()).build()).setEphemeral(true).queue();
+            event.replyEmbeds(buildPermEmbed("@everyone", null, perms, event.getGuild().getName()).build())
+                    .setEphemeral(true).queue();
             return;
         }
 
@@ -85,34 +90,41 @@ public class PermissionsCommand implements SlashCommand {
             Member member = targetOpt.getAsMember();
             if (member != null) {
                 Map<String, Boolean> perms = PermissionManager.getUserPermissions(guildId, member.getId());
-                event.replyEmbeds(buildPermEmbed(member.getEffectiveName(), "\uD83D\uDC64", perms, event.getGuild().getName()).build()).setEphemeral(true).queue();
+                event.replyEmbeds(
+                        buildPermEmbed(member.getEffectiveName(), "\uD83D\uDC64", perms, event.getGuild().getName())
+                                .build())
+                        .setEphemeral(true).queue();
                 return;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         try {
             Role role = targetOpt.getAsRole();
             Map<String, Boolean> perms = PermissionManager.getRolePermissions(guildId, role.getId());
-            event.replyEmbeds(buildPermEmbed(role.getName(), "\uD83C\uDFAD", perms, event.getGuild().getName()).build()).setEphemeral(true).queue();
+            event.replyEmbeds(buildPermEmbed(role.getName(), "\uD83C\uDFAD", perms, event.getGuild().getName()).build())
+                    .setEphemeral(true).queue();
         } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "Could not resolve target.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "Could not resolve target.")).setEphemeral(true)
+                    .queue();
         }
     }
 
     private void handleSet(SlashCommandInteractionEvent event) {
         OptionMapping targetOpt = event.getOption("target");
-        OptionMapping nodeOpt   = event.getOption("node");
+        OptionMapping nodeOpt = event.getOption("node");
 
         if (nodeOpt == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Node",
-                    "Specify a permission node. Use autocomplete to browse available nodes.")).setEphemeral(true).queue();
+                    "Specify a permission node. Use autocomplete to browse available nodes.")).setEphemeral(true)
+                    .queue();
             return;
         }
 
         String guildId = event.getGuild().getId();
-        String node    = nodeOpt.getAsString();
+        String node = nodeOpt.getAsString();
         OptionMapping valueOpt = event.getOption("value");
-        boolean allow  = valueOpt == null || valueOpt.getAsBoolean(); // default: allow
+        boolean allow = valueOpt == null || valueOpt.getAsBoolean(); // default: allow
 
         if (targetOpt == null) {
             // @everyone
@@ -129,10 +141,12 @@ public class PermissionsCommand implements SlashCommand {
                 PermissionManager.setUserPermission(guildId, member.getId(), node, allow);
                 event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                         "Permission " + (allow ? "Granted" : "Denied"),
-                        member.getAsMention() + " — `" + node + "` \u2192 **" + (allow ? "ALLOW" : "DENY") + "**")).queue();
+                        member.getAsMention() + " — `" + node + "` \u2192 **" + (allow ? "ALLOW" : "DENY") + "**"))
+                        .queue();
                 return;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         try {
             Role role = targetOpt.getAsRole();
@@ -141,13 +155,14 @@ public class PermissionsCommand implements SlashCommand {
                     "Permission " + (allow ? "Granted" : "Denied"),
                     role.getAsMention() + " — `" + node + "` \u2192 **" + (allow ? "ALLOW" : "DENY") + "**")).queue();
         } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "Could not resolve target.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "Could not resolve target.")).setEphemeral(true)
+                    .queue();
         }
     }
 
     private void handleRemove(SlashCommandInteractionEvent event) {
         OptionMapping targetOpt = event.getOption("target");
-        OptionMapping nodeOpt   = event.getOption("node");
+        OptionMapping nodeOpt = event.getOption("node");
 
         if (nodeOpt == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Node",
@@ -156,7 +171,7 @@ public class PermissionsCommand implements SlashCommand {
         }
 
         String guildId = event.getGuild().getId();
-        String node    = nodeOpt.getAsString();
+        String node = nodeOpt.getAsString();
 
         if (targetOpt == null) {
             PermissionManager.removeEveryonePermission(guildId, node);
@@ -173,7 +188,8 @@ public class PermissionsCommand implements SlashCommand {
                         member.getAsMention() + " — `" + node + "` reset to default.")).queue();
                 return;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         try {
             Role role = targetOpt.getAsRole();
@@ -181,7 +197,8 @@ public class PermissionsCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createSuccessEmbed("Permission Removed",
                     role.getAsMention() + " — `" + node + "` reset to default.")).queue();
         } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "Could not resolve target.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "Could not resolve target.")).setEphemeral(true)
+                    .queue();
         }
     }
 
@@ -202,7 +219,8 @@ public class PermissionsCommand implements SlashCommand {
                     .limit(40)
                     .forEach(e -> sb.append(e.getValue() ? CustomEmojis.ON : CustomEmojis.OFF)
                             .append("  `").append(e.getKey()).append("`\n"));
-            if (perms.size() > 40) sb.append("\u2026 and ").append(perms.size() - 40).append(" more.");
+            if (perms.size() > 40)
+                sb.append("\u2026 and ").append(perms.size() - 40).append(" more.");
             eb.setDescription(sb.toString());
         }
         return eb;
@@ -215,30 +233,47 @@ public class PermissionsCommand implements SlashCommand {
                 .setDescription("Manage fine-grained permission nodes for users, roles, and @everyone.")
                 .addField("Actions",
                         "**view** — Show explicit overrides for a target (omit target \u2192 @everyone)\n"
-                        + "**set** — Grant or deny a node (`value: true` = allow, `false` = deny)\n"
-                        + "**remove** — Reset a node back to server default", false)
+                                + "**set** — Grant or deny a node (`value: true` = allow, `false` = deny)\n"
+                                + "**remove** — Reset a node back to server default",
+                        false)
                 .addField("Tips",
                         "\u2022 Omitting `target` targets `@everyone`.\n"
-                        + "\u2022 The `node` field has autocomplete \u2014 just start typing!\n"
-                        + "\u2022 Wildcard nodes like `mod.*` grant/deny entire groups.\n"
-                        + "\u2022 Explicit deny always wins over allow.", false)
+                                + "\u2022 The `node` field has autocomplete \u2014 just start typing!\n"
+                                + "\u2022 Wildcard nodes like `mod.*` grant/deny entire groups.\n"
+                                + "\u2022 Explicit deny always wins over allow.",
+                        false)
                 .setFooter("Guild owners and Discord Administrators bypass all permission checks.");
         event.replyEmbeds(eb.build()).setEphemeral(true).queue();
     }
 
     // Metadata
 
-    @Override public String getName()              { return "permissions"; }
-    @Override public String getDescription()       { return "Manage server permission nodes for users, roles, and @everyone"; }
-    @Override public CommandCategory getCategory() { return CommandCategory.CONFIGURATION; }
-    @Override public boolean requiresPermissions() { return true; }
+    @Override
+    public String getName() {
+        return "permissions";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Manage server permission nodes for users, roles, and @everyone";
+    }
+
+    @Override
+    public CommandCategory getCategory() {
+        return CommandCategory.CONFIGURATION;
+    }
+
+    @Override
+    public boolean requiresPermissions() {
+        return true;
+    }
 
     public static CommandData getCommandData() {
         OptionData actionOpt = new OptionData(OptionType.STRING, "action",
                 "What to do", false)
-                .addChoice("View permissions",   "view")
-                .addChoice("Set / override",     "set")
-                .addChoice("Remove override",    "remove");
+                .addChoice("View permissions", "view")
+                .addChoice("Set / override", "set")
+                .addChoice("Remove override", "remove");
 
         OptionData nodeOpt = new OptionData(OptionType.STRING, "node",
                 "Permission node (e.g. mod.ban, admin.*) \u2014 start typing for autocomplete", false)
@@ -251,7 +286,6 @@ public class PermissionsCommand implements SlashCommand {
                                 "User or role to manage (omit for @everyone)", false),
                         nodeOpt,
                         new OptionData(OptionType.BOOLEAN, "value",
-                                "true = allow, false = deny (default: true)", false)
-                );
+                                "true = allow, false = deny (default: true)", false));
     }
 }

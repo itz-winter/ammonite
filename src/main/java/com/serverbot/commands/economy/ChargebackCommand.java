@@ -26,16 +26,16 @@ public class ChargebackCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         Member member = event.getMember();
         if (!PermissionManager.hasPermission(member, "economy.admin.chargeback")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", "You need the `economy.admin.chargeback` permission to perform chargebacks."
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions",
+                    "You need the `economy.admin.chargeback` permission to perform chargebacks.")).setEphemeral(true)
+                    .queue();
             return;
         }
 
@@ -44,36 +44,35 @@ public class ChargebackCommand implements SlashCommand {
 
         try {
             String guildId = event.getGuild().getId();
-            
+
             // Process the chargeback - in a real implementation, this would:
             // 1. Find the transaction by ID in the database
             // 2. Reverse the transaction (add/subtract balances)
             // 3. Log the chargeback action
-            
+
             // For this implementation, we'll create a chargeback log entry
             long chargebackId = System.currentTimeMillis();
-            
+
             // Log the chargeback action
             ServerBot.getStorageManager().logModerationAction(
-                guildId,
-                transactionId, // Using transaction ID as target
-                member.getUser().getId(),
-                "CHARGEBACK",
-                reason,
-                "Transaction ID: " + transactionId
-            );
+                    guildId,
+                    transactionId, // Using transaction ID as target
+                    member.getUser().getId(),
+                    "CHARGEBACK",
+                    reason,
+                    "Transaction ID: " + transactionId);
 
             // Create chargeback record
             Map<String, Object> chargebackRecord = Map.of(
-                "id", chargebackId,
-                "transactionId", transactionId,
-                "reason", reason,
-                "moderatorId", member.getUser().getId(),
-                "timestamp", System.currentTimeMillis(),
-                "status", "PROCESSED"
-            );
+                    "id", chargebackId,
+                    "transactionId", transactionId,
+                    "reason", reason,
+                    "moderatorId", member.getUser().getId(),
+                    "timestamp", System.currentTimeMillis(),
+                    "status", "PROCESSED");
 
-            // Store chargeback (you might want to create a separate chargeback storage method)
+            // Store chargeback (you might want to create a separate chargeback storage
+            // method)
             ServerBot.getStorageManager().updateGuildSettings(guildId, "chargeback_" + chargebackId, chargebackRecord);
 
             // Send confirmation
@@ -94,14 +93,13 @@ public class ChargebackCommand implements SlashCommand {
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Chargeback Failed", 
-                "Failed to process chargeback: " + e.getMessage()
-            )).setEphemeral(true).queue();
+                    "Chargeback Failed",
+                    "Failed to process chargeback: " + e.getMessage())).setEphemeral(true).queue();
         }
     }
 
-    private void logChargebackToChannel(SlashCommandInteractionEvent event, String transactionId, 
-                                      long chargebackId, String reason, Member moderator) {
+    private void logChargebackToChannel(SlashCommandInteractionEvent event, String transactionId,
+            long chargebackId, String reason, Member moderator) {
         try {
             String guildId = event.getGuild().getId();
             Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);

@@ -25,42 +25,57 @@ public class EmbedCommand implements SlashCommand {
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
-        /*if (!event.isFromGuild()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only","This command can only be used in servers.")).setEphemeral(true).queue();
-            return;
-        }*/
+        /*
+         * if (!event.isFromGuild()) {
+         * event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only"
+         * ,"This command can only be used in servers.")).setEphemeral(true).queue();
+         * return;
+         * }
+         */
         Member member = event.getMember();
         if (!PermissionUtils.hasModeratorPermissions(member)) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Insufficient Permissions","You need moderation permissions to send embeds.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Insufficient Permissions",
+                    "You need moderation permissions to send embeds.")).setEphemeral(true).queue();
             return;
         }
         String jsonRaw = event.getOption("json", OptionMapping::getAsString);
         if (jsonRaw == null || jsonRaw.isBlank()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing JSON","Please provide embed JSON.\n\n💡 Use /embedgui for an interactive builder with live preview and JSON export.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing JSON",
+                    "Please provide embed JSON.\n\n💡 Use /embedgui for an interactive builder with live preview and JSON export."))
+                    .setEphemeral(true).queue();
             return;
         }
         EmbedBuilder embed;
-        try { embed = EmbedJsonUtils.parseEmbed(jsonRaw); }
-        catch (IllegalArgumentException e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Embed JSON",e.getMessage()+"\n\n💡 Use /embedgui to build embeds visually and export JSON.")).setEphemeral(true).queue();
+        try {
+            embed = EmbedJsonUtils.parseEmbed(jsonRaw);
+        } catch (IllegalArgumentException e) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Embed JSON",
+                    e.getMessage() + "\n\n💡 Use /embedgui to build embeds visually and export JSON."))
+                    .setEphemeral(true).queue();
             return;
         }
         if (!hasContent(embed)) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Empty Embed","The embed must have at least a title, description, or one field.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Empty Embed",
+                    "The embed must have at least a title, description, or one field.")).setEphemeral(true).queue();
             return;
         }
         List<Button> buttons = new ArrayList<>();
-        try { buttons = EmbedJsonUtils.parseButtonsFromJson(jsonRaw); }
-        catch (IllegalArgumentException e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Buttons JSON",e.getMessage())).setEphemeral(true).queue();
+        try {
+            buttons = EmbedJsonUtils.parseButtonsFromJson(jsonRaw);
+        } catch (IllegalArgumentException e) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Buttons JSON", e.getMessage())).setEphemeral(true)
+                    .queue();
             return;
         }
         GuildMessageChannel target = event.getChannel().asGuildMessageChannel();
         OptionMapping channelOption = event.getOption("channel");
         if (channelOption != null) {
-            try { target = channelOption.getAsChannel().asGuildMessageChannel(); }
-            catch (Exception e) {
-                event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Channel","That channel cannot receive messages.")).setEphemeral(true).queue();
+            try {
+                target = channelOption.getAsChannel().asGuildMessageChannel();
+            } catch (Exception e) {
+                event.replyEmbeds(
+                        EmbedUtils.createErrorEmbed("Invalid Channel", "That channel cannot receive messages."))
+                        .setEphemeral(true).queue();
                 return;
             }
         }
@@ -68,34 +83,59 @@ public class EmbedCommand implements SlashCommand {
         if (!buttons.isEmpty()) {
             List<ActionRow> rows = new ArrayList<>();
             for (int i = 0; i < buttons.size(); i += 5)
-                rows.add(ActionRow.of(buttons.subList(i, Math.min(i+5, buttons.size()))));
+                rows.add(ActionRow.of(buttons.subList(i, Math.min(i + 5, buttons.size()))));
             msg.setComponents(rows);
         }
         final GuildMessageChannel dest = target;
         event.deferReply(true).queue();
         dest.sendMessage(msg.build()).queue(
-            sent -> event.getHook().editOriginalEmbeds(EmbedUtils.createSuccessEmbed("Embed Sent","Your embed was sent to "+dest.getAsMention()+".")).queue(),
-            err  -> event.getHook().editOriginalEmbeds(EmbedUtils.createErrorEmbed("Send Failed",err.getMessage())).queue()
-        );
+                sent -> event.getHook()
+                        .editOriginalEmbeds(EmbedUtils.createSuccessEmbed("Embed Sent",
+                                "Your embed was sent to " + dest.getAsMention() + "."))
+                        .queue(),
+                err -> event.getHook().editOriginalEmbeds(EmbedUtils.createErrorEmbed("Send Failed", err.getMessage()))
+                        .queue());
     }
 
     private static boolean hasContent(EmbedBuilder eb) {
         var built = eb.build();
         return (built.getTitle() != null && !built.getTitle().isBlank())
-            || (built.getDescription() != null && !built.getDescription().isBlank())
-            || !built.getFields().isEmpty();
+                || (built.getDescription() != null && !built.getDescription().isBlank())
+                || !built.getFields().isEmpty();
     }
 
     public static CommandData getCommandData() {
-        return Commands.slash("embed","Send a custom embed using JSON. Use /embedgui for an interactive builder.")
-            .addOptions(
-                new OptionData(OptionType.STRING,"json","Embed JSON — optionally include a \"buttons\" key for buttons (use /embedgui to generate)",true),
-                new OptionData(OptionType.CHANNEL,"channel","Channel to send to (default: current channel)",false)
-            );
+        return Commands.slash("embed", "Send a custom embed using JSON. Use /embedgui for an interactive builder.")
+                .addOptions(
+                        new OptionData(OptionType.STRING, "json",
+                                "Embed JSON — optionally include a \"buttons\" key for buttons (use /embedgui to generate)",
+                                true),
+                        new OptionData(OptionType.CHANNEL, "channel", "Channel to send to (default: current channel)",
+                                false));
     }
 
-    @Override public String getName()              { return "embed"; }
-    @Override public String getDescription()       { return "Send a custom embed using JSON."; }
-    @Override public CommandCategory getCategory() { return CommandCategory.UTILITY; }
-    @Override public boolean requiresPermissions() { return true; }
+    @Override
+    public String getName() {
+        return "embed";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Send a custom embed using JSON.";
+    }
+
+    @Override
+    public CommandCategory getCategory() {
+        return CommandCategory.UTILITY;
+    }
+
+    @Override
+    public boolean isGuildOnly() {
+        return false;
+    }
+
+    @Override
+    public boolean requiresPermissions() {
+        return true;
+    }
 }

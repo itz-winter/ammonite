@@ -20,8 +20,7 @@ public class HelpCommand implements SlashCommand {
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
-        String commandName = event.getOption("command") != null ? 
-                event.getOption("command").getAsString() : null;
+        String commandName = event.getOption("command") != null ? event.getOption("command").getAsString() : null;
 
         if (commandName != null) {
             showSpecificCommandHelp(event, commandName);
@@ -32,12 +31,11 @@ public class HelpCommand implements SlashCommand {
 
     private void showSpecificCommandHelp(SlashCommandInteractionEvent event, String commandName) {
         SlashCommand command = ServerBot.getCommandManager().getCommand(commandName.toLowerCase());
-        
+
         if (command == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Command Not Found",
-                "The command `" + commandName + "` does not exist."
-            )).setEphemeral(true).queue();
+                    "Command Not Found",
+                    "The command `" + commandName + "` does not exist.")).setEphemeral(true).queue();
             return;
         }
 
@@ -63,13 +61,14 @@ public class HelpCommand implements SlashCommand {
                 .setDescription("Here are all available commands organized by category:");
 
         Map<String, SlashCommand> commands = ServerBot.getCommandManager().getAllCommands();
-        
-        // Check if the user is the bot owner to decide whether to show owner-only commands
+
+        // Check if the user is the bot owner to decide whether to show owner-only
+        // commands
         boolean isOwner = PermissionUtils.isBotOwner(event.getUser());
-        
+
         // Group commands by category, filtering out owner-only commands for non-owners
         Map<CommandCategory, StringBuilder> categoryCommands = new java.util.HashMap<>();
-        
+
         for (SlashCommand command : commands.values()) {
             // Hide owner-only commands from non-owners
             if (command.isOwnerOnly() && !isOwner) {
@@ -91,10 +90,11 @@ public class HelpCommand implements SlashCommand {
             }
         }
 
-        embed.addField("📖 Need More Help?", 
+        embed.addField("📖 Need More Help?",
                 "• Use `/help <command>` for detailed information about a specific command\n" +
-                "• Use `/error` to view comprehensive error code documentation\n" +
-                "• Use `/error category:<letter>` for specific error categories (A-W)", false);
+                        "• Use `/error` to view comprehensive error code documentation\n" +
+                        "• Use `/error category:<letter>` for specific error categories (A-W)",
+                false);
 
         event.replyEmbeds(embed.build()).setEphemeral(true).queue();
     }
@@ -107,14 +107,22 @@ public class HelpCommand implements SlashCommand {
             case "mute" -> "`/mute <user> <duration> [reason]`\nExample: `/mute @user 1h Inappropriate language`";
             case "echo" -> "`/echo <message> [channel]`\nExample: `/echo Hello World #general`";
             case "gamble" -> "`/gamble <game> <points>`\nGames: blackjack, cointoss, poker, rockpaperscissors";
-            case "permissions" -> "`/permissions target:<user/role/everyone> action:<set/remove/view> node:<permission> value:<true/false>`\nExample: `/permissions target:user:@user action:set node:moderation.ban value:true`";
-            case "settings" -> "`/settings setting:<setting-name> [value:<new-value>]`\nExample: `/settings setting:daily-reward value:100`";
-            case "antispam" -> "`/antispam setting:<setting-name> [value:<new-value>]`\nExample: `/antispam setting:message-limit amount:10`";
-            case "bank" -> "`/bank setting:<balance/maxloan/minloan/autocollect> [action:<set/add/remove>] [user:<@user>] [amount:<value>]`\nExample: `/bank setting:balance action:add user:@user amount:1000`";
-            case "embed" -> "`/embed type:<simple/advanced> title:<title> description:<description> [color:<hex-color>]`\nExample: `/embed type:simple title:Welcome description:Hello everyone! color:#ff0000`";
-            case "welcome" -> "`/welcome action:<view/message/embed-color/auto-role/enable/test> [value:<new-value>]`\nExample: `/welcome action:message text:Welcome {user} to {server}!`";
-            case "status" -> "`/status action:<set/clear/online> [type:<playing/watching/listening>] [text:<status-text>]`\nExample: `/status action:set type:playing text:Minecraft`";
-            case "pride" -> "`/pride type:<avatar/url/custom> flag:<flag-name> [url:<image-url>]`\nExample: `/pride type:avatar flag:rainbow`";
+            case "permissions" ->
+                "`/permissions target:<user/role/everyone> action:<set/remove/view> node:<permission> value:<true/false>`\nExample: `/permissions target:user:@user action:set node:moderation.ban value:true`";
+            case "settings" ->
+                "`/settings setting:<setting-name> [value:<new-value>]`\nExample: `/settings setting:daily-reward value:100`";
+            case "antispam" ->
+                "`/antispam setting:<setting-name> [value:<new-value>]`\nExample: `/antispam setting:message-limit amount:10`";
+            case "bank" ->
+                "`/bank setting:<balance/maxloan/minloan/autocollect> [action:<set/add/remove>] [user:<@user>] [amount:<value>]`\nExample: `/bank setting:balance action:add user:@user amount:1000`";
+            case "embed" ->
+                "`/embed type:<simple/advanced> title:<title> description:<description> [color:<hex-color>]`\nExample: `/embed type:simple title:Welcome description:Hello everyone! color:#ff0000`";
+            case "welcome" ->
+                "`/welcome action:<view/message/embed-color/auto-role/enable/test> [value:<new-value>]`\nExample: `/welcome action:message text:Welcome {user} to {server}!`";
+            case "status" ->
+                "`/status action:<set/clear/online> [type:<playing/watching/listening>] [text:<status-text>]`\nExample: `/status action:set type:playing text:Minecraft`";
+            case "pride" ->
+                "`/pride type:<avatar/url/custom> flag:<flag-name> [url:<image-url>]`\nExample: `/pride type:avatar flag:rainbow`";
             case "error" -> "`/error [category:<A-W>]`\nExample: `/error category:S` (Settings errors)";
             default -> null;
         };

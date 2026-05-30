@@ -119,7 +119,19 @@ public class DadJokeCommand implements SlashCommand {
         "I'd tell you a joke about pizza, but it's a little cheesy.",
         "Why did the fish blush? Because it saw the ocean's bottom.",
         "Why did the belt get arrested? For holding up a pair of pants.",
-        "Why don't scientists trust atoms? Because they make up everything!"
+        "Why don't scientists trust atoms? Because they make up everything!",
+        "What do you call a snowman with a six-pack? An abdominal snowman.",
+        "Why did the coffee file a police report? It got mugged.",
+        "What do you call a dinosaur with an extensive vocabulary? A thesaurus.",
+        "Why did the cookie go to the doctor? Because it felt crummy.",
+        "What do you call a fake noodle? An impasta.",
+        "Why did the bicycle fall over? Because it was two-tired.",
+        "I used to be addicted to soap, but I'm clean now.",
+        "What do you call a bear with no teeth? A gummy bear.",
+        "Why don't skeletons fight each other? They don't have the guts.",
+        "What do you call a sleeping bull? A bulldozer.",
+        "Why did the math book look sad? Because it had too many problems.",
+        "I told my wife she was drawing her eyebrows too high. She looked surprised.",
     };
 
     @Override
@@ -149,6 +161,11 @@ public class DadJokeCommand implements SlashCommand {
     @Override
     public CommandCategory getCategory() {
         return CommandCategory.UTILITY;
+    }
+
+    @Override
+    public boolean isGuildOnly() {
+        return false;
     }
 
     @Override

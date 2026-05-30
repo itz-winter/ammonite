@@ -25,8 +25,7 @@ public class QueueCommand implements SlashCommand {
 
         if (!musicManager.isConnected(event.getGuild())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Not Playing", "The bot is not currently playing music."
-            )).setEphemeral(true).queue();
+                    "Not Playing", "The bot is not currently playing music.")).setEphemeral(true).queue();
             return;
         }
 
@@ -41,8 +40,8 @@ public class QueueCommand implements SlashCommand {
             String progress = MusicUtils.createProgressBar(currentTrack.getPosition(), currentTrack.getDuration());
             embed.addField("Now Playing",
                     MusicUtils.formatTrack(currentTrack) + "\n" +
-                    progress + " `" + MusicUtils.formatDuration(currentTrack.getPosition()) + 
-                    "/" + MusicUtils.formatDuration(currentTrack.getDuration()) + "`",
+                            progress + " `" + MusicUtils.formatDuration(currentTrack.getPosition()) +
+                            "/" + MusicUtils.formatDuration(currentTrack.getDuration()) + "`",
                     false);
         } else {
             embed.addField("Now Playing", "Nothing is currently playing.", false);
@@ -72,8 +71,10 @@ public class QueueCommand implements SlashCommand {
 
         // Show repeat/shuffle status
         String statusLine = "";
-        if (gmm.getScheduler().isRepeating()) statusLine += "🔁 Repeat ON  ";
-        if (gmm.getScheduler().isShuffling()) statusLine += "🔀 Shuffle ON";
+        if (gmm.getScheduler().isRepeating())
+            statusLine += "🔁 Repeat ON  ";
+        if (gmm.getScheduler().isShuffling())
+            statusLine += "🔀 Shuffle ON";
         if (!statusLine.isEmpty()) {
             embed.addField("Mode", statusLine.trim(), false);
         }
@@ -86,11 +87,17 @@ public class QueueCommand implements SlashCommand {
     }
 
     @Override
-    public String getName() { return "queue"; }
+    public String getName() {
+        return "queue";
+    }
 
     @Override
-    public String getDescription() { return "Show what's currently playing."; }
+    public String getDescription() {
+        return "Show what's currently playing.";
+    }
 
     @Override
-    public CommandCategory getCategory() { return CommandCategory.MUSIC; }
+    public CommandCategory getCategory() {
+        return CommandCategory.MUSIC;
+    }
 }

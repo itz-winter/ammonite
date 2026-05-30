@@ -17,40 +17,40 @@ import java.awt.Color;
  * Handles button interactions for the interactive blackjack game.
  */
 public class BlackjackButtonListener extends ListenerAdapter {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(BlackjackButtonListener.class);
-    
+
     @Override
     public void onButtonInteraction(ButtonInteractionEvent event) {
         String buttonId = event.getComponentId();
-        
+
         if (!buttonId.startsWith("bj_")) {
             return; // Not a blackjack button
         }
-        
+
         // Parse button: bj_<action>_<gameId>
         String[] parts = buttonId.split("_", 3);
-        if (parts.length < 3) return;
-        
+        if (parts.length < 3)
+            return;
+
         String action = parts[1];
         String gameId = parts[2];
-        
+
         BlackjackGame game = BlackjackGame.getGame(gameId);
         if (game == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Game Expired", "This blackjack game has expired. Start a new one with `/gamble game:blackjack`."
-            )).setEphemeral(true).queue();
+                    "Game Expired", "This blackjack game has expired. Start a new one with `/gamble game:blackjack`."))
+                    .setEphemeral(true).queue();
             return;
         }
-        
+
         // Only the game owner can interact
         if (!event.getUser().getId().equals(game.getUserId())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Not Your Game", "Only the person who started this game can play it."
-            )).setEphemeral(true).queue();
+                    "Not Your Game", "Only the person who started this game can play it.")).setEphemeral(true).queue();
             return;
         }
-        
+
         switch (action) {
             case "hit" -> handleHit(event, game);
             case "stand" -> handleStand(event, game);
@@ -58,11 +58,11 @@ public class BlackjackButtonListener extends ListenerAdapter {
             default -> event.deferEdit().queue();
         }
     }
-    
+
     private void handleHit(ButtonInteractionEvent event, BlackjackGame game) {
         game.playerHit();
         int playerTotal = game.getPlayerTotal();
-        
+
         if (playerTotal > 21) {
             // Player busted
             finishGame(event, game, false, "💥 **BUST!** You went over 21!");
@@ -72,30 +72,30 @@ public class BlackjackButtonListener extends ListenerAdapter {
         } else {
             // Show updated hand with buttons
             int dealerShowing = game.getDealerCards().get(0);
-            
+
             EmbedBuilder embed = EmbedUtils.createEmbedBuilder(Color.BLUE)
-                .setTitle("🃏 Blackjack")
-                .setDescription("Choose your action!")
-                .addField("Your Hand (" + playerTotal + ")", game.formatPlayerCards(), true)
-                .addField("Dealer Shows", game.formatSingleCard(dealerShowing) + " + ?", true)
-                .addField("Bet Amount", String.format("%,d coins", game.getEffectiveBet()), true);
-            
+                    .setTitle("🃏 Blackjack")
+                    .setDescription("Choose your action!")
+                    .addField("Your Hand (" + playerTotal + ")", game.formatPlayerCards(), true)
+                    .addField("Dealer Shows", game.formatSingleCard(dealerShowing) + " + ?", true)
+                    .addField("Bet Amount", String.format("%,d coins", game.getEffectiveBet()), true);
+
             Button hitButton = Button.primary("bj_hit_" + game.getGameId(), "Hit 🃏");
             Button standButton = Button.success("bj_stand_" + game.getGameId(), "Stand ✋");
-            
+
             event.editMessageEmbeds(embed.build())
-                .setComponents(ActionRow.of(hitButton, standButton))
-                .queue();
+                    .setComponents(ActionRow.of(hitButton, standButton))
+                    .queue();
         }
     }
-    
+
     private void handleStand(ButtonInteractionEvent event, BlackjackGame game) {
         // Dealer plays
         game.dealerPlay();
-        
+
         int playerTotal = game.getPlayerTotal();
         int dealerTotal = game.getDealerTotal();
-        
+
         if (dealerTotal > 21) {
             finishGame(event, game, true, "🎉 **Dealer busted!** You win!");
         } else if (playerTotal > dealerTotal) {
@@ -107,37 +107,37 @@ public class BlackjackButtonListener extends ListenerAdapter {
             finishGame(event, game, null, "🤝 **Push!** It's a tie. Your bet has been returned.");
         }
     }
-    
+
     private void handleDoubleDown(ButtonInteractionEvent event, BlackjackGame game) {
         String guildId = game.getGuildId();
         String userId = game.getUserId();
         long betAmount = game.getBetAmount();
-        
+
         // Check if player can afford to double
         long currentBalance = ServerBot.getStorageManager().getBalance(guildId, userId);
         if (currentBalance < betAmount) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Funds", 
-                String.format("You need %,d more coins to double down.", betAmount - currentBalance)
-            )).setEphemeral(true).queue();
+                    "Insufficient Funds",
+                    String.format("You need %,d more coins to double down.", betAmount - currentBalance)))
+                    .setEphemeral(true).queue();
             return;
         }
-        
+
         // Deduct additional bet
         ServerBot.getStorageManager().setBalance(guildId, userId, currentBalance - betAmount);
         game.setDoubledDown(true);
-        
+
         // Draw exactly one more card then stand
         game.playerHit();
         int playerTotal = game.getPlayerTotal();
-        
+
         if (playerTotal > 21) {
             finishGame(event, game, false, "💥 **BUST!** You went over 21! (Double Down)");
         } else {
             // Auto-stand after double down
             game.dealerPlay();
             int dealerTotal = game.getDealerTotal();
-            
+
             if (dealerTotal > 21) {
                 finishGame(event, game, true, "🎉 **Dealer busted!** You win! (Double Down)");
             } else if (playerTotal > dealerTotal) {
@@ -149,16 +149,17 @@ public class BlackjackButtonListener extends ListenerAdapter {
             }
         }
     }
-    
+
     /**
      * Finish the game and settle the bet.
+     * 
      * @param won true=win, false=loss, null=push(tie)
      */
     private void finishGame(ButtonInteractionEvent event, BlackjackGame game, Boolean won, String resultText) {
         String guildId = game.getGuildId();
         String userId = game.getUserId();
         long effectiveBet = game.getEffectiveBet();
-        
+
         Color color;
         if (won == null) {
             // Push - return the bet
@@ -174,16 +175,16 @@ public class BlackjackButtonListener extends ListenerAdapter {
             // Loss - bet was already deducted
             color = Color.RED;
         }
-        
+
         long newBalance = ServerBot.getStorageManager().getBalance(guildId, userId);
-        
+
         EmbedBuilder embed = EmbedUtils.createEmbedBuilder(color)
-            .setTitle("🃏 Blackjack - Game Over")
-            .setDescription(resultText)
-            .addField("Your Hand (" + game.getPlayerTotal() + ")", game.formatPlayerCards(), true)
-            .addField("Dealer Hand (" + game.getDealerTotal() + ")", game.formatDealerCards(false), true)
-            .addField("Bet Amount", String.format("%,d coins", effectiveBet), true);
-        
+                .setTitle("🃏 Blackjack - Game Over")
+                .setDescription(resultText)
+                .addField("Your Hand (" + game.getPlayerTotal() + ")", game.formatPlayerCards(), true)
+                .addField("Dealer Hand (" + game.getDealerTotal() + ")", game.formatDealerCards(false), true)
+                .addField("Bet Amount", String.format("%,d coins", effectiveBet), true);
+
         if (won != null && won) {
             embed.addField("Winnings", String.format("+%,d coins", effectiveBet), true);
         } else if (won != null) {
@@ -191,14 +192,14 @@ public class BlackjackButtonListener extends ListenerAdapter {
         } else {
             embed.addField("Returned", String.format("%,d coins", effectiveBet), true);
         }
-        
+
         embed.addField("New Balance", String.format("%,d coins", newBalance), false);
-        
+
         // Remove buttons and update message
         event.editMessageEmbeds(embed.build())
-            .setComponents() // Remove all buttons
-            .queue();
-        
+                .setComponents() // Remove all buttons
+                .queue();
+
         // Clean up game state
         game.removeGame();
     }

@@ -21,17 +21,17 @@ public class InfoCommand implements SlashCommand {
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         JDA jda = event.getJDA();
-        
+
         // Get runtime information
         long uptimeMillis = ManagementFactory.getRuntimeMXBean().getUptime();
         long uptimeSeconds = uptimeMillis / 1000;
         String uptime = formatUptime(uptimeSeconds);
-        
+
         // Get memory usage
         Runtime runtime = Runtime.getRuntime();
         long memoryUsed = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024);
         long memoryTotal = runtime.totalMemory() / (1024 * 1024);
-        
+
         EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
                 .setTitle("🐚 " + jda.getSelfUser().getName())
                 .setThumbnail(jda.getSelfUser().getEffectiveAvatarUrl());
@@ -39,37 +39,37 @@ public class InfoCommand implements SlashCommand {
         // Bot Stats
         embed.addField("📊 Bot Statistics",
                 "**Servers:** " + jda.getGuilds().size() + "\n" +
-                "**Users:** " + jda.getUsers().size() + "\n" +
-                "**Commands:** " + ServerBot.getCommandManager().getAllCommands().size(),
+                        "**Users:** " + jda.getUsers().size() + "\n" +
+                        "**Commands:** " + ServerBot.getCommandManager().getAllCommands().size(),
                 true);
 
         // Technical Info
         embed.addField(CustomEmojis.SETTING + " Technical Info",
                 "**Uptime:** " + uptime + "\n" +
-                "**Memory:** " + memoryUsed + "/" + memoryTotal + " MB\n" +
-                "**Java:** " + System.getProperty("java.version"),
+                        "**Memory:** " + memoryUsed + "/" + memoryTotal + " MB\n" +
+                        "**Java:** " + System.getProperty("java.version"),
                 true);
 
         // Version Info
         String version = ServerBot.getConfigManager().getConfig().getBotVersion();
         embed.addField("📋 Version Info",
                 "**Bot Version:** " + version + "\n" +
-                "**JDA Version:** 6.4.1\n" +
-                "**API Version:** " + jda.getGatewayIntents().size() + " intents",
+                        "**JDA Version:** 6.4.1\n" +
+                        "**API Version:** " + jda.getGatewayIntents().size() + " intents",
                 true);
 
         // Features
         embed.addField("🎯 Features",
                 "• Moderation & Auto-Moderation\n" +
-                "• Economy & Banking\n" +
-                "• Leveling & XP\n" +
-                "• Music Playback\n" +
-                "• Games (Chess, Poker, Blackjack)\n" +
-                "• Reaction Roles\n" +
-                "• Proxy System\n" +
-                "• Cross-Server Global Chat\n" +
-                "• Ticket System\n" +
-                "• Comprehensive Logging",
+                        "• Economy & Banking\n" +
+                        "• Leveling & XP\n" +
+                        "• Music Playback\n" +
+                        "• Games (Chess, Poker, Blackjack)\n" +
+                        "• Reaction Roles\n" +
+                        "• Proxy System\n" +
+                        "• Cross-Server Global Chat\n" +
+                        "• Ticket System\n" +
+                        "• Comprehensive Logging",
                 false);
 
         // Support
@@ -90,10 +90,14 @@ public class InfoCommand implements SlashCommand {
         long secs = seconds % 60;
 
         StringBuilder sb = new StringBuilder();
-        if (days > 0) sb.append(days).append("d ");
-        if (hours > 0) sb.append(hours).append("h ");
-        if (minutes > 0) sb.append(minutes).append("m ");
-        if (secs > 0 || sb.length() == 0) sb.append(secs).append("s");
+        if (days > 0)
+            sb.append(days).append("d ");
+        if (hours > 0)
+            sb.append(hours).append("h ");
+        if (minutes > 0)
+            sb.append(minutes).append("m ");
+        if (secs > 0 || sb.length() == 0)
+            sb.append(secs).append("s");
 
         return sb.toString().trim();
     }

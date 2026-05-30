@@ -23,39 +23,38 @@ public class WarnCommandSimple implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         // Check permissions
         if (!PermissionManager.hasPermission(event.getMember(), "mod.warn")) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Insufficient Permissions", 
-                "You need the `mod.warn` permission to warn members.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Insufficient Permissions",
+                    "You need the `mod.warn` permission to warn members.")).setEphemeral(true).queue();
             return;
         }
 
         User targetUser = event.getOption("user").getAsUser();
-        String reason = event.getOption("reason") != null ? 
-                event.getOption("reason").getAsString() : "No reason provided";
+        String reason = event.getOption("reason") != null ? event.getOption("reason").getAsString()
+                : "No reason provided";
 
         Member targetMember = event.getGuild().getMember(targetUser);
         if (targetMember == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("User Not Found", 
-                "This user is not in the server!")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("User Not Found",
+                    "This user is not in the server!")).setEphemeral(true).queue();
             return;
         }
 
         if (targetUser.isBot()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Target", 
-                "You cannot warn bots!")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Target",
+                    "You cannot warn bots!")).setEphemeral(true).queue();
             return;
         }
 
         // Check if the moderator can interact with the target
         if (!PermissionUtils.canInteractWith(event.getMember(), targetMember)) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Cannot Warn", 
-                "You cannot warn this user due to role hierarchy!")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Cannot Warn",
+                    "You cannot warn this user due to role hierarchy!")).setEphemeral(true).queue();
             return;
         }
 
@@ -69,13 +68,12 @@ public class WarnCommandSimple implements SlashCommand {
         int warningCount = storage.getWarningCount(guildId, userId);
 
         String description = String.format(
-            "**User:** %s (%s)\n" +
-            "**Reason:** %s\n" +
-            "**Warning Count:** %d\n" +
-            "**Moderator:** %s",
-            targetUser.getName(), targetUser.getId(),
-            reason, warningCount, event.getUser().getName()
-        );
+                "**User:** %s (%s)\n" +
+                        "**Reason:** %s\n" +
+                        "**Warning Count:** %d\n" +
+                        "**Moderator:** %s",
+                targetUser.getName(), targetUser.getId(),
+                reason, warningCount, event.getUser().getName());
 
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("User Warned", description)).queue();
     }

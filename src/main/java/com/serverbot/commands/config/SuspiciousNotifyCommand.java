@@ -62,19 +62,18 @@ public class SuspiciousNotifyCommand implements SlashCommand {
 
     public static CommandData getCommandData() {
         return Commands.slash("suspiciousnotify", "Manage suspicious account notification settings and submit reports")
-            .addSubcommands(
-                new SubcommandData("add", "Add a user to receive suspicious account notifications")
-                    .addOption(OptionType.USER, "user", "The user to add to notifications", true),
-                new SubcommandData("remove", "Remove a user from suspicious account notifications")
-                    .addOption(OptionType.USER, "user", "The user to remove from notifications", true),
-                new SubcommandData("list", "List all users who receive suspicious account notifications"),
-                new SubcommandData("clear", "Clear all users from the notification list"),
-                new SubcommandData("test", "Send a test notification to verify the system works"),
-                new SubcommandData("report", "Report a suspicious user to the bot owner")
-                    .addOption(OptionType.STRING, "userid", "The user ID of the suspicious user", true)
-                    .addOption(OptionType.STRING, "reason", "Reason for reporting this user", true)
-                    .addOption(OptionType.STRING, "notes", "Additional notes or evidence", false)
-            );
+                .addSubcommands(
+                        new SubcommandData("add", "Add a user to receive suspicious account notifications")
+                                .addOption(OptionType.USER, "user", "The user to add to notifications", true),
+                        new SubcommandData("remove", "Remove a user from suspicious account notifications")
+                                .addOption(OptionType.USER, "user", "The user to remove from notifications", true),
+                        new SubcommandData("list", "List all users who receive suspicious account notifications"),
+                        new SubcommandData("clear", "Clear all users from the notification list"),
+                        new SubcommandData("test", "Send a test notification to verify the system works"),
+                        new SubcommandData("report", "Report a suspicious user to the bot owner")
+                                .addOption(OptionType.STRING, "userid", "The user ID of the suspicious user", true)
+                                .addOption(OptionType.STRING, "reason", "Reason for reporting this user", true)
+                                .addOption(OptionType.STRING, "notes", "Additional notes or evidence", false));
     }
 
     @Override
@@ -118,13 +117,16 @@ public class SuspiciousNotifyCommand implements SlashCommand {
             }
         }
         if (notifyUsers.contains(targetMember.getId())) {
-            event.reply(targetMember.getAsMention() + " is already on the notification list.").setEphemeral(true).queue();
+            event.reply(targetMember.getAsMention() + " is already on the notification list.").setEphemeral(true)
+                    .queue();
             return;
         }
         notifyUsers.add(targetMember.getId());
         ServerBot.getStorageManager().updateGuildSettings(guildId, NOTIFY_USERS_KEY, notifyUsers);
-        logger.info("Added {} to suspicious account notifications in guild {}", targetMember.getUser().getName(), guild.getName());
-        event.reply("Added " + targetMember.getAsMention() + " to suspicious account notifications.").setEphemeral(true).queue();
+        logger.info("Added {} to suspicious account notifications in guild {}", targetMember.getUser().getName(),
+                guild.getName());
+        event.reply("Added " + targetMember.getAsMention() + " to suspicious account notifications.").setEphemeral(true)
+                .queue();
     }
 
     private void handleRemove(SlashCommandInteractionEvent event) {
@@ -151,8 +153,10 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         }
         notifyUsers.remove(targetMember.getId());
         ServerBot.getStorageManager().updateGuildSettings(guildId, NOTIFY_USERS_KEY, notifyUsers);
-        logger.info("Removed {} from suspicious account notifications in guild {}", targetMember.getUser().getName(), guild.getName());
-        event.reply("Removed " + targetMember.getAsMention() + " from suspicious account notifications.").setEphemeral(true).queue();
+        logger.info("Removed {} from suspicious account notifications in guild {}", targetMember.getUser().getName(),
+                guild.getName());
+        event.reply("Removed " + targetMember.getAsMention() + " from suspicious account notifications.")
+                .setEphemeral(true).queue();
     }
 
     private void handleList(SlashCommandInteractionEvent event) {
@@ -169,7 +173,9 @@ public class SuspiciousNotifyCommand implements SlashCommand {
             }
         }
         if (notifyUsers.isEmpty()) {
-            event.reply("No users are set to receive suspicious account notifications.\nUse `/suspiciousnotify add @user` to add someone.").setEphemeral(true).queue();
+            event.reply(
+                    "No users are set to receive suspicious account notifications.\nUse `/suspiciousnotify add @user` to add someone.")
+                    .setEphemeral(true).queue();
             return;
         }
         StringBuilder sb = new StringBuilder();
@@ -179,7 +185,8 @@ public class SuspiciousNotifyCommand implements SlashCommand {
             count++;
             Member member = guild.getMemberById(userId);
             if (member != null) {
-                sb.append(count).append(". ").append(member.getAsMention()).append(" (").append(member.getUser().getName()).append(")\n");
+                sb.append(count).append(". ").append(member.getAsMention()).append(" (")
+                        .append(member.getUser().getName()).append(")\n");
             } else {
                 sb.append(count).append(". Unknown User (ID: `").append(userId).append("`)\n");
             }
@@ -202,7 +209,8 @@ public class SuspiciousNotifyCommand implements SlashCommand {
             return;
         }
         ServerBot.getStorageManager().updateGuildSettings(guildId, NOTIFY_USERS_KEY, new ArrayList<String>());
-        logger.info("Cleared suspicious account notification list in guild {} ({} users removed)", guild.getName(), previousCount);
+        logger.info("Cleared suspicious account notification list in guild {} ({} users removed)", guild.getName(),
+                previousCount);
         event.reply("Cleared the notification list. Removed " + previousCount + " user(s).").setEphemeral(true).queue();
     }
 
@@ -220,18 +228,19 @@ public class SuspiciousNotifyCommand implements SlashCommand {
             }
         }
         if (notifyUsers.isEmpty()) {
-            event.reply("No users are set to receive notifications. Add users first with `/suspiciousnotify add`.").setEphemeral(true).queue();
+            event.reply("No users are set to receive notifications. Add users first with `/suspiciousnotify add`.")
+                    .setEphemeral(true).queue();
             return;
         }
         event.deferReply(true).queue();
         EmbedBuilder testEmbed = new EmbedBuilder()
-            .setTitle("Test Notification")
-            .setDescription("This is a test notification from the suspicious account alert system.")
-            .addField("Server", guild.getName(), true)
-            .addField("Triggered By", event.getUser().getAsMention(), true)
-            .setColor(Color.BLUE)
-            .setFooter("This is only a test - no actual suspicious activity detected")
-            .setTimestamp(Instant.now());
+                .setTitle("Test Notification")
+                .setDescription("This is a test notification from the suspicious account alert system.")
+                .addField("Server", guild.getName(), true)
+                .addField("Triggered By", event.getUser().getAsMention(), true)
+                .setColor(Color.BLUE)
+                .setFooter("This is only a test - no actual suspicious activity detected")
+                .setTimestamp(Instant.now());
         int successCount = 0;
         int failCount = 0;
         for (String userId : notifyUsers) {
@@ -248,7 +257,9 @@ public class SuspiciousNotifyCommand implements SlashCommand {
                 failCount++;
             }
         }
-        String result = String.format("Test notifications sent!\n\nSuccessful: %d\nFailed: %d\n\nIf you didn't receive a DM, make sure your DMs are open for this server.", successCount, failCount);
+        String result = String.format(
+                "Test notifications sent!\n\nSuccessful: %d\nFailed: %d\n\nIf you didn't receive a DM, make sure your DMs are open for this server.",
+                successCount, failCount);
         event.getHook().sendMessage(result).queue();
     }
 
@@ -263,11 +274,13 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         String reason = event.getOption("reason").getAsString();
         String notes = event.getOption("notes") != null ? event.getOption("notes").getAsString() : null;
         if (!userId.matches("\\d{17,19}")) {
-            event.reply("Invalid user ID format. User IDs should be 17-19 digit numbers.\nYou can get a user ID by enabling Developer Mode and right-clicking on a user.").setEphemeral(true).queue();
+            event.reply(
+                    "Invalid user ID format. User IDs should be 17-19 digit numbers.\nYou can get a user ID by enabling Developer Mode and right-clicking on a user.")
+                    .setEphemeral(true).queue();
             return;
         }
         event.deferReply(true).queue();
-        
+
         String userInfo = "Unknown User";
         String userAvatar = null;
         User reportedUser = null;
@@ -280,7 +293,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         } catch (Exception e) {
             logger.debug("Could not retrieve user info for ID {}: {}", userId, e.getMessage());
         }
-        
+
         // Add user to suspicious masterlist
         FileStorageManager storage = ServerBot.getStorageManager();
         Map<String, Object> detectionData = new HashMap<>();
@@ -292,33 +305,36 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         if (notes != null && !notes.isEmpty()) {
             detectionData.put("notes", notes);
         }
-        
+
         storage.markUserAsSuspicious(userId, member.getId(), reason, detectionData);
-        logger.info("Added user {} to suspicious masterlist. Reported by {} from guild {}", userId, member.getUser().getName(), guild.getName());
-        
+        logger.info("Added user {} to suspicious masterlist. Reported by {} from guild {}", userId,
+                member.getUser().getName(), guild.getName());
+
         // Build report embed for bot owners
         EmbedBuilder reportEmbed = new EmbedBuilder()
-            .setTitle(CustomEmojis.MOD_BAN + " Suspicious User Report")
-            .setColor(Color.RED)
-            .setDescription("A guild owner has submitted a suspicious user report.\n**User has been added to the masterlist (pending validation).**")
-            .addField("Reported User", userInfo, false)
-            .addField("User ID", "`" + userId + "`", true)
-            .addField("Server", guild.getName() + "\n`" + guild.getId() + "`", true)
-            .addField("Reported By", member.getUser().getName() + "\n`" + member.getId() + "`", true)
-            .addField("Reason", reason, false)
-            .setTimestamp(Instant.now())
-            .setFooter("Click buttons below to validate or invalidate this report");
+                .setTitle(CustomEmojis.MOD_BAN + " Suspicious User Report")
+                .setColor(Color.RED)
+                .setDescription(
+                        "A guild owner has submitted a suspicious user report.\n**User has been added to the masterlist (pending validation).**")
+                .addField("Reported User", userInfo, false)
+                .addField("User ID", "`" + userId + "`", true)
+                .addField("Server", guild.getName() + "\n`" + guild.getId() + "`", true)
+                .addField("Reported By", member.getUser().getName() + "\n`" + member.getId() + "`", true)
+                .addField("Reason", reason, false)
+                .setTimestamp(Instant.now())
+                .setFooter("Click buttons below to validate or invalidate this report");
         if (notes != null && !notes.isEmpty()) {
             reportEmbed.addField("Additional Notes", notes, false);
         }
         if (userAvatar != null) {
             reportEmbed.setThumbnail(userAvatar);
         }
-        
+
         // Find other servers where this user is a member
         List<Guild> otherGuilds = new ArrayList<>();
         for (Guild otherGuild : event.getJDA().getGuilds()) {
-            if (otherGuild.getId().equals(guild.getId())) continue;
+            if (otherGuild.getId().equals(guild.getId()))
+                continue;
             try {
                 Member suspiciousMember = otherGuild.retrieveMemberById(userId).complete();
                 if (suspiciousMember != null) {
@@ -328,44 +344,49 @@ public class SuspiciousNotifyCommand implements SlashCommand {
                 // User not in this guild
             }
         }
-        
+
         if (!otherGuilds.isEmpty()) {
             StringBuilder otherServers = new StringBuilder();
             for (Guild otherGuild : otherGuilds) {
-                otherServers.append("• ").append(otherGuild.getName()).append(" (`").append(otherGuild.getId()).append("`)\n");
+                otherServers.append("• ").append(otherGuild.getName()).append(" (`").append(otherGuild.getId())
+                        .append("`)\n");
             }
-            reportEmbed.addField(CustomEmojis.WARN + " Also Found In (" + otherGuilds.size() + " servers)", otherServers.toString(), false);
+            reportEmbed.addField(CustomEmojis.WARN + " Also Found In (" + otherGuilds.size() + " servers)",
+                    otherServers.toString(), false);
         }
-        
+
         // Validate/Invalidate buttons
         Button validateBtn = Button.success("suspicious_validate:" + userId, CustomEmojis.SUCCESS + " Validate Report");
-        Button invalidateBtn = Button.danger("suspicious_invalidate:" + userId, CustomEmojis.ERROR + " Invalidate Report");
+        Button invalidateBtn = Button.danger("suspicious_invalidate:" + userId,
+                CustomEmojis.ERROR + " Invalidate Report");
         Button viewBtn = Button.secondary("suspicious_view:" + userId, CustomEmojis.INFO + " View Details");
-        
+
         BotConfig config = ServerBot.getConfigManager().getConfig();
         List<String> botOwners = config.getAllOwnerIds();
         if (botOwners.isEmpty()) {
-            event.getHook().sendMessage("No bot owners configured. Report could not be sent.").setEphemeral(true).queue();
+            event.getHook().sendMessage("No bot owners configured. Report could not be sent.").setEphemeral(true)
+                    .queue();
             return;
         }
-        
+
         int successCount = 0;
         int failCount = 0;
         Map<String, String> ownerMessageIds = new HashMap<>(); // Track message IDs for cross-owner updates
-        
+
         for (String ownerId : botOwners) {
             try {
                 User owner = event.getJDA().retrieveUserById(ownerId).complete();
                 if (owner != null) {
                     Message sentMessage = owner.openPrivateChannel().complete()
-                        .sendMessageEmbeds(reportEmbed.build())
-                        .setComponents(ActionRow.of(validateBtn, invalidateBtn, viewBtn))
-                        .complete();
-                    
+                            .sendMessageEmbeds(reportEmbed.build())
+                            .setComponents(ActionRow.of(validateBtn, invalidateBtn, viewBtn))
+                            .complete();
+
                     // Store the message ID for this owner
                     ownerMessageIds.put(ownerId, sentMessage.getId());
                     successCount++;
-                    logger.info("Sent suspicious user report to bot owner {} from guild {}", owner.getName(), guild.getName());
+                    logger.info("Sent suspicious user report to bot owner {} from guild {}", owner.getName(),
+                            guild.getName());
                 } else {
                     failCount++;
                 }
@@ -374,12 +395,12 @@ public class SuspiciousNotifyCommand implements SlashCommand {
                 failCount++;
             }
         }
-        
+
         // Store message IDs in storage for cross-owner panel updates
         if (!ownerMessageIds.isEmpty()) {
             storage.storePendingReportMessages(userId, ownerMessageIds);
         }
-        
+
         // Notify other servers where this user is present (send to guild owners)
         int notifiedGuilds = 0;
         if (!otherGuilds.isEmpty()) {
@@ -387,53 +408,59 @@ public class SuspiciousNotifyCommand implements SlashCommand {
                 try {
                     // Respect the target guild's DM notification toggle
                     if (!DmUtils.areDmsEnabled(otherGuild)) {
-                        logger.debug("DM notifications disabled for guild {}, skipping suspicious user alert", otherGuild.getName());
+                        logger.debug("DM notifications disabled for guild {}, skipping suspicious user alert",
+                                otherGuild.getName());
                         continue;
                     }
                     User guildOwner = otherGuild.retrieveOwner().complete().getUser();
                     EmbedBuilder alertEmbed = new EmbedBuilder()
-                        .setTitle(CustomEmojis.WARN + " Suspicious User Alert")
-                        .setColor(Color.ORANGE)
-                        .setDescription("A user in your server has been reported as suspicious by another guild owner.")
-                        .addField("User", userInfo, true)
-                        .addField("User ID", "`" + userId + "`", true)
-                        .addField("Reason", reason, false)
-                        .addField("Reported From", guild.getName(), true)
-                        .addField("Status", CustomEmojis.INFO + " Pending Validation", true)
-                        .setTimestamp(Instant.now())
-                        .setFooter("This report is pending bot owner review. You may want to monitor this user.");
-                    
+                            .setTitle(CustomEmojis.WARN + " Suspicious User Alert")
+                            .setColor(Color.ORANGE)
+                            .setDescription(
+                                    "A user in your server has been reported as suspicious by another guild owner.")
+                            .addField("User", userInfo, true)
+                            .addField("User ID", "`" + userId + "`", true)
+                            .addField("Reason", reason, false)
+                            .addField("Reported From", guild.getName(), true)
+                            .addField("Status", CustomEmojis.INFO + " Pending Validation", true)
+                            .setTimestamp(Instant.now())
+                            .setFooter("This report is pending bot owner review. You may want to monitor this user.");
+
                     if (userAvatar != null) {
                         alertEmbed.setThumbnail(userAvatar);
                     }
-                    
+
                     guildOwner.openPrivateChannel().complete()
-                        .sendMessageEmbeds(alertEmbed.build())
-                        .complete();
+                            .sendMessageEmbeds(alertEmbed.build())
+                            .complete();
                     notifiedGuilds++;
-                    logger.info("Sent suspicious user alert to guild owner of {} for user {}", otherGuild.getName(), userId);
+                    logger.info("Sent suspicious user alert to guild owner of {} for user {}", otherGuild.getName(),
+                            userId);
                 } catch (Exception e) {
                     logger.debug("Could not notify guild owner of {}: {}", otherGuild.getName(), e.getMessage());
                 }
             }
         }
-        
+
         if (successCount > 0) {
             StringBuilder response = new StringBuilder();
             response.append("**Report Submitted Successfully!**\n\n");
             response.append(CustomEmojis.SUCCESS + " User has been added to the suspicious masterlist\n");
             response.append(CustomEmojis.SUCCESS + " Report sent to ").append(successCount).append(" bot owner(s)\n");
             if (notifiedGuilds > 0) {
-                response.append(CustomEmojis.SUCCESS + " Alert sent to ").append(notifiedGuilds).append(" other server owner(s) where this user is present\n");
+                response.append(CustomEmojis.SUCCESS + " Alert sent to ").append(notifiedGuilds)
+                        .append(" other server owner(s) where this user is present\n");
             }
             response.append("\n**Report Summary:**\n");
             response.append("User ID: `").append(userId).append("`\n");
             response.append("Reason: ").append(reason).append("\n");
             response.append("Status: Pending validation");
-            
+
             event.getHook().sendMessage(response.toString()).setEphemeral(true).queue();
         } else {
-            event.getHook().sendMessage("Failed to send the report. The bot owners may have DMs disabled.\nHowever, the user has been added to the masterlist.").setEphemeral(true).queue();
+            event.getHook().sendMessage(
+                    "Failed to send the report. The bot owners may have DMs disabled.\nHowever, the user has been added to the masterlist.")
+                    .setEphemeral(true).queue();
         }
     }
 }

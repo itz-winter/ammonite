@@ -50,10 +50,16 @@ public class EmbedGuiSession {
     /** Whether this user has permission to send the built embed to a channel. */
     public boolean canSend = false;
 
-    /** Reference to the original slash-command hook so we can edit the GUI message after modals. */
+    /**
+     * Reference to the original slash-command hook so we can edit the GUI message
+     * after modals.
+     */
     public InteractionHook hook;
 
-    /** Message ID of the ephemeral controls follow-up message (has the buttons), so it can be updated. */
+    /**
+     * Message ID of the ephemeral controls follow-up message (has the buttons), so
+     * it can be updated.
+     */
     public String controlsMessageId;
 
     // Embed fields
@@ -71,7 +77,10 @@ public class EmbedGuiSession {
     public boolean timestamp = false;
 
     public final List<FieldEntry> fields = new ArrayList<>();
-    /** Buttons the user wants to attach to the sent embed (not the GUI control buttons). */
+    /**
+     * Buttons the user wants to attach to the sent embed (not the GUI control
+     * buttons).
+     */
     public final List<ButtonEntry> buttons = new ArrayList<>();
 
     public long lastActivity = System.currentTimeMillis();

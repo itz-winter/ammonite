@@ -11,14 +11,14 @@ import java.time.Instant;
  * Utility class for creating consistent embeds across the bot
  */
 public class EmbedUtils {
-    
+
     // Bot color scheme
     public static final Color SUCCESS_COLOR = new Color(46, 204, 113);
     public static final Color ERROR_COLOR = new Color(231, 76, 60);
     public static final Color WARNING_COLOR = new Color(241, 196, 15);
     public static final Color INFO_COLOR = new Color(52, 152, 219);
     public static final Color DEFAULT_COLOR = new Color(116, 125, 141);
-    
+
     /**
      * Creates a success embed
      */
@@ -30,7 +30,7 @@ public class EmbedUtils {
                 .setTimestamp(Instant.now())
                 .build();
     }
-    
+
     /**
      * Creates an error embed
      */
@@ -42,12 +42,13 @@ public class EmbedUtils {
                 .setTimestamp(Instant.now())
                 .build();
     }
-    
+
     /**
      * Creates an error embed with correct usage hint
-     * @param title The error title
+     * 
+     * @param title       The error title
      * @param description The error description
-     * @param usage The correct command usage (e.g., "/warn @user [reason]")
+     * @param usage       The correct command usage (e.g., "/warn @user [reason]")
      */
     public static MessageEmbed createErrorEmbedWithUsage(String title, String description, String usage) {
         return new EmbedBuilder()
@@ -58,15 +59,18 @@ public class EmbedUtils {
                 .setTimestamp(Instant.now())
                 .build();
     }
-    
+
     /**
      * Creates an error embed with correct usage hint and example
-     * @param title The error title
+     * 
+     * @param title       The error title
      * @param description The error description
-     * @param usage The correct command usage (e.g., "/warn @user [reason]")
-     * @param example An example of correct usage (e.g., "/warn @John Spamming in chat")
+     * @param usage       The correct command usage (e.g., "/warn @user [reason]")
+     * @param example     An example of correct usage (e.g., "/warn @John Spamming
+     *                    in chat")
      */
-    public static MessageEmbed createErrorEmbedWithUsage(String title, String description, String usage, String example) {
+    public static MessageEmbed createErrorEmbedWithUsage(String title, String description, String usage,
+            String example) {
         return new EmbedBuilder()
                 .setColor(ERROR_COLOR)
                 .setTitle(CustomEmojis.ERROR + " " + title)
@@ -76,7 +80,7 @@ public class EmbedUtils {
                 .setTimestamp(Instant.now())
                 .build();
     }
-    
+
     /**
      * Creates a warning embed
      */
@@ -88,7 +92,7 @@ public class EmbedUtils {
                 .setTimestamp(Instant.now())
                 .build();
     }
-    
+
     /**
      * Creates an info embed
      */
@@ -100,7 +104,7 @@ public class EmbedUtils {
                 .setTimestamp(Instant.now())
                 .build();
     }
-    
+
     /**
      * Creates a default embed
      */
@@ -125,7 +129,7 @@ public class EmbedUtils {
                 .setTimestamp(Instant.now())
                 .build();
     }
-    
+
     /**
      * Creates a moderation action embed
      */
@@ -140,7 +144,7 @@ public class EmbedUtils {
                 .setFooter("UID: " + target.getId() + " | Moderator UID: " + moderator.getId())
                 .build();
     }
-    
+
     /**
      * Creates an embed builder with default settings
      */
@@ -149,7 +153,7 @@ public class EmbedUtils {
                 .setColor(DEFAULT_COLOR)
                 .setTimestamp(Instant.now());
     }
-    
+
     /**
      * Creates an embed builder with specified color
      */

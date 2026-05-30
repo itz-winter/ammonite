@@ -20,41 +20,44 @@ public class EchoCommand implements SlashCommand {
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
-        /*if (!event.isFromGuild()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
-            return;
-        }*/
+        /*
+         * if (!event.isFromGuild()) {
+         * event.replyEmbeds(EmbedUtils.createErrorEmbed(
+         * "Guild Only", "This command can only be used in servers."
+         * )).setEphemeral(true).queue();
+         * return;
+         * }
+         */
 
         Member member = event.getMember();
         if (!PermissionManager.hasPermission(member, "utility.echo")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", "You need moderation permissions to use this command."
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions", "You need moderation permissions to use this command."))
+                    .setEphemeral(true).queue();
             return;
         }
 
         String message = event.getOption("message").getAsString();
-        
+
         // Check message length (Discord's limit is 2000 characters)
         if (message.length() > 2000) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Message Too Long", 
-                "❌ Message too long! The maximum length is 2000 characters. Your message is " + message.length() + " characters."
-            )).setEphemeral(true).queue();
+                    "Message Too Long",
+                    "❌ Message too long! The maximum length is 2000 characters. Your message is " + message.length()
+                            + " characters."))
+                    .setEphemeral(true).queue();
             return;
         }
-        
-        GuildMessageChannel targetChannel = event.getOption("channel") != null ? 
-                (GuildMessageChannel) event.getOption("channel").getAsChannel() : 
-                (GuildMessageChannel) event.getChannel();
+
+        GuildMessageChannel targetChannel = event.getOption("channel") != null
+                ? (GuildMessageChannel) event.getOption("channel").getAsChannel()
+                : (GuildMessageChannel) event.getChannel();
 
         // Check if bot can send messages in target channel
         if (!targetChannel.canTalk()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Cannot Send Message", "I don't have permission to send messages in that channel."
-            )).setEphemeral(true).queue();
+                    "Cannot Send Message", "I don't have permission to send messages in that channel."))
+                    .setEphemeral(true).queue();
             return;
         }
 
@@ -64,27 +67,25 @@ public class EchoCommand implements SlashCommand {
                     if (targetChannel.equals(event.getChannel())) {
                         // If same channel, just acknowledge
                         event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                            "Message Sent", "Your message has been sent."
-                        )).setEphemeral(true).queue();
+                                "Message Sent", "Your message has been sent.")).setEphemeral(true).queue();
                     } else {
                         // If different channel, show where it was sent
                         event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                            "Message Sent", "Your message has been sent to " + targetChannel.getAsMention()
-                        )).setEphemeral(true).queue();
+                                "Message Sent", "Your message has been sent to " + targetChannel.getAsMention()))
+                                .setEphemeral(true).queue();
                     }
                 },
                 error -> {
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                        "Send Failed", "Failed to send message: " + error.getMessage()
-                    )).setEphemeral(true).queue();
-                }
-        );
+                            "Send Failed", "Failed to send message: " + error.getMessage())).setEphemeral(true).queue();
+                });
     }
 
     public static CommandData getCommandData() {
         return Commands.slash("echo", "Send a message to a channel")
                 .addOption(OptionType.STRING, "message", "Message to send", true)
-                .addOptions(new OptionData(OptionType.CHANNEL, "channel", "Channel to send message to (defaults to current)", false)
+                .addOptions(new OptionData(OptionType.CHANNEL, "channel",
+                        "Channel to send message to (defaults to current)", false)
                         .setChannelTypes(ChannelType.TEXT, ChannelType.NEWS));
     }
 

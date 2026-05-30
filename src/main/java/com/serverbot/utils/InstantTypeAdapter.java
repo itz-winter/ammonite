@@ -11,7 +11,7 @@ import java.time.Instant;
  * Gson TypeAdapter for java.time.Instant to avoid Java 17+ module access issues
  */
 public class InstantTypeAdapter extends TypeAdapter<Instant> {
-    
+
     @Override
     public void write(JsonWriter out, Instant value) throws IOException {
         if (value == null) {
@@ -20,7 +20,7 @@ public class InstantTypeAdapter extends TypeAdapter<Instant> {
             out.value(value.toString());
         }
     }
-    
+
     @Override
     public Instant read(JsonReader in) throws IOException {
         String instantString = in.nextString();

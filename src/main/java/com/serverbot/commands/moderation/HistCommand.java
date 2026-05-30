@@ -28,41 +28,40 @@ public class HistCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         Member moderator = event.getMember();
         if (!PermissionManager.hasPermission(moderator, "mod.history")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", "You need the `mod.history` permission to view user history."
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions", "You need the `mod.history` permission to view user history."))
+                    .setEphemeral(true).queue();
             return;
         }
 
         User targetUser = event.getOption("user").getAsUser();
 
         try {
-            List<Map<String, Object>> moderationLogs = ServerBot.getStorageManager().getModerationLogs(event.getGuild().getId());
-            
+            List<Map<String, Object>> moderationLogs = ServerBot.getStorageManager()
+                    .getModerationLogs(event.getGuild().getId());
+
             // Filter logs for this user
             List<Map<String, Object>> userHistory = moderationLogs.stream()
-                .filter(log -> targetUser.getId().equals(log.get("userId")))
-                .sorted((a, b) -> {
-                    // Handle both Long and Double timestamp types
-                    long timestampA = getLongValue(a.get("timestamp"));
-                    long timestampB = getLongValue(b.get("timestamp"));
-                    return Long.compare(timestampB, timestampA);
-                })
-                .limit(20) // Show last 20 entries
-                .toList();
+                    .filter(log -> targetUser.getId().equals(log.get("userId")))
+                    .sorted((a, b) -> {
+                        // Handle both Long and Double timestamp types
+                        long timestampA = getLongValue(a.get("timestamp"));
+                        long timestampB = getLongValue(b.get("timestamp"));
+                        return Long.compare(timestampB, timestampA);
+                    })
+                    .limit(20) // Show last 20 entries
+                    .toList();
 
             if (userHistory.isEmpty()) {
                 event.replyEmbeds(EmbedUtils.createInfoEmbed(
-                    "No Moderation History", 
-                    targetUser.getAsMention() + " has no recorded moderation actions."
-                )).queue();
+                        "No Moderation History",
+                        targetUser.getAsMention() + " has no recorded moderation actions.")).queue();
                 return;
             }
 
@@ -75,34 +74,37 @@ public class HistCommand implements SlashCommand {
                     .withZone(ZoneId.systemDefault());
 
             int displayCount = Math.min(userHistory.size(), 10);
-            
+
             for (int i = 0; i < displayCount; i++) {
                 Map<String, Object> log = userHistory.get(i);
                 long timestamp = getLongValue(log.get("timestamp"));
                 String type = (String) log.get("type");
                 String reason = (String) log.get("reason");
                 String moderatorId = (String) log.get("moderatorId");
-                
+
                 String moderatorName = "Unknown";
                 try {
                     User mod = event.getJDA().getUserById(moderatorId);
-                    if (mod != null) moderatorName = mod.getName();
-                } catch (Exception ignored) {}
+                    if (mod != null)
+                        moderatorName = mod.getName();
+                } catch (Exception ignored) {
+                }
 
                 String dateStr = formatter.format(Instant.ofEpochMilli(timestamp));
-                
+
                 String fieldTitle = getActionEmoji(type) + " " + type + " (#" + (i + 1) + ")";
                 String fieldValue = "**Reason:** " + reason + "\n" +
-                                   "**Moderator:** " + moderatorName + "\n" +
-                                   "**Date:** " + dateStr;
-                
+                        "**Moderator:** " + moderatorName + "\n" +
+                        "**Date:** " + dateStr;
+
                 embed.addField(fieldTitle, fieldValue, false);
             }
 
-            embed.addField("📊 Statistics", 
-                          "**Total Records:** " + userHistory.size() + "\n" +
-                          "**User:** " + targetUser.getName(), true);
-            
+            embed.addField("📊 Statistics",
+                    "**Total Records:** " + userHistory.size() + "\n" +
+                            "**User:** " + targetUser.getName(),
+                    true);
+
             if (userHistory.size() > displayCount) {
                 embed.setFooter("Showing " + displayCount + " most recent entries out of " + userHistory.size());
             }
@@ -111,9 +113,8 @@ public class HistCommand implements SlashCommand {
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "History Error", 
-                "Failed to retrieve moderation history: " + e.getMessage()
-            )).setEphemeral(true).queue();
+                    "History Error",
+                    "Failed to retrieve moderation history: " + e.getMessage())).setEphemeral(true).queue();
         }
     }
 

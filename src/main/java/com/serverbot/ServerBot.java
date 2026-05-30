@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * Main bot class that initializes and starts the Discord bot
  */
 public class ServerBot {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ServerBot.class);
     private static JDA jda;
     private static FileStorageManager storageManager;
@@ -59,21 +59,21 @@ public class ServerBot {
     private static TicketService ticketService;
     private static ProxyService proxyService;
     private static GlobalChatService globalChatService;
-    
+
     public static void main(String[] args) {
         BotConfig config = null;
-        
+
         try {
             logger.info("=== Starting Discord Server Bot ===");
             logger.info("Java Version: " + System.getProperty("java.version"));
             logger.info("Working Directory: " + System.getProperty("user.dir"));
-            
+
             // Initialize configuration
             try {
                 configManager = new ConfigManager();
                 config = configManager.getConfig();
                 logger.info("Configuration loaded successfully");
-                
+
                 if (config.getBotToken() == null || config.getBotToken().isEmpty()) {
                     logger.error("Bot token not found! Please set your bot token in the config file.");
                     System.exit(1);
@@ -82,7 +82,7 @@ public class ServerBot {
                 logger.error("Failed to load configuration", e);
                 System.exit(1);
             }
-            
+
             // Initialize file storage
             try {
                 storageManager = new FileStorageManager("data");
@@ -91,7 +91,7 @@ public class ServerBot {
                 logger.error("Failed to initialize file storage", e);
                 throw e;
             }
-            
+
             // Initialize ticket service
             try {
                 ticketService = new TicketService();
@@ -100,7 +100,7 @@ public class ServerBot {
                 logger.error("Failed to initialize ticket service", e);
                 throw e;
             }
-            
+
             // Initialize proxy service
             try {
                 proxyService = new ProxyService();
@@ -109,7 +109,7 @@ public class ServerBot {
                 logger.error("Failed to initialize proxy service", e);
                 throw e;
             }
-            
+
             // Initialize global chat service
             try {
                 globalChatService = new GlobalChatService();
@@ -118,7 +118,7 @@ public class ServerBot {
                 logger.error("Failed to initialize global chat service", e);
                 throw e;
             }
-            
+
             // Initialize command manager
             try {
                 commandManager = new CommandManager();
@@ -127,8 +127,9 @@ public class ServerBot {
                 logger.error("Failed to initialize command manager", e);
                 throw e;
             }
-            
-            // Initialize DAVE Protocol (Discord Audio & Video E2EE) - Required since March 1, 2026
+
+            // Initialize DAVE Protocol (Discord Audio & Video E2EE) - Required since March
+            // 1, 2026
             DaveFactory daveFactory = new NativeDaveFactory();
             LDJDADaveSessionFactory daveSessionFactory = new LDJDADaveSessionFactory(daveFactory);
 
@@ -140,10 +141,13 @@ public class ServerBot {
                     .setAudioModuleConfig(new AudioModuleConfig()
                             .withDaveSessionFactory(daveSessionFactory))
                     .enableIntents(
-                            // Required for: role persistence (tracking member join/leave), suspicious account
-                            // detection (member screening), welcome messages, and member cache for moderation
+                            // Required for: role persistence (tracking member join/leave), suspicious
+                            // account
+                            // detection (member screening), welcome messages, and member cache for
+                            // moderation
                             GatewayIntent.GUILD_MEMBERS,
-                            // Required for: global chat relay, auto-moderation, prefix commands, and event logging
+                            // Required for: global chat relay, auto-moderation, prefix commands, and event
+                            // logging
                             GatewayIntent.GUILD_MESSAGES,
                             // Required for: proxy tag matching in message content, prefix command parsing,
                             // global chat relay content, and auto-moderation content filtering
@@ -155,8 +159,7 @@ public class ServerBot {
                             // Required for: punishment appeal DMs and ticket DM notifications
                             GatewayIntent.DIRECT_MESSAGES,
                             // Required for: music bot voice channel connections and tracking
-                            GatewayIntent.GUILD_VOICE_STATES
-                    )
+                            GatewayIntent.GUILD_VOICE_STATES)
                     .setActivity(buildActivityFromConfig(config))
                     .setStatus(buildOnlineStatusFromConfig(config))
                     .setAutoReconnect(true)
@@ -188,17 +191,16 @@ public class ServerBot {
                             new com.serverbot.listeners.EmbedGuiListener(),
                             new com.serverbot.listeners.WelcomeGuiListener(),
                             new com.serverbot.listeners.AntiSpamGuiListener(),
-                            new com.serverbot.listeners.SettingsGuiListener()
-                    )
+                            new com.serverbot.listeners.SettingsGuiListener())
                     .build();
-            
+
             // Wait for JDA to be ready
             logger.info("Waiting for JDA to connect...");
             jda.awaitReady();
             logger.info("✓ JDA connection established!");
             logger.info("✓ Connected as: " + jda.getSelfUser().getAsTag());
             logger.info("✓ Connected to " + jda.getGuilds().size() + " guild(s)");
-            
+
             // Initialize scheduler service with JDA
             try {
                 logger.info("Starting scheduler service...");
@@ -208,7 +210,7 @@ public class ServerBot {
                 logger.error("Failed to start scheduler service", e);
                 // Non-fatal, continue
             }
-            
+
             // Start warning expiry manager
             try {
                 logger.info("Starting warning expiry manager...");
@@ -218,13 +220,13 @@ public class ServerBot {
                 logger.error("Failed to start warning expiry manager", e);
                 // Non-fatal, continue
             }
-            
+
             // Add shutdown hook for graceful cleanup
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 logger.info("Shutdown signal received, cleaning up...");
                 shutdown();
             }));
-            
+
             // Register slash commands (only once at startup)
             logger.info("Registering slash commands...");
             try {
@@ -237,15 +239,15 @@ public class ServerBot {
                 logger.error("Failed to register commands: " + e.getMessage(), e);
                 logger.warn("Bot will continue without slash commands. Commands may need to be registered manually.");
             }
-            
+
             logger.info("==============================================");
             logger.info("✓ Bot successfully started and is ready!");
             logger.info("==============================================");
             logger.info("Commands may take up to 1 hour to appear in Discord due to global command caching.");
-            
+
             // Keep the main thread alive
             Thread.currentThread().join();
-            
+
         } catch (InterruptedException e) {
             logger.error("Bot startup was interrupted.", e);
             Thread.currentThread().interrupt();
@@ -267,39 +269,39 @@ public class ServerBot {
             System.exit(1);
         }
     }
-    
+
     public static JDA getJda() {
         return jda;
     }
-    
+
     public static FileStorageManager getStorageManager() {
         return storageManager;
     }
-    
+
     public static CommandManager getCommandManager() {
         return commandManager;
     }
-    
+
     public static ConfigManager getConfigManager() {
         return configManager;
     }
-    
+
     public static TicketService getTicketService() {
         return ticketService;
     }
-    
+
     public static ProxyService getProxyService() {
         return proxyService;
     }
-    
+
     public static GlobalChatService getGlobalChatService() {
         return globalChatService;
     }
-    
+
     public static Logger getLogger() {
         return logger;
     }
-    
+
     /**
      * Notify the bot owner(s) of a critical error via DM
      */
@@ -307,29 +309,34 @@ public class ServerBot {
         try {
             if (jda != null && configManager != null) {
                 List<String> ownerIds = configManager.getConfig().getAllOwnerIds();
-                
+
                 if (!ownerIds.isEmpty()) {
                     for (String ownerId : ownerIds) {
                         jda.retrieveUserById(ownerId).queue(
-                            owner -> {
-                                owner.openPrivateChannel().queue(
-                                    channel -> {
-                                        channel.sendMessage("🚨 **Bot Startup Error** 🚨\n\n" +
-                                            "The bot encountered a critical error during startup and has shut down:\n\n" +
-                                            "```\n" + errorMessage + "\n```\n\n" +
-                                            "Please check the logs and configuration before restarting.")
-                                            .queue(
-                                                success -> logger.info("Error notification sent to bot owner: " + ownerId),
-                                                failure -> logger.warn("Failed to send error notification to " + ownerId + ": " + failure.getMessage())
-                                            );
-                                    },
-                                    failure -> logger.warn("Failed to open DM channel with bot owner " + ownerId + ": " + failure.getMessage())
-                                );
-                            },
-                            failure -> logger.warn("Failed to retrieve bot owner " + ownerId + ": " + failure.getMessage())
-                        );
+                                owner -> {
+                                    owner.openPrivateChannel().queue(
+                                            channel -> {
+                                                channel.sendMessage("🚨 **Bot Startup Error** 🚨\n\n" +
+                                                        "The bot encountered a critical error during startup and has shut down:\n\n"
+                                                        +
+                                                        "```\n" + errorMessage + "\n```\n\n" +
+                                                        "Please check the logs and configuration before restarting.")
+                                                        .queue(
+                                                                success -> logger
+                                                                        .info("Error notification sent to bot owner: "
+                                                                                + ownerId),
+                                                                failure -> logger
+                                                                        .warn("Failed to send error notification to "
+                                                                                + ownerId + ": "
+                                                                                + failure.getMessage()));
+                                            },
+                                            failure -> logger.warn("Failed to open DM channel with bot owner " + ownerId
+                                                    + ": " + failure.getMessage()));
+                                },
+                                failure -> logger
+                                        .warn("Failed to retrieve bot owner " + ownerId + ": " + failure.getMessage()));
                     }
-                    
+
                     // Wait a moment for the messages to send
                     Thread.sleep(2000);
                 } else {
@@ -340,7 +347,7 @@ public class ServerBot {
             logger.warn("Failed to notify owner of error: " + e.getMessage());
         }
     }
-    
+
     /**
      * Build the Activity from config settings.
      * Priority: if default_status_message is set, use custom status.
@@ -352,7 +359,7 @@ public class ServerBot {
         if (statusMessage != null && !statusMessage.isEmpty()) {
             return Activity.customStatus(statusMessage);
         }
-        
+
         // Otherwise build RPC activity from type + text.
         // If both fields are blank, return null → no activity shown.
         String rpcText = config.getDefaultRpcText();
@@ -386,7 +393,7 @@ public class ServerBot {
                 return Activity.watching(rpcText);
         }
     }
-    
+
     /**
      * Build the OnlineStatus from config settings.
      */
@@ -395,7 +402,7 @@ public class ServerBot {
         if (status == null || status.isEmpty()) {
             return OnlineStatus.ONLINE;
         }
-        
+
         switch (status.toLowerCase()) {
             case "dnd":
             case "do_not_disturb":
@@ -410,22 +417,22 @@ public class ServerBot {
                 return OnlineStatus.ONLINE;
         }
     }
-    
+
     public static void shutdown() {
         logger.info("Shutting down bot...");
-        
+
         // Stop warning expiry manager
         WarnExpiryManager.stop();
-        
+
         // Stop scheduler service
         if (SchedulerService.getInstance() != null) {
             SchedulerService.getInstance().shutdown();
         }
-        
+
         if (storageManager != null) {
             storageManager.close();
         }
-        
+
         if (jda != null) {
             try {
                 // Shutdown JDA properly to prevent connection loops
@@ -438,7 +445,7 @@ public class ServerBot {
                 Thread.currentThread().interrupt();
             }
         }
-        
+
         logger.info("Bot shutdown complete.");
     }
 }

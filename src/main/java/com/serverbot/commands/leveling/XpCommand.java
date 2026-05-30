@@ -22,16 +22,15 @@ public class XpCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         Member moderator = event.getMember();
         if (!PermissionManager.hasPermission(moderator, "leveling.admin.xp")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", "You need the `leveling.admin.xp` permission to manage XP."
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions", "You need the `leveling.admin.xp` permission to manage XP."))
+                    .setEphemeral(true).queue();
             return;
         }
 
@@ -42,27 +41,29 @@ public class XpCommand implements SlashCommand {
         try {
             long currentExp = ServerBot.getStorageManager().getExperience(event.getGuild().getId(), targetUser.getId());
             long newExp = currentExp;
-            
+
             switch (action.toLowerCase()) {
                 case "add" -> {
                     newExp = currentExp + expAmount;
-                    ServerBot.getStorageManager().addExperience(event.getGuild().getId(), targetUser.getId(), expAmount);
+                    ServerBot.getStorageManager().addExperience(event.getGuild().getId(), targetUser.getId(),
+                            expAmount);
                 }
                 case "subtract" -> {
                     newExp = Math.max(0, currentExp - expAmount);
                     // Use negative addExperience to subtract
-                    ServerBot.getStorageManager().addExperience(event.getGuild().getId(), targetUser.getId(), -expAmount);
+                    ServerBot.getStorageManager().addExperience(event.getGuild().getId(), targetUser.getId(),
+                            -expAmount);
                 }
                 case "set" -> {
                     newExp = Math.max(0, expAmount);
                     // Calculate difference and use addExperience
                     long difference = newExp - currentExp;
-                    ServerBot.getStorageManager().addExperience(event.getGuild().getId(), targetUser.getId(), difference);
+                    ServerBot.getStorageManager().addExperience(event.getGuild().getId(), targetUser.getId(),
+                            difference);
                 }
                 default -> {
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                        "Invalid Action", "Valid actions are: add, subtract, set"
-                    )).setEphemeral(true).queue();
+                            "Invalid Action", "Valid actions are: add, subtract, set")).setEphemeral(true).queue();
                     return;
                 }
             }
@@ -70,35 +71,33 @@ public class XpCommand implements SlashCommand {
             int newLevel = ServerBot.getStorageManager().getLevel(event.getGuild().getId(), targetUser.getId());
 
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "XP " + action.substring(0, 1).toUpperCase() + action.substring(1) + "ed",
-                "**User:** " + targetUser.getAsMention() + "\n" +
-                "**Action:** " + action.toUpperCase() + " " + expAmount + " XP\n" +
-                "**Previous XP:** " + currentExp + "\n" +
-                "**New XP:** " + newExp + "\n" +
-                "**Current Level:** " + newLevel + "\n" +
-                "**Moderator:** " + moderator.getAsMention()
-            )).queue();
+                    "XP " + action.substring(0, 1).toUpperCase() + action.substring(1) + "ed",
+                    "**User:** " + targetUser.getAsMention() + "\n" +
+                            "**Action:** " + action.toUpperCase() + " " + expAmount + " XP\n" +
+                            "**Previous XP:** " + currentExp + "\n" +
+                            "**New XP:** " + newExp + "\n" +
+                            "**Current Level:** " + newLevel + "\n" +
+                            "**Moderator:** " + moderator.getAsMention()))
+                    .queue();
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "XP Management Failed", 
-                "Failed to manage XP: " + e.getMessage()
-            )).setEphemeral(true).queue();
+                    "XP Management Failed",
+                    "Failed to manage XP: " + e.getMessage())).setEphemeral(true).queue();
         }
     }
 
     public static CommandData getCommandData() {
         return Commands.slash("xp", "Manage user XP")
                 .addOptions(
-                    new OptionData(OptionType.STRING, "action", "Action to perform", true)
-                        .addChoice("Add XP", "add")
-                        .addChoice("Subtract XP", "subtract")
-                        .addChoice("Set XP", "set"),
-                    new OptionData(OptionType.INTEGER, "exp", "Amount of XP", true)
-                        .setMinValue(0)
-                        .setMaxValue(1000000),
-                    new OptionData(OptionType.USER, "user", "Target user", true)
-                );
+                        new OptionData(OptionType.STRING, "action", "Action to perform", true)
+                                .addChoice("Add XP", "add")
+                                .addChoice("Subtract XP", "subtract")
+                                .addChoice("Set XP", "set"),
+                        new OptionData(OptionType.INTEGER, "exp", "Amount of XP", true)
+                                .setMinValue(0)
+                                .setMaxValue(1000000),
+                        new OptionData(OptionType.USER, "user", "Target user", true));
     }
 
     @Override

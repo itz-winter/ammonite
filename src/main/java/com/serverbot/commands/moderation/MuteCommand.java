@@ -35,51 +35,48 @@ public class MuteCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage(
-                "Guild Only", "This command can only be used in servers.", USAGE
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.", USAGE)).setEphemeral(true).queue();
             return;
         }
 
         Member moderator = event.getMember();
         if (!PermissionManager.hasPermission(moderator, "mod.mute")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", 
-                "You need the `mod.mute` permission to use this command.\n\n" +
-                "Ask a server admin to grant you the `mod.mute` permission."
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions",
+                    "You need the `mod.mute` permission to use this command.\n\n" +
+                            "Ask a server admin to grant you the `mod.mute` permission."))
+                    .setEphemeral(true).queue();
             return;
         }
 
         User target = event.getOption("user").getAsUser();
-        String durationStr = event.getOption("duration") != null ? 
-                event.getOption("duration").getAsString() : "1h";
-        String reason = event.getOption("reason") != null ? 
-                event.getOption("reason").getAsString() : "No reason provided";
+        String durationStr = event.getOption("duration") != null ? event.getOption("duration").getAsString() : "1h";
+        String reason = event.getOption("reason") != null ? event.getOption("reason").getAsString()
+                : "No reason provided";
 
         Member targetMember = event.getGuild().getMember(target);
-        
+
         if (targetMember == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage(
-                "User Not Found", "This user is not in the server.", USAGE, EXAMPLE
-            )).setEphemeral(true).queue();
+                    "User Not Found", "This user is not in the server.", USAGE, EXAMPLE)).setEphemeral(true).queue();
             return;
         }
 
         if (!PermissionUtils.canInteractWith(moderator, targetMember)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Cannot Mute User", 
-                "You cannot mute this user due to role hierarchy.\n\n" +
-                "Your highest role must be above the target user's highest role."
-            )).setEphemeral(true).queue();
+                    "Cannot Mute User",
+                    "You cannot mute this user due to role hierarchy.\n\n" +
+                            "Your highest role must be above the target user's highest role."))
+                    .setEphemeral(true).queue();
             return;
         }
 
         if (!PermissionUtils.botCanInteractWith(event.getGuild(), targetMember)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Cannot Mute User", 
-                "I cannot mute this user due to role hierarchy.\n\n" +
-                "Move my role higher than the target user's highest role."
-            )).setEphemeral(true).queue();
+                    "Cannot Mute User",
+                    "I cannot mute this user due to role hierarchy.\n\n" +
+                            "Move my role higher than the target user's highest role."))
+                    .setEphemeral(true).queue();
             return;
         }
 
@@ -87,12 +84,11 @@ public class MuteCommand implements SlashCommand {
         final Duration muteDuration = TimeUtils.parseDuration(durationStr);
         if (muteDuration == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage(
-                "Invalid Duration", 
-                "Please provide a valid duration format.\n\n" +
-                "**Valid formats:** `1d`, `2h`, `30m`, `1w`, `12h30m`\n" +
-                "**Units:** `s`=seconds, `m`=minutes, `h`=hours, `d`=days, `w`=weeks",
-                USAGE, EXAMPLE
-            )).setEphemeral(true).queue();
+                    "Invalid Duration",
+                    "Please provide a valid duration format.\n\n" +
+                            "**Valid formats:** `1d`, `2h`, `30m`, `1w`, `12h30m`\n" +
+                            "**Units:** `s`=seconds, `m`=minutes, `h`=hours, `d`=days, `w`=weeks",
+                    USAGE, EXAMPLE)).setEphemeral(true).queue();
             return;
         }
 
@@ -100,8 +96,9 @@ public class MuteCommand implements SlashCommand {
         Role muteRole = findMuteRole(event.getGuild());
         if (muteRole == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Mute Role Missing", "Could not find or create a mute role. Please create a role named 'Muted' and configure its permissions."
-            )).setEphemeral(true).queue();
+                    "Mute Role Missing",
+                    "Could not find or create a mute role. Please create a role named 'Muted' and configure its permissions."))
+                    .setEphemeral(true).queue();
             return;
         }
 
@@ -114,31 +111,28 @@ public class MuteCommand implements SlashCommand {
                     // Send confirmation
                     String durationText = TimeUtils.formatDuration(muteDuration);
                     event.getHook().sendMessageEmbeds(EmbedUtils.createModerationEmbed(
-                        "User Muted", target, moderator.getUser(), 
-                        reason + "\n**Duration:** " + durationText
-                    )).queue();
+                            "User Muted", target, moderator.getUser(),
+                            reason + "\n**Duration:** " + durationText)).queue();
 
                     // Schedule unmute and log action
                     scheduleMute(event.getGuild().getId(), target.getId(), muteDuration, moderator.getId(), reason);
                     logMute(event.getGuild().getId(), target.getId(), moderator.getId(), reason, muteDuration);
-                    
+
                     // Log to AutoLog channel
                     AutoLogUtils.logMute(event.getGuild(), target, moderator.getUser(), reason, muteDuration);
-                    
+
                     // Send DM notification if enabled
                     PunishmentNotificationService.getInstance().sendPunishmentNotification(
-                        event.getGuild().getId(),
-                        target.getId(),
-                        PunishmentNotificationService.PunishmentType.MUTE,
-                        reason,
-                        muteDuration,
-                        durationText
-                    );
+                            event.getGuild().getId(),
+                            target.getId(),
+                            PunishmentNotificationService.PunishmentType.MUTE,
+                            reason,
+                            muteDuration,
+                            durationText);
 
                 }, error -> {
                     event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                        "Mute Failed", "Failed to mute user: " + error.getMessage()
-                    )).setEphemeral(true).queue();
+                            "Mute Failed", "Failed to mute user: " + error.getMessage())).setEphemeral(true).queue();
                 });
     }
 
@@ -147,11 +141,11 @@ public class MuteCommand implements SlashCommand {
         Role existingRole = guild.getRolesByName("Muted", true).stream()
                 .findFirst()
                 .orElse(null);
-        
+
         if (existingRole != null) {
             return existingRole;
         }
-        
+
         // Create mute role if it doesn't exist
         try {
             Role muteRole = guild.createRole()
@@ -161,20 +155,23 @@ public class MuteCommand implements SlashCommand {
                     .setHoisted(false)
                     .reason("Automatically created by ServerBot for muting users")
                     .complete();
-            
+
             // Configure permissions for all channels
             guild.getTextChannels().forEach(channel -> {
-                channel.getManager().putRolePermissionOverride(muteRole.getIdLong(), null, 
-                    EnumSet.of(Permission.MESSAGE_SEND, Permission.MESSAGE_ADD_REACTION, 
-                               Permission.MESSAGE_SEND_IN_THREADS, Permission.CREATE_PUBLIC_THREADS, 
-                               Permission.CREATE_PRIVATE_THREADS)).queue(null, throwable -> {});
+                channel.getManager().putRolePermissionOverride(muteRole.getIdLong(), null,
+                        EnumSet.of(Permission.MESSAGE_SEND, Permission.MESSAGE_ADD_REACTION,
+                                Permission.MESSAGE_SEND_IN_THREADS, Permission.CREATE_PUBLIC_THREADS,
+                                Permission.CREATE_PRIVATE_THREADS))
+                        .queue(null, throwable -> {
+                        });
             });
-            
+
             guild.getVoiceChannels().forEach(channel -> {
-                channel.getManager().putRolePermissionOverride(muteRole.getIdLong(), null, 
-                    EnumSet.of(Permission.VOICE_SPEAK)).queue(null, throwable -> {});
+                channel.getManager().putRolePermissionOverride(muteRole.getIdLong(), null,
+                        EnumSet.of(Permission.VOICE_SPEAK)).queue(null, throwable -> {
+                        });
             });
-            
+
             return muteRole;
         } catch (Exception e) {
             System.err.println("Failed to create mute role: " + e.getMessage());
@@ -186,7 +183,7 @@ public class MuteCommand implements SlashCommand {
         try {
             // Create a unique key for this temporary punishment
             String uniqueKey = guildId + ":" + userId + ":MUTE:" + System.currentTimeMillis();
-            
+
             // Create temp punishment data
             Map<String, Object> tempPunishment = new HashMap<>();
             tempPunishment.put("guildId", guildId);
@@ -199,8 +196,9 @@ public class MuteCommand implements SlashCommand {
 
             // Store the temporary punishment
             ServerBot.getStorageManager().storeTempPunishment(uniqueKey, tempPunishment);
-            
-            System.out.println("Scheduled mute removal for user " + userId + " in " + duration.toMinutes() + " minutes");
+
+            System.out
+                    .println("Scheduled mute removal for user " + userId + " in " + duration.toMinutes() + " minutes");
         } catch (Exception e) {
             System.err.println("Failed to schedule unmute: " + e.getMessage());
             e.printStackTrace();

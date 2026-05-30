@@ -35,6 +35,7 @@ public class TrackScheduler extends AudioEventAdapter {
 
     /**
      * Add a track to the queue, or start playing if nothing is currently playing.
+     * 
      * @return true if the track started playing immediately, false if it was queued
      */
     public boolean queue(AudioTrack track) {
@@ -70,6 +71,7 @@ public class TrackScheduler extends AudioEventAdapter {
 
     /**
      * Skip a number of tracks.
+     * 
      * @param count number of tracks to skip (1 = skip current)
      * @return the number of tracks actually skipped
      */

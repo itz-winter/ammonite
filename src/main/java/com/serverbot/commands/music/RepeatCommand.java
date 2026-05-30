@@ -20,8 +20,7 @@ public class RepeatCommand implements SlashCommand {
 
         if (!musicManager.isConnected(event.getGuild())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Not Playing", "The bot is not currently playing music."
-            )).setEphemeral(true).queue();
+                    "Not Playing", "The bot is not currently playing music.")).setEphemeral(true).queue();
             return;
         }
 
@@ -31,14 +30,12 @@ public class RepeatCommand implements SlashCommand {
 
         if (newState) {
             event.replyEmbeds(EmbedUtils.createMusicEmbed(
-                "🔁 Repeat Enabled",
-                "The current track will now repeat."
-            )).queue();
+                    "🔁 Repeat Enabled",
+                    "The current track will now repeat.")).queue();
         } else {
             event.replyEmbeds(EmbedUtils.createMusicEmbed(
-                "🔁 Repeat Disabled",
-                "Repeat mode has been turned off."
-            )).queue();
+                    "🔁 Repeat Disabled",
+                    "Repeat mode has been turned off.")).queue();
         }
     }
 
@@ -47,11 +44,17 @@ public class RepeatCommand implements SlashCommand {
     }
 
     @Override
-    public String getName() { return "repeat"; }
+    public String getName() {
+        return "repeat";
+    }
 
     @Override
-    public String getDescription() { return "Sets whether the playlist should repeat."; }
+    public String getDescription() {
+        return "Sets whether the playlist should repeat.";
+    }
 
     @Override
-    public CommandCategory getCategory() { return CommandCategory.MUSIC; }
+    public CommandCategory getCategory() {
+        return CommandCategory.MUSIC;
+    }
 }

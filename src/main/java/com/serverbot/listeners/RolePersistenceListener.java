@@ -9,13 +9,13 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
  * Listener for handling role persistence when members join/leave
  */
 public class RolePersistenceListener extends ListenerAdapter {
-    
+
     private final RolePersistenceService rolePersistenceService;
-    
+
     public RolePersistenceListener() {
         this.rolePersistenceService = RolePersistenceService.getInstance();
     }
-    
+
     @Override
     public void onGuildMemberRemove(GuildMemberRemoveEvent event) {
         // Save user's roles when they leave
@@ -23,10 +23,11 @@ public class RolePersistenceListener extends ListenerAdapter {
             rolePersistenceService.saveUserRoles(event.getMember());
         }
     }
-    
+
     @Override
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
-        // Restore user's roles when they rejoin (with a small delay to ensure member is fully loaded)
+        // Restore user's roles when they rejoin (with a small delay to ensure member is
+        // fully loaded)
         // Schedule the role restoration for 2 seconds later to avoid race conditions
         new Thread(() -> {
             try {

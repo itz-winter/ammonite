@@ -22,16 +22,15 @@ public class LevelCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         Member moderator = event.getMember();
         if (!PermissionManager.hasPermission(moderator, "leveling.admin.level")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", "You need the `leveling.admin.level` permission to manage levels."
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions", "You need the `leveling.admin.level` permission to manage levels."))
+                    .setEphemeral(true).queue();
             return;
         }
 
@@ -42,24 +41,27 @@ public class LevelCommand implements SlashCommand {
         try {
             long currentExp = ServerBot.getStorageManager().getExperience(event.getGuild().getId(), targetUser.getId());
             int currentLevel = ServerBot.getStorageManager().getLevel(event.getGuild().getId(), targetUser.getId());
-            
+
             int newLevel = currentLevel;
             long newExp = currentExp;
-            
+
             switch (action.toLowerCase()) {
                 case "add" -> {
                     newLevel = currentLevel + levelAmount;
                     // Calculate XP required for the new level
                     newExp = calculateExpForLevel(newLevel);
-                    ServerBot.getStorageManager().addExperience(event.getGuild().getId(), targetUser.getId(), (int)(newExp - currentExp));
+                    ServerBot.getStorageManager().addExperience(event.getGuild().getId(), targetUser.getId(),
+                            (int) (newExp - currentExp));
                 }
                 case "subtract" -> {
                     newLevel = Math.max(0, currentLevel - levelAmount);
                     newExp = calculateExpForLevel(newLevel);
-                    // Since we can't subtract XP directly, we'll add the difference to reach the target level
+                    // Since we can't subtract XP directly, we'll add the difference to reach the
+                    // target level
                     long expDiff = newExp - currentExp;
                     if (expDiff != 0) {
-                        ServerBot.getStorageManager().addExperience(event.getGuild().getId(), targetUser.getId(), (int)expDiff);
+                        ServerBot.getStorageManager().addExperience(event.getGuild().getId(), targetUser.getId(),
+                                (int) expDiff);
                     }
                 }
                 case "set" -> {
@@ -67,13 +69,13 @@ public class LevelCommand implements SlashCommand {
                     newExp = calculateExpForLevel(newLevel);
                     long expDiff = newExp - currentExp;
                     if (expDiff != 0) {
-                        ServerBot.getStorageManager().addExperience(event.getGuild().getId(), targetUser.getId(), (int)expDiff);
+                        ServerBot.getStorageManager().addExperience(event.getGuild().getId(), targetUser.getId(),
+                                (int) expDiff);
                     }
                 }
                 default -> {
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                        "Invalid Action", "Valid actions are: add, subtract, set"
-                    )).setEphemeral(true).queue();
+                            "Invalid Action", "Valid actions are: add, subtract, set")).setEphemeral(true).queue();
                     return;
                 }
             }
@@ -83,19 +85,18 @@ public class LevelCommand implements SlashCommand {
             long finalExp = ServerBot.getStorageManager().getExperience(event.getGuild().getId(), targetUser.getId());
 
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Level " + action.substring(0, 1).toUpperCase() + action.substring(1) + "ed",
-                "**User:** " + targetUser.getAsMention() + "\n" +
-                "**Action:** " + action.toUpperCase() + " " + levelAmount + " levels\n" +
-                "**Previous Level:** " + currentLevel + " (" + currentExp + " XP)\n" +
-                "**New Level:** " + finalLevel + " (" + finalExp + " XP)\n" +
-                "**Moderator:** " + moderator.getAsMention()
-            )).queue();
+                    "Level " + action.substring(0, 1).toUpperCase() + action.substring(1) + "ed",
+                    "**User:** " + targetUser.getAsMention() + "\n" +
+                            "**Action:** " + action.toUpperCase() + " " + levelAmount + " levels\n" +
+                            "**Previous Level:** " + currentLevel + " (" + currentExp + " XP)\n" +
+                            "**New Level:** " + finalLevel + " (" + finalExp + " XP)\n" +
+                            "**Moderator:** " + moderator.getAsMention()))
+                    .queue();
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Level Management Failed", 
-                "Failed to manage level: " + e.getMessage()
-            )).setEphemeral(true).queue();
+                    "Level Management Failed",
+                    "Failed to manage level: " + e.getMessage())).setEphemeral(true).queue();
         }
     }
 
@@ -107,15 +108,14 @@ public class LevelCommand implements SlashCommand {
     public static CommandData getCommandData() {
         return Commands.slash("level", "Manage user levels")
                 .addOptions(
-                    new OptionData(OptionType.STRING, "action", "Action to perform", true)
-                        .addChoice("Add Levels", "add")
-                        .addChoice("Subtract Levels", "subtract")
-                        .addChoice("Set Level", "set"),
-                    new OptionData(OptionType.INTEGER, "level", "Number of levels", true)
-                        .setMinValue(0)
-                        .setMaxValue(1000),
-                    new OptionData(OptionType.USER, "user", "Target user", true)
-                );
+                        new OptionData(OptionType.STRING, "action", "Action to perform", true)
+                                .addChoice("Add Levels", "add")
+                                .addChoice("Subtract Levels", "subtract")
+                                .addChoice("Set Level", "set"),
+                        new OptionData(OptionType.INTEGER, "level", "Number of levels", true)
+                                .setMinValue(0)
+                                .setMaxValue(1000),
+                        new OptionData(OptionType.USER, "user", "Target user", true));
     }
 
     @Override

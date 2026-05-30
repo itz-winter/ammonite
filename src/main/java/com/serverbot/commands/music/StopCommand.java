@@ -19,8 +19,7 @@ public class StopCommand implements SlashCommand {
 
         if (!musicManager.isConnected(event.getGuild())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Not Playing", "The bot is not currently playing music."
-            )).setEphemeral(true).queue();
+                    "Not Playing", "The bot is not currently playing music.")).setEphemeral(true).queue();
             return;
         }
 
@@ -29,8 +28,7 @@ public class StopCommand implements SlashCommand {
         gmm.getPlayer().stopTrack();
 
         event.replyEmbeds(EmbedUtils.createMusicEmbed(
-            "⏹️ Stopped", "Stopped playing and cleared the queue."
-        )).queue();
+                "⏹️ Stopped", "Stopped playing and cleared the queue.")).queue();
     }
 
     public static CommandData getCommandData() {
@@ -38,11 +36,17 @@ public class StopCommand implements SlashCommand {
     }
 
     @Override
-    public String getName() { return "stop"; }
+    public String getName() {
+        return "stop";
+    }
 
     @Override
-    public String getDescription() { return "Stops playing any music entirely."; }
+    public String getDescription() {
+        return "Stops playing any music entirely.";
+    }
 
     @Override
-    public CommandCategory getCategory() { return CommandCategory.MUSIC; }
+    public CommandCategory getCategory() {
+        return CommandCategory.MUSIC;
+    }
 }

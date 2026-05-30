@@ -20,8 +20,7 @@ public class PauseCommand implements SlashCommand {
 
         if (!musicManager.isConnected(event.getGuild())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Not Playing", "The bot is not currently playing music."
-            )).setEphemeral(true).queue();
+                    "Not Playing", "The bot is not currently playing music.")).setEphemeral(true).queue();
             return;
         }
 
@@ -31,12 +30,10 @@ public class PauseCommand implements SlashCommand {
 
         if (isPaused) {
             event.replyEmbeds(EmbedUtils.createMusicEmbed(
-                "▶️ Resumed", "Music playback has been resumed."
-            )).queue();
+                    "▶️ Resumed", "Music playback has been resumed.")).queue();
         } else {
             event.replyEmbeds(EmbedUtils.createMusicEmbed(
-                "⏸️ Paused", "Music playback has been paused."
-            )).queue();
+                    "⏸️ Paused", "Music playback has been paused.")).queue();
         }
     }
 
@@ -45,11 +42,17 @@ public class PauseCommand implements SlashCommand {
     }
 
     @Override
-    public String getName() { return "pause"; }
+    public String getName() {
+        return "pause";
+    }
 
     @Override
-    public String getDescription() { return "Pauses or resumes the music in voicechat."; }
+    public String getDescription() {
+        return "Pauses or resumes the music in voicechat.";
+    }
 
     @Override
-    public CommandCategory getCategory() { return CommandCategory.MUSIC; }
+    public CommandCategory getCategory() {
+        return CommandCategory.MUSIC;
+    }
 }

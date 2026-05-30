@@ -22,24 +22,23 @@ import java.awt.*;
  * Command for managing proxy settings and switching members
  */
 public class ProxySettingsCommand implements SlashCommand {
-    
+
     private final ProxyService proxyService;
-    
+
     public ProxySettingsCommand() {
         this.proxyService = ServerBot.getProxyService();
     }
-    
+
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         String subcommand = event.getSubcommandName();
         if (subcommand == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Error",
-                "Please specify a subcommand."
-            )).setEphemeral(true).queue();
+                    "Error",
+                    "Please specify a subcommand.")).setEphemeral(true).queue();
             return;
         }
-        
+
         switch (subcommand) {
             case "view":
                 handleView(event);
@@ -55,130 +54,121 @@ public class ProxySettingsCommand implements SlashCommand {
                 break;
             default:
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Error",
-                    "Unknown subcommand."
-                )).setEphemeral(true).queue();
+                        "Error",
+                        "Unknown subcommand.")).setEphemeral(true).queue();
         }
     }
-    
+
     private void handleView(SlashCommandInteractionEvent event) {
         // Use "global" as guildId for DM channels
         String guildId = event.getGuild() != null ? event.getGuild().getId() : "global";
-        
+
         ProxySettings settings = proxyService.getSettings(
-            event.getUser().getId(),
-            guildId
-        );
-        
+                event.getUser().getId(),
+                guildId);
+
         EmbedBuilder embed = new EmbedBuilder()
-            .setTitle(CustomEmojis.SETTING + " Proxy Settings")
-            .setColor(Color.BLUE)
-            .addField("Proxy Enabled", settings.isProxyEnabled() ? "Yes" : "No", true)
-            .addField("Autoproxy Mode", settings.getAutoproxyMode().toString(), true)
-            .addField("Show Indicator", settings.isShowProxyIndicator() ? "Yes" : "No", true)
-            .addField("Case Sensitive Tags", settings.isCaseSensitiveTags() ? "Yes" : "No", true);
-        
+                .setTitle(CustomEmojis.SETTING + " Proxy Settings")
+                .setColor(Color.BLUE)
+                .addField("Proxy Enabled", settings.isProxyEnabled() ? "Yes" : "No", true)
+                .addField("Autoproxy Mode", settings.getAutoproxyMode().toString(), true)
+                .addField("Show Indicator", settings.isShowProxyIndicator() ? "Yes" : "No", true)
+                .addField("Case Sensitive Tags", settings.isCaseSensitiveTags() ? "Yes" : "No", true);
+
         if (settings.getLastProxiedMemberId() != null) {
             ProxyMember lastMember = proxyService.getMember(settings.getLastProxiedMemberId());
             if (lastMember != null) {
                 embed.addField("Last Fronter", lastMember.getName(), true);
             }
         }
-        
-        if (settings.getAutoproxyMode() == ProxySettings.AutoproxyMode.MEMBER && 
-            settings.getAutoproxyMemberId() != null) {
+
+        if (settings.getAutoproxyMode() == ProxySettings.AutoproxyMode.MEMBER &&
+                settings.getAutoproxyMemberId() != null) {
             ProxyMember autoproxyMember = proxyService.getMember(settings.getAutoproxyMemberId());
             if (autoproxyMember != null) {
                 embed.addField("Autoproxy Member", autoproxyMember.getName(), true);
             }
         }
-        
+
         event.replyEmbeds(embed.build()).setEphemeral(true).queue();
     }
-    
+
     private void handleAutoproxy(SlashCommandInteractionEvent event) {
         String mode = event.getOption("mode").getAsString().toUpperCase();
-        String memberName = event.getOption("member") != null ? 
-                           event.getOption("member").getAsString() : null;
-        
+        String memberName = event.getOption("member") != null ? event.getOption("member").getAsString() : null;
+
         // Use "global" as guildId for DM channels
         String guildId = event.getGuild() != null ? event.getGuild().getId() : "global";
-        
+
         ProxySettings settings = proxyService.getSettings(
-            event.getUser().getId(),
-            guildId
-        );
-        
+                event.getUser().getId(),
+                guildId);
+
         try {
             ProxySettings.AutoproxyMode autoproxyMode = ProxySettings.AutoproxyMode.valueOf(mode);
             settings.setAutoproxyMode(autoproxyMode);
-            
+
             if (autoproxyMode == ProxySettings.AutoproxyMode.MEMBER) {
                 if (memberName == null) {
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                        "Error",
-                        "You must specify a member name for MEMBER autoproxy mode."
-                    )).setEphemeral(true).queue();
+                            "Error",
+                            "You must specify a member name for MEMBER autoproxy mode.")).setEphemeral(true).queue();
                     return;
                 }
-                
+
                 ProxyMember member = proxyService.getMemberByName(
-                    event.getUser().getId(),
-                    guildId,
-                    memberName
-                );
-                
+                        event.getUser().getId(),
+                        guildId,
+                        memberName);
+
                 if (member == null) {
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                        "Error 710",
-                        "Proxy member not found. Use `/proxy list` to see your members."
-                    )).setEphemeral(true).queue();
+                            "Error 710",
+                            "Proxy member not found. Use `/proxy list` to see your members.")).setEphemeral(true)
+                            .queue();
                     return;
                 }
-                
+
                 settings.setAutoproxyMemberId(member.getMemberId());
             }
-            
+
             event.deferReply().queue();
-            
+
             proxyService.updateSettings(
-                event.getUser().getId(),
-                event.getGuild().getId(),
-                settings
-            ).thenAccept(result -> {
-                if (result.equals("SUCCESS")) {
-                    event.getHook().editOriginalEmbeds(EmbedUtils.createSuccessEmbed(
-                        "Autoproxy Updated",
-                        "Autoproxy mode set to: **" + autoproxyMode.toString() + "**"
-                    )).queue();
-                } else {
-                    event.getHook().editOriginalEmbeds(EmbedUtils.createErrorEmbed(
-                        "Error " + result,
-                        "Failed to update settings. Use `/error category:7` for full proxy system documentation."
-                    )).queue();
-                }
-            });
-            
+                    event.getUser().getId(),
+                    event.getGuild().getId(),
+                    settings).thenAccept(result -> {
+                        if (result.equals("SUCCESS")) {
+                            event.getHook().editOriginalEmbeds(EmbedUtils.createSuccessEmbed(
+                                    "Autoproxy Updated",
+                                    "Autoproxy mode set to: **" + autoproxyMode.toString() + "**")).queue();
+                        } else {
+                            event.getHook().editOriginalEmbeds(EmbedUtils.createErrorEmbed(
+                                    "Error " + result,
+                                    "Failed to update settings. Use `/error category:7` for full proxy system documentation."))
+                                    .queue();
+                        }
+                    });
+
         } catch (IllegalArgumentException e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Error",
-                "Invalid autoproxy mode. Valid modes: OFF, FRONT, LATCH, MEMBER, STICKY"
-            )).setEphemeral(true).queue();
+                    "Error",
+                    "Invalid autoproxy mode. Valid modes: OFF, FRONT, LATCH, MEMBER, STICKY")).setEphemeral(true)
+                    .queue();
         }
     }
-    
+
     private void handleToggle(SlashCommandInteractionEvent event) {
         String setting = event.getOption("setting").getAsString().toLowerCase();
         boolean value = event.getOption("enabled").getAsBoolean();
-        
+
         // Use "global" as guildId for DM channels
         String guildId = event.getGuild() != null ? event.getGuild().getId() : "global";
-        
+
         ProxySettings settings = proxyService.getSettings(
-            event.getUser().getId(),
-            guildId
-        );
-        
+                event.getUser().getId(),
+                guildId);
+
         switch (setting) {
             case "proxy":
                 settings.setProxyEnabled(value);
@@ -191,144 +181,137 @@ public class ProxySettingsCommand implements SlashCommand {
                 break;
             default:
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Error",
-                    "Invalid setting. Valid settings: proxy, indicator, casesensitive"
-                )).setEphemeral(true).queue();
+                        "Error",
+                        "Invalid setting. Valid settings: proxy, indicator, casesensitive")).setEphemeral(true).queue();
                 return;
         }
-        
+
         event.deferReply().queue();
-        
+
         proxyService.updateSettings(
-            event.getUser().getId(),
-            guildId,
-            settings
-        ).thenAccept(result -> {
-            if (result.equals("SUCCESS")) {
-                event.getHook().editOriginalEmbeds(EmbedUtils.createSuccessEmbed(
-                    "Setting Updated",
-                    "**" + setting + "** set to: **" + (value ? "Enabled" : "Disabled") + "**"
-                )).queue();
-            } else {
-                event.getHook().editOriginalEmbeds(EmbedUtils.createErrorEmbed(
-                    "Error " + result,
-                    "Failed to update settings. Use `/error category:7` for full proxy system documentation."
-                )).queue();
-            }
-        });
+                event.getUser().getId(),
+                guildId,
+                settings).thenAccept(result -> {
+                    if (result.equals("SUCCESS")) {
+                        event.getHook().editOriginalEmbeds(EmbedUtils.createSuccessEmbed(
+                                "Setting Updated",
+                                "**" + setting + "** set to: **" + (value ? "Enabled" : "Disabled") + "**")).queue();
+                    } else {
+                        event.getHook().editOriginalEmbeds(EmbedUtils.createErrorEmbed(
+                                "Error " + result,
+                                "Failed to update settings. Use `/error category:7` for full proxy system documentation."))
+                                .queue();
+                    }
+                });
     }
-    
+
     private void handleSwitch(SlashCommandInteractionEvent event) {
-        String memberName = event.getOption("member") != null ? 
-                           event.getOption("member").getAsString() : null;
-        
+        String memberName = event.getOption("member") != null ? event.getOption("member").getAsString() : null;
+
         // Use "global" as guildId for DM channels
         String guildId = event.getGuild() != null ? event.getGuild().getId() : "global";
-        
+
         if (memberName == null) {
             // Switch out (clear)
             ProxySettings settings = proxyService.getSettings(
-                event.getUser().getId(),
-                guildId
-            );
+                    event.getUser().getId(),
+                    guildId);
             settings.setLastProxiedMemberId(null);
             settings.setLastSwitchTime(null);
-            
+
             event.deferReply().queue();
-            
+
             proxyService.updateSettings(
-                event.getUser().getId(),
-                event.getGuild().getId(),
-                settings
-            ).thenAccept(result -> {
-                event.getHook().editOriginalEmbeds(EmbedUtils.createSuccessEmbed(
-                    "Switched Out",
-                    "Cleared current fronter."
-                )).queue();
-            });
+                    event.getUser().getId(),
+                    event.getGuild().getId(),
+                    settings).thenAccept(result -> {
+                        event.getHook().editOriginalEmbeds(EmbedUtils.createSuccessEmbed(
+                                "Switched Out",
+                                "Cleared current fronter.")).queue();
+                    });
             return;
         }
-        
+
         // Switch to member
         ProxyMember member = proxyService.getMemberByName(
-            event.getUser().getId(),
-            guildId,
-            memberName
-        );
-        
+                event.getUser().getId(),
+                guildId,
+                memberName);
+
         if (member == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Error 710",
-                "Proxy member not found. Use `/proxy list` to see your members."
-            )).setEphemeral(true).queue();
+                    "Error 710",
+                    "Proxy member not found. Use `/proxy list` to see your members.")).setEphemeral(true).queue();
             return;
         }
-        
+
         event.deferReply().queue();
-        
+
         proxyService.switchMember(
-            event.getUser().getId(),
-            guildId,
-            member.getMemberId()
-        ).thenAccept(result -> {
-            if (result.equals("SUCCESS")) {
-                EmbedBuilder embed = new EmbedBuilder()
-                    .setTitle(CustomEmojis.SUCCESS + "Switched")
-                    .setDescription("Now fronting: **" + member.getName() + "**")
-                    .setColor(Color.GREEN);
-                
-                if (member.getAvatarUrl() != null) {
-                    embed.setThumbnail(member.getAvatarUrl());
-                }
-                
-                event.getHook().editOriginalEmbeds(embed.build()).queue();
-            } else {
-                event.getHook().editOriginalEmbeds(EmbedUtils.createErrorEmbed(
-                    "Error " + result,
-                    "Failed to switch. Use `/error category:7` for full proxy system documentation."
-                )).queue();
-            }
-        });
+                event.getUser().getId(),
+                guildId,
+                member.getMemberId()).thenAccept(result -> {
+                    if (result.equals("SUCCESS")) {
+                        EmbedBuilder embed = new EmbedBuilder()
+                                .setTitle(CustomEmojis.SUCCESS + "Switched")
+                                .setDescription("Now fronting: **" + member.getName() + "**")
+                                .setColor(Color.GREEN);
+
+                        if (member.getAvatarUrl() != null) {
+                            embed.setThumbnail(member.getAvatarUrl());
+                        }
+
+                        event.getHook().editOriginalEmbeds(embed.build()).queue();
+                    } else {
+                        event.getHook().editOriginalEmbeds(EmbedUtils.createErrorEmbed(
+                                "Error " + result,
+                                "Failed to switch. Use `/error category:7` for full proxy system documentation."))
+                                .queue();
+                    }
+                });
     }
-    
+
     public static CommandData getCommandData() {
         return Commands.slash("proxysettings", "Manage proxy settings and switch members")
-            .addSubcommands(
-                new SubcommandData("view", "View your current proxy settings"),
-                    
-                new SubcommandData("autoproxy", "Set autoproxy mode")
-                    .addOption(OptionType.STRING, "mode", "Autoproxy mode (OFF, FRONT, LATCH, MEMBER, STICKY)", true)
-                    .addOption(OptionType.STRING, "member", "Member name (required for MEMBER mode)", false),
-                    
-                new SubcommandData("toggle", "Toggle a proxy setting")
-                    .addOption(OptionType.STRING, "setting", "Setting to toggle (proxy, indicator, casesensitive)", true)
-                    .addOption(OptionType.BOOLEAN, "enabled", "Enable or disable", true),
-                    
-                new SubcommandData("switch", "Switch to a member (or switch out)")
-                    .addOption(OptionType.STRING, "member", "Member name (leave empty to switch out)", false)
-            );
+                .addSubcommands(
+                        new SubcommandData("view", "View your current proxy settings"),
+
+                        new SubcommandData("autoproxy", "Set autoproxy mode")
+                                .addOption(OptionType.STRING, "mode",
+                                        "Autoproxy mode (OFF, FRONT, LATCH, MEMBER, STICKY)", true)
+                                .addOption(OptionType.STRING, "member", "Member name (required for MEMBER mode)",
+                                        false),
+
+                        new SubcommandData("toggle", "Toggle a proxy setting")
+                                .addOption(OptionType.STRING, "setting",
+                                        "Setting to toggle (proxy, indicator, casesensitive)", true)
+                                .addOption(OptionType.BOOLEAN, "enabled", "Enable or disable", true),
+
+                        new SubcommandData("switch", "Switch to a member (or switch out)")
+                                .addOption(OptionType.STRING, "member", "Member name (leave empty to switch out)",
+                                        false));
     }
-    
+
     @Override
     public String getName() {
         return "proxysettings";
     }
-    
+
     @Override
     public String getDescription() {
         return "Manage proxy settings and switch members";
     }
-    
+
     @Override
     public CommandCategory getCategory() {
         return CommandCategory.UTILITY;
     }
-    
+
     @Override
     public boolean requiresPermissions() {
         return false;
     }
-    
+
     @Override
     public boolean isGuildOnly() {
         return false; // Allow in DMs for global proxy management

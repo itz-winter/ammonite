@@ -14,14 +14,16 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import java.util.List;
 
 /**
- * Listener that handles the search result selection dropdown from the /play command.
+ * Listener that handles the search result selection dropdown from the /play
+ * command.
  * When a user picks a track from the StringSelectMenu, this listener queues it.
  */
 public class MusicSearchSelectionListener extends ListenerAdapter {
 
     @Override
     public void onStringSelectInteraction(StringSelectInteractionEvent event) {
-        if (!event.getComponentId().equals("play_search_select")) return;
+        if (!event.getComponentId().equals("play_search_select"))
+            return;
 
         // Build the lookup key: "guildId:userId"
         String key = event.getGuild().getId() + ":" + event.getUser().getId();
@@ -29,9 +31,8 @@ public class MusicSearchSelectionListener extends ListenerAdapter {
 
         if (pending == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Selection Expired",
-                "This search has expired. Please run `/play` again."
-            )).setEphemeral(true).queue();
+                    "Selection Expired",
+                    "This search has expired. Please run `/play` again.")).setEphemeral(true).queue();
             return;
         }
 
@@ -41,16 +42,14 @@ public class MusicSearchSelectionListener extends ListenerAdapter {
             index = Integer.parseInt(event.getValues().get(0));
         } catch (NumberFormatException | IndexOutOfBoundsException e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Selection", "Something went wrong. Please try again."
-            )).setEphemeral(true).queue();
+                    "Invalid Selection", "Something went wrong. Please try again.")).setEphemeral(true).queue();
             return;
         }
 
         List<AudioTrack> tracks = pending.tracks();
         if (index < 0 || index >= tracks.size()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Selection", "Something went wrong. Please try again."
-            )).setEphemeral(true).queue();
+                    "Invalid Selection", "Something went wrong. Please try again.")).setEphemeral(true).queue();
             return;
         }
 
@@ -62,9 +61,8 @@ public class MusicSearchSelectionListener extends ListenerAdapter {
         if (!musicManager.isConnected(event.getGuild())) {
             if (!musicManager.joinChannel(voiceChannel)) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Connection Failed",
-                    "Failed to join your voice channel. Check bot permissions."
-                )).setEphemeral(true).queue();
+                        "Connection Failed",
+                        "Failed to join your voice channel. Check bot permissions.")).setEphemeral(true).queue();
                 return;
             }
         } else {
@@ -88,7 +86,8 @@ public class MusicSearchSelectionListener extends ListenerAdapter {
             embed.addField("Position", "#" + (gmm.getScheduler().getQueueSize()) + " in queue", true);
         }
 
-        // Edit the original search message: replace the dropdown with the "now playing" embed
+        // Edit the original search message: replace the dropdown with the "now playing"
+        // embed
         event.editMessageEmbeds(embed.build()).setComponents().queue();
     }
 }

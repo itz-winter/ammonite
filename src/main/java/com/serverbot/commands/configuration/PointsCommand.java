@@ -22,47 +22,44 @@ public class PointsCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         Member member = event.getMember();
         if (!PermissionUtils.hasManageServerPermissions(member)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", "You need Manage Server permissions to use this command."
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions", "You need Manage Server permissions to use this command."))
+                    .setEphemeral(true).queue();
             return;
         }
 
         String action = event.getOption("action").getAsString().toLowerCase();
         boolean enable = action.equals("enable");
-        
+
         try {
             String guildId = event.getGuild().getId();
             ServerBot.getStorageManager().updateGuildSettings(guildId, "enableEconomy", enable);
-            
+
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Economy " + (enable ? "Enabled" : "Disabled"),
-                "The points/economy system has been " + (enable ? "enabled" : "disabled") + " for this server."
-            )).queue();
-            
+                    "Economy " + (enable ? "Enabled" : "Disabled"),
+                    "The points/economy system has been " + (enable ? "enabled" : "disabled") + " for this server."))
+                    .queue();
+
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Configuration Failed", "Failed to update economy settings: " + e.getMessage()
-            )).setEphemeral(true).queue();
+                    "Configuration Failed", "Failed to update economy settings: " + e.getMessage())).setEphemeral(true)
+                    .queue();
         }
     }
 
     public static CommandData getCommandData() {
         return Commands.slash("points", "Enable or disable the points/economy system")
                 .addOptions(
-                    new OptionData(OptionType.STRING, "action", "Enable or disable points", true)
-                        .addChoices(
-                            new Command.Choice("Enable", "enable"),
-                            new Command.Choice("Disable", "disable")
-                        )
-                );
+                        new OptionData(OptionType.STRING, "action", "Enable or disable points", true)
+                                .addChoices(
+                                        new Command.Choice("Enable", "enable"),
+                                        new Command.Choice("Disable", "disable")));
     }
 
     @Override

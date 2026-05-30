@@ -18,32 +18,33 @@ import java.util.concurrent.ConcurrentHashMap;
  * File-based data storage manager that replaces database functionality
  */
 public class FileStorageManager {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(FileStorageManager.class);
     private static final String DATA_DIR = "data";
     private final Gson gson;
     private final File dataDir;
-    
+
     // In-memory caches for better performance
     private final Map<String, Map<String, Object>> userEconomyCache = new ConcurrentHashMap<>();
     private final Map<String, Map<String, Object>> userLevelsCache = new ConcurrentHashMap<>();
     private final Map<String, List<Map<String, Object>>> userWarningsCache = new ConcurrentHashMap<>();
     private final Map<String, Map<String, Object>> guildSettingsCache = new ConcurrentHashMap<>();
-    
-        // Temp punishments cache and operations
+
+    // Temp punishments cache and operations
     private final Map<String, Map<String, Object>> tempPunishmentsCache = new HashMap<>();
     private final File tempPunishmentsFile;
-    
-    // Moderation logs cache and operations  
+
+    // Moderation logs cache and operations
     private final Map<String, List<Map<String, Object>>> moderationLogsCache = new HashMap<>();
     private final File moderationLogsFile;
-    
+
     // Suspicious users cache and operations
     private final Map<String, Map<String, Object>> suspiciousUsersCache = new ConcurrentHashMap<>();
     private final File suspiciousUsersFile;
-    
+
     // Pending report messages cache: userId -> Map<ownerId, messageId>
-    // Used to track which bot owner DM messages need updating when one owner validates/invalidates
+    // Used to track which bot owner DM messages need updating when one owner
+    // validates/invalidates
     private final Map<String, Map<String, String>> pendingReportMessagesCache = new ConcurrentHashMap<>();
     private final File pendingReportMessagesFile;
 
@@ -57,8 +58,12 @@ public class FileStorageManager {
         public String title;
         public String author;
         public long duration; // millis, 0 if unknown
+
         public PlaylistEntry(String url, String title, String author, long duration) {
-            this.url = url; this.title = title; this.author = author; this.duration = duration;
+            this.url = url;
+            this.title = title;
+            this.author = author;
+            this.duration = duration;
         }
     }
 
@@ -68,9 +73,12 @@ public class FileStorageManager {
         public String description;
         public List<PlaylistEntry> entries;
         public long createdAt;
+
         public UserPlaylist(String name, String description) {
-            this.name = name; this.description = description;
-            this.entries = new ArrayList<>(); this.createdAt = System.currentTimeMillis();
+            this.name = name;
+            this.description = description;
+            this.entries = new ArrayList<>();
+            this.createdAt = System.currentTimeMillis();
         }
     }
 
@@ -88,7 +96,7 @@ public class FileStorageManager {
         initializeDataDirectory();
         loadAllData();
     }
-    
+
     private void initializeDataDirectory() {
         try {
             Path dataPath = Paths.get(DATA_DIR);
@@ -100,7 +108,7 @@ public class FileStorageManager {
             logger.error("Failed to create data directory", e);
         }
     }
-    
+
     private void loadAllData() {
         loadEconomyData();
         loadLevelsData();
@@ -113,15 +121,16 @@ public class FileStorageManager {
         loadUserPlaylists();
         logger.info("All data loaded from files");
     }
-    
+
     // Economy methods
     public long getBalance(String guildId, String userId) {
         String key = guildId + ":" + userId;
         Map<String, Object> data = userEconomyCache.get(key);
-        if (data == null) return 0;
+        if (data == null)
+            return 0;
         return ((Number) data.getOrDefault("balance", 0)).longValue();
     }
-    
+
     public void setBalance(String guildId, String userId, long balance) {
         String key = guildId + ":" + userId;
         Map<String, Object> data = userEconomyCache.computeIfAbsent(key, k -> new HashMap<>());
@@ -129,22 +138,23 @@ public class FileStorageManager {
         data.put("lastUpdated", System.currentTimeMillis());
         saveEconomyData();
     }
-    
+
     public void addBalance(String guildId, String userId, long amount) {
         long currentBalance = getBalance(guildId, userId);
         setBalance(guildId, userId, currentBalance + amount);
     }
-    
+
     public boolean removeBalance(String guildId, String userId, long amount) {
         long currentBalance = getBalance(guildId, userId);
-        if (currentBalance < amount) return false;
+        if (currentBalance < amount)
+            return false;
         setBalance(guildId, userId, currentBalance - amount);
         return true;
     }
-    
+
     public List<Map.Entry<String, Long>> getTopBalances(String guildId, int limit) {
         List<Map.Entry<String, Long>> topBalances = new ArrayList<>();
-        
+
         for (Map.Entry<String, Map<String, Object>> entry : userEconomyCache.entrySet()) {
             String key = entry.getKey();
             if (key.startsWith(guildId + ":")) {
@@ -153,45 +163,47 @@ public class FileStorageManager {
                 topBalances.add(new AbstractMap.SimpleEntry<>(userId, balance));
             }
         }
-        
+
         topBalances.sort(Map.Entry.<String, Long>comparingByValue().reversed());
         return topBalances.subList(0, Math.min(limit, topBalances.size()));
     }
-    
+
     // Leveling methods
     public long getExperience(String guildId, String userId) {
         String key = guildId + ":" + userId;
         Map<String, Object> data = userLevelsCache.get(key);
-        if (data == null) return 0;
+        if (data == null)
+            return 0;
         return ((Number) data.getOrDefault("experience", 0)).longValue();
     }
-    
+
     public int getLevel(String guildId, String userId) {
         String key = guildId + ":" + userId;
         Map<String, Object> data = userLevelsCache.get(key);
-        if (data == null) return 0;
+        if (data == null)
+            return 0;
         return ((Number) data.getOrDefault("level", 0)).intValue();
     }
-    
+
     public void addExperience(String guildId, String userId, long experience) {
         String key = guildId + ":" + userId;
         Map<String, Object> data = userLevelsCache.computeIfAbsent(key, k -> new HashMap<>());
-        
+
         long currentExp = ((Number) data.getOrDefault("experience", 0)).longValue();
-        
+
         long newExp = currentExp + experience;
         int newLevel = calculateLevel(newExp);
-        
+
         data.put("experience", newExp);
         data.put("level", newLevel);
         data.put("lastUpdated", System.currentTimeMillis());
-        
+
         saveLevelsData();
     }
-    
+
     public List<Map.Entry<String, Integer>> getTopLevels(String guildId, int limit) {
         List<Map.Entry<String, Integer>> topLevels = new ArrayList<>();
-        
+
         for (Map.Entry<String, Map<String, Object>> entry : userLevelsCache.entrySet()) {
             String key = entry.getKey();
             if (key.startsWith(guildId + ":")) {
@@ -200,53 +212,55 @@ public class FileStorageManager {
                 topLevels.add(new AbstractMap.SimpleEntry<>(userId, level));
             }
         }
-        
+
         topLevels.sort(Map.Entry.<String, Integer>comparingByValue().reversed());
         return topLevels.subList(0, Math.min(limit, topLevels.size()));
     }
-    
+
     public Map<String, Map<String, Object>> getAllLevelData() {
         return new HashMap<>(userLevelsCache);
     }
-    
+
     private int calculateLevel(long experience) {
         return (int) Math.floor(Math.sqrt(experience / 100.0));
     }
-    
+
     // Warning methods
     public void addWarning(String guildId, String userId, String reason, String moderatorId) {
         String key = guildId + ":" + userId;
         List<Map<String, Object>> warnings = userWarningsCache.computeIfAbsent(key, k -> new ArrayList<>());
-        
+
         Map<String, Object> warning = new HashMap<>();
         warning.put("id", System.currentTimeMillis());
         warning.put("reason", reason);
         warning.put("moderatorId", moderatorId);
         warning.put("timestamp", System.currentTimeMillis());
-        
+
         warnings.add(warning);
         saveWarningsData();
     }
-    
+
     public List<Map<String, Object>> getWarnings(String guildId, String userId) {
         String key = guildId + ":" + userId;
         return new ArrayList<>(userWarningsCache.getOrDefault(key, new ArrayList<>()));
     }
-    
+
     public int getWarningCount(String guildId, String userId) {
         return getWarnings(guildId, userId).size();
     }
-    
+
     public void clearWarnings(String guildId, String userId) {
         String key = guildId + ":" + userId;
         userWarningsCache.remove(key);
         saveWarningsData();
     }
-    
+
     /**
      * Delete ALL stored data for a specific user across all guilds.
-     * This is used to comply with data-deletion requests (GDPR / Discord Developer ToS).
-     * Removes: economy, leveling, warnings, moderation logs (as subject), suspicious user data,
+     * This is used to comply with data-deletion requests (GDPR / Discord Developer
+     * ToS).
+     * Removes: economy, leveling, warnings, moderation logs (as subject),
+     * suspicious user data,
      * and pending report messages for that user.
      *
      * @param userId The Discord user ID whose data should be purged
@@ -254,43 +268,53 @@ public class FileStorageManager {
      */
     public int deleteAllUserData(String userId) {
         int categoriesCleared = 0;
-        
+
         // 1. Economy data — remove all guild:userId keys
         int removed = removeKeysEndingWith(userEconomyCache, userId);
-        if (removed > 0) { categoriesCleared++; saveEconomyData(); }
-        
+        if (removed > 0) {
+            categoriesCleared++;
+            saveEconomyData();
+        }
+
         // 2. Leveling data
         removed = removeKeysEndingWith(userLevelsCache, userId);
-        if (removed > 0) { categoriesCleared++; saveLevelsData(); }
-        
+        if (removed > 0) {
+            categoriesCleared++;
+            saveLevelsData();
+        }
+
         // 3. Warnings
         removed = removeKeysEndingWith(userWarningsCache, userId);
-        if (removed > 0) { categoriesCleared++; saveWarningsData(); }
-        
+        if (removed > 0) {
+            categoriesCleared++;
+            saveWarningsData();
+        }
+
         // 4. Moderation logs where this user is the subject
         for (Map.Entry<String, List<Map<String, Object>>> entry : moderationLogsCache.entrySet()) {
             int sizeBefore = entry.getValue().size();
             entry.getValue().removeIf(log -> userId.equals(log.get("userId")) || userId.equals(log.get("targetId")));
-            if (entry.getValue().size() != sizeBefore) categoriesCleared++;
+            if (entry.getValue().size() != sizeBefore)
+                categoriesCleared++;
         }
         saveModerationLogs();
-        
+
         // 5. Suspicious user data
         if (suspiciousUsersCache.remove(userId) != null) {
             categoriesCleared++;
             saveSuspiciousUsers();
         }
-        
+
         // 6. Pending report messages
         if (pendingReportMessagesCache.remove(userId) != null) {
             categoriesCleared++;
             savePendingReportMessages();
         }
-        
+
         logger.info("Deleted all stored data for user {} — {} categories cleared", userId, categoriesCleared);
         return categoriesCleared;
     }
-    
+
     /**
      * Helper: removes all entries from a map whose key ends with ":userId".
      */
@@ -306,7 +330,7 @@ public class FileStorageManager {
         }
         return count;
     }
-    
+
     /**
      * Get all warnings for all users in a guild
      */
@@ -321,7 +345,7 @@ public class FileStorageManager {
         }
         return guildWarnings;
     }
-    
+
     /**
      * Update a user's warnings list (used for expiry management)
      */
@@ -334,17 +358,18 @@ public class FileStorageManager {
         }
         saveWarningsData();
     }
-    
+
     /**
      * Get all guild settings (for expiry checking)
      */
     public Map<String, Object> getAllGuildSettings() {
         return new HashMap<>(guildSettingsCache);
     }
-    
-    public void logModerationAction(String guildId, String targetId, String moderatorId, String action, String reason, String duration) {
+
+    public void logModerationAction(String guildId, String targetId, String moderatorId, String action, String reason,
+            String duration) {
         List<Map<String, Object>> logs = moderationLogsCache.computeIfAbsent(guildId, k -> new ArrayList<>());
-        
+
         Map<String, Object> logEntry = new HashMap<>();
         logEntry.put("id", System.currentTimeMillis());
         logEntry.put("targetId", targetId);
@@ -353,16 +378,16 @@ public class FileStorageManager {
         logEntry.put("reason", reason);
         logEntry.put("duration", duration);
         logEntry.put("timestamp", System.currentTimeMillis());
-        
+
         logs.add(logEntry);
         saveModerationLogs();
     }
-    
+
     // Guild settings methods
     public Map<String, Object> getGuildSettings(String guildId) {
         return new HashMap<>(guildSettingsCache.getOrDefault(guildId, getDefaultGuildSettings()));
     }
-    
+
     public void updateGuildSettings(String guildId, String key, Object value) {
         Map<String, Object> settings = guildSettingsCache.computeIfAbsent(guildId, k -> getDefaultGuildSettings());
         if (value == null) {
@@ -372,7 +397,7 @@ public class FileStorageManager {
         }
         saveGuildSettings();
     }
-    
+
     /**
      * Remove a specific key from guild settings.
      */
@@ -383,10 +408,12 @@ public class FileStorageManager {
             saveGuildSettings();
         }
     }
-    
+
     // Custom guild messages (configurable per-server)
 
-    private String messageKey(String type) { return "customMessages." + type; }
+    private String messageKey(String type) {
+        return "customMessages." + type;
+    }
 
     /**
      * Get custom messages for a given type (e.g. "work", "daily").
@@ -401,7 +428,10 @@ public class FileStorageManager {
         return null;
     }
 
-    /** Set the full custom message list for a type. Passing null or empty resets to defaults. */
+    /**
+     * Set the full custom message list for a type. Passing null or empty resets to
+     * defaults.
+     */
     public void setCustomGuildMessages(String guildId, String type, List<String> messages) {
         if (messages == null || messages.isEmpty()) {
             removeGuildSetting(guildId, messageKey(type));
@@ -426,14 +456,19 @@ public class FileStorageManager {
     @SuppressWarnings("unchecked")
     public boolean removeCustomGuildMessage(String guildId, String type, int index) {
         Map<String, Object> settings = guildSettingsCache.get(guildId);
-        if (settings == null) return false;
+        if (settings == null)
+            return false;
         Object val = settings.get(messageKey(type));
-        if (!(val instanceof List<?> l)) return false;
+        if (!(val instanceof List<?> l))
+            return false;
         List<String> list = new ArrayList<>((List<String>) l);
-        if (index < 0 || index >= list.size()) return false;
+        if (index < 0 || index >= list.size())
+            return false;
         list.remove(index);
-        if (list.isEmpty()) settings.remove(messageKey(type));
-        else settings.put(messageKey(type), list);
+        if (list.isEmpty())
+            settings.remove(messageKey(type));
+        else
+            settings.put(messageKey(type), list);
         saveGuildSettings();
         return true;
     }
@@ -447,7 +482,7 @@ public class FileStorageManager {
         }
         return 15L; // Default value
     }
-    
+
     public long getPointsPerMessage(String guildId) {
         Map<String, Object> settings = getGuildSettings(guildId);
         Object value = settings.get("pointsPerMessage");
@@ -456,7 +491,7 @@ public class FileStorageManager {
         }
         return 5L; // Default value
     }
-    
+
     private Map<String, Object> getDefaultGuildSettings() {
         Map<String, Object> defaultSettings = new HashMap<>();
         defaultSettings.put("prefix", "/");
@@ -469,23 +504,24 @@ public class FileStorageManager {
         defaultSettings.put("logChannelId", null);
         defaultSettings.put("welcomeChannelId", null);
         defaultSettings.put("autoRoleId", null);
-        defaultSettings.put("dmNotifications", true);  // Whether bot sends DMs (except punishment DMs to target)
+        defaultSettings.put("dmNotifications", true); // Whether bot sends DMs (except punishment DMs to target)
         return defaultSettings;
     }
-    
+
     // File I/O methods
     private void loadEconomyData() {
         try {
             File file = new File(DATA_DIR, "economy.json");
             if (file.exists()) {
-                Type type = new TypeToken<Map<String, Map<String, Object>>>(){}.getType();
+                Type type = new TypeToken<Map<String, Map<String, Object>>>() {
+                }.getType();
                 userEconomyCache.putAll(gson.fromJson(new FileReader(file), type));
             }
         } catch (IOException e) {
             logger.warn("Failed to load economy data", e);
         }
     }
-    
+
     private void saveEconomyData() {
         try {
             File file = new File(DATA_DIR, "economy.json");
@@ -496,19 +532,20 @@ public class FileStorageManager {
             logger.error("Failed to save economy data", e);
         }
     }
-    
+
     private void loadLevelsData() {
         try {
             File file = new File(DATA_DIR, "levels.json");
             if (file.exists()) {
-                Type type = new TypeToken<Map<String, Map<String, Object>>>(){}.getType();
+                Type type = new TypeToken<Map<String, Map<String, Object>>>() {
+                }.getType();
                 userLevelsCache.putAll(gson.fromJson(new FileReader(file), type));
             }
         } catch (IOException e) {
             logger.warn("Failed to load levels data", e);
         }
     }
-    
+
     private void saveLevelsData() {
         try {
             File file = new File(DATA_DIR, "levels.json");
@@ -519,19 +556,20 @@ public class FileStorageManager {
             logger.error("Failed to save levels data", e);
         }
     }
-    
+
     private void loadWarningsData() {
         try {
             File file = new File(DATA_DIR, "warnings.json");
             if (file.exists()) {
-                Type type = new TypeToken<Map<String, List<Map<String, Object>>>>(){}.getType();
+                Type type = new TypeToken<Map<String, List<Map<String, Object>>>>() {
+                }.getType();
                 userWarningsCache.putAll(gson.fromJson(new FileReader(file), type));
             }
         } catch (IOException e) {
             logger.warn("Failed to load warnings data", e);
         }
     }
-    
+
     private void saveWarningsData() {
         try {
             File file = new File(DATA_DIR, "warnings.json");
@@ -542,19 +580,20 @@ public class FileStorageManager {
             logger.error("Failed to save warnings data", e);
         }
     }
-    
+
     private void loadGuildSettings() {
         try {
             File file = new File(DATA_DIR, "guilds.json");
             if (file.exists()) {
-                Type type = new TypeToken<Map<String, Map<String, Object>>>(){}.getType();
+                Type type = new TypeToken<Map<String, Map<String, Object>>>() {
+                }.getType();
                 guildSettingsCache.putAll(gson.fromJson(new FileReader(file), type));
             }
         } catch (IOException e) {
             logger.warn("Failed to load guild settings", e);
         }
     }
-    
+
     public void saveGuildSettings() {
         try {
             File file = new File(DATA_DIR, "guilds.json");
@@ -565,7 +604,7 @@ public class FileStorageManager {
             logger.error("Failed to save guild settings", e);
         }
     }
-    
+
     public void saveAllData() {
         saveEconomyData();
         saveLevelsData();
@@ -575,30 +614,31 @@ public class FileStorageManager {
         saveModerationLogs();
         logger.info("All data saved to files");
     }
-    
+
     // Temp Punishments Management
     public void storeTempPunishment(String key, Map<String, Object> punishmentData) {
         tempPunishmentsCache.put(key, punishmentData);
         saveTempPunishments();
     }
-    
+
     public Map<String, Map<String, Object>> getAllTempPunishments() {
         return new HashMap<>(tempPunishmentsCache);
     }
-    
+
     public void removeTempPunishment(String key) {
         tempPunishmentsCache.remove(key);
         saveTempPunishments();
     }
-    
+
     private void loadTempPunishments() {
         tempPunishmentsCache.clear();
         if (!tempPunishmentsFile.exists()) {
             return;
         }
-        
+
         try (FileReader reader = new FileReader(tempPunishmentsFile)) {
-            Type type = new TypeToken<Map<String, Map<String, Object>>>(){}.getType();
+            Type type = new TypeToken<Map<String, Map<String, Object>>>() {
+            }.getType();
             Map<String, Map<String, Object>> data = gson.fromJson(reader, type);
             if (data != null) {
                 tempPunishmentsCache.putAll(data);
@@ -608,7 +648,7 @@ public class FileStorageManager {
             logger.error("Failed to load temp punishments", e);
         }
     }
-    
+
     private void saveTempPunishments() {
         try (FileWriter writer = new FileWriter(tempPunishmentsFile)) {
             gson.toJson(tempPunishmentsCache, writer);
@@ -616,25 +656,26 @@ public class FileStorageManager {
             logger.error("Failed to save temp punishments", e);
         }
     }
-    
+
     // Moderation Logs Management
     public void addModerationLog(String guildId, Map<String, Object> logEntry) {
         moderationLogsCache.computeIfAbsent(guildId, k -> new ArrayList<>()).add(logEntry);
         saveModerationLogs();
     }
-    
+
     public List<Map<String, Object>> getModerationLogs(String guildId) {
         return new ArrayList<>(moderationLogsCache.getOrDefault(guildId, new ArrayList<>()));
     }
-    
+
     private void loadModerationLogs() {
         moderationLogsCache.clear();
         if (!moderationLogsFile.exists()) {
             return;
         }
-        
+
         try (FileReader reader = new FileReader(moderationLogsFile)) {
-            Type type = new TypeToken<Map<String, List<Map<String, Object>>>>(){}.getType();
+            Type type = new TypeToken<Map<String, List<Map<String, Object>>>>() {
+            }.getType();
             Map<String, List<Map<String, Object>>> data = gson.fromJson(reader, type);
             if (data != null) {
                 moderationLogsCache.putAll(data);
@@ -644,7 +685,7 @@ public class FileStorageManager {
             logger.error("Failed to load moderation logs", e);
         }
     }
-    
+
     private void saveModerationLogs() {
         try (FileWriter writer = new FileWriter(moderationLogsFile)) {
             gson.toJson(moderationLogsCache, writer);
@@ -652,13 +693,14 @@ public class FileStorageManager {
             logger.error("Failed to save moderation logs", e);
         }
     }
-    
+
     // Suspicious users methods
     /**
      * Mark a user as suspicious
-     * @param userId The ID of the user to mark
-     * @param markedBy The ID of the user who marked them (usually bot owner)
-     * @param reason The reason they were marked
+     * 
+     * @param userId        The ID of the user to mark
+     * @param markedBy      The ID of the user who marked them (usually bot owner)
+     * @param reason        The reason they were marked
      * @param detectionData Original detection data
      */
     public void markUserAsSuspicious(String userId, String markedBy, String reason, Map<String, Object> detectionData) {
@@ -668,33 +710,33 @@ public class FileStorageManager {
         data.put("markedAt", System.currentTimeMillis());
         data.put("reason", reason);
         data.put("detectionData", detectionData);
-        
+
         suspiciousUsersCache.put(userId, data);
         saveSuspiciousUsers();
         logger.info("Marked user {} as suspicious by {}", userId, markedBy);
     }
-    
+
     /**
      * Check if a user is marked as suspicious
      */
     public boolean isUserSuspicious(String userId) {
         return suspiciousUsersCache.containsKey(userId);
     }
-    
+
     /**
      * Get suspicious user data
      */
     public Map<String, Object> getSuspiciousUserData(String userId) {
         return suspiciousUsersCache.get(userId);
     }
-    
+
     /**
      * Get all suspicious users
      */
     public Map<String, Map<String, Object>> getAllSuspiciousUsers() {
         return new HashMap<>(suspiciousUsersCache);
     }
-    
+
     /**
      * Remove a user from the suspicious list
      */
@@ -703,7 +745,7 @@ public class FileStorageManager {
         saveSuspiciousUsers();
         logger.info("Removed user {} from suspicious list", userId);
     }
-    
+
     /**
      * Clear all users from the suspicious list
      */
@@ -713,7 +755,7 @@ public class FileStorageManager {
         saveSuspiciousUsers();
         logger.info("Cleared all {} suspicious users from list", count);
     }
-    
+
     /**
      * Validate a suspicious user report (marks as verified by bot owner)
      */
@@ -727,7 +769,7 @@ public class FileStorageManager {
             logger.info("Validated suspicious user {} by {}", userId, validatedBy);
         }
     }
-    
+
     /**
      * Add a note to a suspicious user report
      */
@@ -741,29 +783,29 @@ public class FileStorageManager {
             data.put("reason", "Added via note");
             suspiciousUsersCache.put(userId, data);
         }
-        
+
         // Add note to notes list
         List<Map<String, Object>> notes = (List<Map<String, Object>>) data.get("notes");
         if (notes == null) {
             notes = new java.util.ArrayList<>();
             data.put("notes", notes);
         }
-        
+
         Map<String, Object> noteData = new HashMap<>();
         noteData.put("text", note);
         noteData.put("addedBy", addedBy);
         noteData.put("addedAt", System.currentTimeMillis());
         notes.add(noteData);
-        
+
         // Update suggested action if provided
         if (suggestedAction != null && !suggestedAction.trim().isEmpty()) {
             data.put("suggestedAction", suggestedAction);
         }
-        
+
         saveSuspiciousUsers();
         logger.info("Added note to suspicious user {} by {}", userId, addedBy);
     }
-    
+
     /**
      * Remove a user from the suspicious users list
      */
@@ -774,7 +816,7 @@ public class FileStorageManager {
             logger.info("Removed suspicious user {}", userId);
         }
     }
-    
+
     /**
      * Check if a suspicious user has been validated
      */
@@ -786,22 +828,23 @@ public class FileStorageManager {
         }
         return false;
     }
-    
+
     /**
      * Get count of suspicious users
      */
     public int getSuspiciousUserCount() {
         return suspiciousUsersCache.size();
     }
-    
+
     private void loadSuspiciousUsers() {
         suspiciousUsersCache.clear();
         if (!suspiciousUsersFile.exists()) {
             return;
         }
-        
+
         try (FileReader reader = new FileReader(suspiciousUsersFile)) {
-            Type type = new TypeToken<Map<String, Map<String, Object>>>(){}.getType();
+            Type type = new TypeToken<Map<String, Map<String, Object>>>() {
+            }.getType();
             Map<String, Map<String, Object>> data = gson.fromJson(reader, type);
             if (data != null) {
                 suspiciousUsersCache.putAll(data);
@@ -811,7 +854,7 @@ public class FileStorageManager {
             logger.error("Failed to load suspicious users", e);
         }
     }
-    
+
     private void saveSuspiciousUsers() {
         try (FileWriter writer = new FileWriter(suspiciousUsersFile)) {
             gson.toJson(suspiciousUsersCache, writer);
@@ -819,13 +862,15 @@ public class FileStorageManager {
             logger.error("Failed to save suspicious users", e);
         }
     }
-    
+
     // ==================== Pending Report Messages ====================
-    // Used to track which bot owner DM messages need updating when one owner validates/invalidates
-    
+    // Used to track which bot owner DM messages need updating when one owner
+    // validates/invalidates
+
     /**
      * Store message IDs for a suspicious user report sent to bot owners
-     * @param userId The suspicious user's ID
+     * 
+     * @param userId          The suspicious user's ID
      * @param ownerMessageIds Map of ownerId -> messageId
      */
     public void storePendingReportMessages(String userId, Map<String, String> ownerMessageIds) {
@@ -833,18 +878,20 @@ public class FileStorageManager {
         savePendingReportMessages();
         logger.debug("Stored {} pending report message IDs for user {}", ownerMessageIds.size(), userId);
     }
-    
+
     /**
      * Get all pending report message IDs for a suspicious user
+     * 
      * @param userId The suspicious user's ID
      * @return Map of ownerId -> messageId, or empty map if not found
      */
     public Map<String, String> getPendingReportMessages(String userId) {
         return pendingReportMessagesCache.getOrDefault(userId, new ConcurrentHashMap<>());
     }
-    
+
     /**
      * Remove pending report messages for a user (after validation/invalidation)
+     * 
      * @param userId The suspicious user's ID
      */
     public void removePendingReportMessages(String userId) {
@@ -852,15 +899,16 @@ public class FileStorageManager {
         savePendingReportMessages();
         logger.debug("Removed pending report messages for user {}", userId);
     }
-    
+
     private void loadPendingReportMessages() {
         pendingReportMessagesCache.clear();
         if (!pendingReportMessagesFile.exists()) {
             return;
         }
-        
+
         try (FileReader reader = new FileReader(pendingReportMessagesFile)) {
-            Type type = new TypeToken<Map<String, Map<String, String>>>(){}.getType();
+            Type type = new TypeToken<Map<String, Map<String, String>>>() {
+            }.getType();
             Map<String, Map<String, String>> data = gson.fromJson(reader, type);
             if (data != null) {
                 for (Map.Entry<String, Map<String, String>> entry : data.entrySet()) {
@@ -872,7 +920,7 @@ public class FileStorageManager {
             logger.error("Failed to load pending report messages", e);
         }
     }
-    
+
     private void savePendingReportMessages() {
         try (FileWriter writer = new FileWriter(pendingReportMessagesFile)) {
             gson.toJson(pendingReportMessagesCache, writer);
@@ -880,37 +928,37 @@ public class FileStorageManager {
             logger.error("Failed to save pending report messages", e);
         }
     }
-    
+
     // Statistics and utility methods
     public int getUserDataCount(String guildId) {
         int count = 0;
-        
+
         // Count economy data
         for (String key : userEconomyCache.keySet()) {
             if (key.startsWith(guildId + ":")) {
                 count++;
             }
         }
-        
+
         // Count level data
         for (String key : userLevelsCache.keySet()) {
             if (key.startsWith(guildId + ":")) {
                 count++;
             }
         }
-        
+
         // Count warning data
         for (String key : userWarningsCache.keySet()) {
             if (key.startsWith(guildId + ":")) {
                 count++;
             }
         }
-        
+
         return count;
     }
-    
+
     // Prefix command settings methods
-    
+
     /**
      * Get all active command prefixes for a guild.
      * Returns a list; the first element is the "primary" prefix shown in help text.
@@ -951,7 +999,8 @@ public class FileStorageManager {
      */
     public boolean addPrefix(String guildId, String prefix) {
         List<String> prefixes = getPrefixes(guildId);
-        if (prefixes.contains(prefix)) return false;
+        if (prefixes.contains(prefix))
+            return false;
         prefixes.add(prefix);
         updateGuildSettings(guildId, "commandPrefixes", prefixes);
         updateGuildSettings(guildId, "commandPrefix", prefixes.get(0));
@@ -960,12 +1009,15 @@ public class FileStorageManager {
 
     /**
      * Remove a prefix from the guild's active prefix list.
-     * If removing the last prefix, the list becomes empty (caller should disable prefix commands).
+     * If removing the last prefix, the list becomes empty (caller should disable
+     * prefix commands).
+     * 
      * @return false if the prefix wasn't present
      */
     public boolean removePrefix(String guildId, String prefix) {
         List<String> prefixes = getPrefixes(guildId);
-        if (!prefixes.contains(prefix)) return false;
+        if (!prefixes.contains(prefix))
+            return false;
         prefixes.remove(prefix);
         updateGuildSettings(guildId, "commandPrefixes", prefixes);
         if (!prefixes.isEmpty()) {
@@ -973,7 +1025,7 @@ public class FileStorageManager {
         }
         return true;
     }
-    
+
     /**
      * Check if prefix commands are globally enabled for a guild
      */
@@ -983,14 +1035,14 @@ public class FileStorageManager {
         // Default to true if not set
         return enabled == null || Boolean.TRUE.equals(enabled);
     }
-    
+
     /**
      * Set whether prefix commands are globally enabled for a guild
      */
     public void setPrefixCommandsEnabled(String guildId, boolean enabled) {
         updateGuildSettings(guildId, "prefixCommandsEnabled", enabled);
     }
-    
+
     /**
      * Get the set of disabled prefix commands for a guild
      */
@@ -1003,7 +1055,7 @@ public class FileStorageManager {
         }
         return new HashSet<>();
     }
-    
+
     /**
      * Enable a specific prefix command for a guild
      */
@@ -1012,7 +1064,7 @@ public class FileStorageManager {
         disabled.remove(command.toLowerCase());
         updateGuildSettings(guildId, "disabledPrefixCommands", new ArrayList<>(disabled));
     }
-    
+
     /**
      * Disable a specific prefix command for a guild
      */
@@ -1021,7 +1073,7 @@ public class FileStorageManager {
         disabled.add(command.toLowerCase());
         updateGuildSettings(guildId, "disabledPrefixCommands", new ArrayList<>(disabled));
     }
-    
+
     /**
      * Check if a specific prefix command is enabled for a guild
      */
@@ -1034,7 +1086,7 @@ public class FileStorageManager {
         Set<String> disabled = getDisabledPrefixCommands(guildId);
         return !disabled.contains(command.toLowerCase());
     }
-    
+
     /**
      * Enable all prefix commands for a guild
      */
@@ -1042,7 +1094,7 @@ public class FileStorageManager {
         setPrefixCommandsEnabled(guildId, true);
         updateGuildSettings(guildId, "disabledPrefixCommands", new ArrayList<>());
     }
-    
+
     /**
      * Disable all prefix commands for a guild
      */
@@ -1055,9 +1107,11 @@ public class FileStorageManager {
     private void loadUserPlaylists() {
         try {
             if (userPlaylistsFile.exists()) {
-                Type type = new TypeToken<Map<String, List<UserPlaylist>>>(){}.getType();
+                Type type = new TypeToken<Map<String, List<UserPlaylist>>>() {
+                }.getType();
                 Map<String, List<UserPlaylist>> loaded = gson.fromJson(new FileReader(userPlaylistsFile), type);
-                if (loaded != null) userPlaylistsCache.putAll(loaded);
+                if (loaded != null)
+                    userPlaylistsCache.putAll(loaded);
             }
         } catch (IOException e) {
             logger.warn("Failed to load user playlists", e);
@@ -1080,14 +1134,15 @@ public class FileStorageManager {
     /** Get a specific playlist by name (case-insensitive), or null. */
     public UserPlaylist getUserPlaylist(String userId, String name) {
         return userPlaylistsCache.getOrDefault(userId, new ArrayList<>()).stream()
-            .filter(p -> p.name.equalsIgnoreCase(name))
-            .findFirst().orElse(null);
+                .filter(p -> p.name.equalsIgnoreCase(name))
+                .findFirst().orElse(null);
     }
 
     /** Create a new playlist. Returns false if name already exists. */
     public boolean createUserPlaylist(String userId, String name, String description) {
         List<UserPlaylist> list = userPlaylistsCache.computeIfAbsent(userId, k -> new ArrayList<>());
-        if (list.stream().anyMatch(p -> p.name.equalsIgnoreCase(name))) return false;
+        if (list.stream().anyMatch(p -> p.name.equalsIgnoreCase(name)))
+            return false;
         list.add(new UserPlaylist(name, description));
         saveUserPlaylists();
         return true;
@@ -1096,25 +1151,32 @@ public class FileStorageManager {
     /** Delete a playlist by name. Returns false if not found. */
     public boolean deleteUserPlaylist(String userId, String name) {
         List<UserPlaylist> list = userPlaylistsCache.get(userId);
-        if (list == null) return false;
+        if (list == null)
+            return false;
         boolean removed = list.removeIf(p -> p.name.equalsIgnoreCase(name));
-        if (removed) saveUserPlaylists();
+        if (removed)
+            saveUserPlaylists();
         return removed;
     }
 
     /** Add a track to a playlist. Returns false if playlist not found. */
     public boolean addTrackToPlaylist(String userId, String playlistName, PlaylistEntry entry) {
         UserPlaylist pl = getUserPlaylist(userId, playlistName);
-        if (pl == null) return false;
+        if (pl == null)
+            return false;
         pl.entries.add(entry);
         saveUserPlaylists();
         return true;
     }
 
-    /** Remove a track by 0-based index. Returns false if index out of range or playlist not found. */
+    /**
+     * Remove a track by 0-based index. Returns false if index out of range or
+     * playlist not found.
+     */
     public boolean removeTrackFromPlaylist(String userId, String playlistName, int index) {
         UserPlaylist pl = getUserPlaylist(userId, playlistName);
-        if (pl == null || index < 0 || index >= pl.entries.size()) return false;
+        if (pl == null || index < 0 || index >= pl.entries.size())
+            return false;
         pl.entries.remove(index);
         saveUserPlaylists();
         return true;
@@ -1123,20 +1185,27 @@ public class FileStorageManager {
     /** Rename a playlist. Returns false if not found or newName already taken. */
     public boolean renameUserPlaylist(String userId, String oldName, String newName) {
         List<UserPlaylist> list = userPlaylistsCache.get(userId);
-        if (list == null) return false;
+        if (list == null)
+            return false;
         UserPlaylist pl = list.stream().filter(p -> p.name.equalsIgnoreCase(oldName)).findFirst().orElse(null);
-        if (pl == null) return false;
-        if (list.stream().anyMatch(p -> p.name.equalsIgnoreCase(newName) && !p.name.equalsIgnoreCase(oldName))) return false;
+        if (pl == null)
+            return false;
+        if (list.stream().anyMatch(p -> p.name.equalsIgnoreCase(newName) && !p.name.equalsIgnoreCase(oldName)))
+            return false;
         pl.name = newName;
         saveUserPlaylists();
         return true;
     }
 
-    /** Move a track from one 0-based index to another. Returns false on invalid indices or playlist not found. */
+    /**
+     * Move a track from one 0-based index to another. Returns false on invalid
+     * indices or playlist not found.
+     */
     public boolean reorderTrackInPlaylist(String userId, String playlistName, int fromIdx, int toIdx) {
         UserPlaylist pl = getUserPlaylist(userId, playlistName);
         if (pl == null || fromIdx < 0 || fromIdx >= pl.entries.size()
-                || toIdx < 0 || toIdx >= pl.entries.size()) return false;
+                || toIdx < 0 || toIdx >= pl.entries.size())
+            return false;
         PlaylistEntry entry = pl.entries.remove(fromIdx);
         pl.entries.add(toIdx, entry);
         saveUserPlaylists();

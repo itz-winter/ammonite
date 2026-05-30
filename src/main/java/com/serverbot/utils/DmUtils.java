@@ -14,19 +14,22 @@ import java.util.function.Consumer;
  * Utility for sending DMs that respects the per-guild "dmNotifications" toggle.
  * <p>
  * Usage:
+ * 
  * <pre>
- *   // Normal DM (respects guild toggle):
- *   DmUtils.sendDm(guild, user, embed);
+ * // Normal DM (respects guild toggle):
+ * DmUtils.sendDm(guild, user, embed);
  *
- *   // Forced DM (always sends — use ONLY for punishment notifications to the target):
- *   DmUtils.sendForcedDm(user, embed);
+ * // Forced DM (always sends — use ONLY for punishment notifications to the
+ * // target):
+ * DmUtils.sendForcedDm(user, embed);
  * </pre>
  */
 public final class DmUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(DmUtils.class);
 
-    private DmUtils() {} // utility class
+    private DmUtils() {
+    } // utility class
 
     /**
      * Check whether DM notifications are enabled for a guild.
@@ -54,25 +57,30 @@ public final class DmUtils {
     }
 
     /**
-     * Send a DM to a user with success/failure callbacks, respecting the guild toggle.
+     * Send a DM to a user with success/failure callbacks, respecting the guild
+     * toggle.
      */
     public static void sendDm(Guild guild, User user, MessageEmbed embed,
-                               Consumer<Void> onSuccess, Consumer<Throwable> onFailure) {
+            Consumer<Void> onSuccess, Consumer<Throwable> onFailure) {
         if (guild != null && !areDmsEnabled(guild)) {
             logger.debug("DM notifications disabled for guild {}, skipping DM to {}", guild.getId(), user.getId());
             return;
         }
         user.openPrivateChannel().queue(dm -> {
             dm.sendMessageEmbeds(embed).queue(
-                    msg -> { if (onSuccess != null) onSuccess.accept(null); },
+                    msg -> {
+                        if (onSuccess != null)
+                            onSuccess.accept(null);
+                    },
                     err -> {
                         logger.debug("Failed to DM user {}: {}", user.getId(), err.getMessage());
-                        if (onFailure != null) onFailure.accept(err);
-                    }
-            );
+                        if (onFailure != null)
+                            onFailure.accept(err);
+                    });
         }, err -> {
             logger.debug("Failed to open DM channel for user {}: {}", user.getId(), err.getMessage());
-            if (onFailure != null) onFailure.accept(err);
+            if (onFailure != null)
+                onFailure.accept(err);
         });
     }
 
@@ -88,18 +96,22 @@ public final class DmUtils {
      * Send a forced DM with callbacks.
      */
     public static void sendForcedDm(User user, MessageEmbed embed,
-                                     Consumer<Void> onSuccess, Consumer<Throwable> onFailure) {
+            Consumer<Void> onSuccess, Consumer<Throwable> onFailure) {
         user.openPrivateChannel().queue(dm -> {
             dm.sendMessageEmbeds(embed).queue(
-                    msg -> { if (onSuccess != null) onSuccess.accept(null); },
+                    msg -> {
+                        if (onSuccess != null)
+                            onSuccess.accept(null);
+                    },
                     err -> {
                         logger.debug("Failed to DM user {}: {}", user.getId(), err.getMessage());
-                        if (onFailure != null) onFailure.accept(err);
-                    }
-            );
+                        if (onFailure != null)
+                            onFailure.accept(err);
+                    });
         }, err -> {
             logger.debug("Failed to open DM channel for user {}: {}", user.getId(), err.getMessage());
-            if (onFailure != null) onFailure.accept(err);
+            if (onFailure != null)
+                onFailure.accept(err);
         });
     }
 }

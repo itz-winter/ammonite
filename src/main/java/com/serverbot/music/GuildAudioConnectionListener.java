@@ -10,13 +10,17 @@ import org.slf4j.LoggerFactory;
  * Monitors the voice connection status for a single guild and cleans up
  * music state when the bot is permanently disconnected.
  *
- * JDA's {@link ConnectionStatus} has a {@link ConnectionStatus#shouldReconnect()} method:
- * - true  → JDA will auto-reconnect (transient error, region change, session resume, etc.)
- *            — no cleanup needed; just let JDA handle it
- * - false → permanent disconnect (kicked, channel deleted, not-connected, shutdown)
- *            — clean up our music state
+ * JDA's {@link ConnectionStatus} has a
+ * {@link ConnectionStatus#shouldReconnect()} method:
+ * - true → JDA will auto-reconnect (transient error, region change, session
+ * resume, etc.)
+ * — no cleanup needed; just let JDA handle it
+ * - false → permanent disconnect (kicked, channel deleted, not-connected,
+ * shutdown)
+ * — clean up our music state
  *
- * This is the correct place to handle disconnect cleanup because it gets the exact
+ * This is the correct place to handle disconnect cleanup because it gets the
+ * exact
  * reason from JDA's internal voice WebSocket, rather than inferring it from the
  * GuildVoiceUpdateEvent stream (which fires for every reconnect attempt and is
  * ambiguous during auto-reconnect sequences).

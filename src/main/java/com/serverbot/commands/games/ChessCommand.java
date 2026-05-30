@@ -29,33 +29,31 @@ import java.util.List;
 public class ChessCommand extends ListenerAdapter implements SlashCommand {
 
     private static final Map<String, ChessGame> activeGames = new ConcurrentHashMap<>();
-    
+
     // Chess piece Unicode symbols
     private static final String[][] INITIAL_BOARD = {
-        {"♜", "♞", "♝", "♛", "♚", "♝", "♞", "♜"},
-        {"♟", "♟", "♟", "♟", "♟", "♟", "♟", "♟"},
-        {"⬜", "⬛", "⬜", "⬛", "⬜", "⬛", "⬜", "⬛"},
-        {"⬛", "⬜", "⬛", "⬜", "⬛", "⬜", "⬛", "⬜"},
-        {"⬜", "⬛", "⬜", "⬛", "⬜", "⬛", "⬜", "⬛"},
-        {"⬛", "⬜", "⬛", "⬜", "⬛", "⬜", "⬛", "⬜"},
-        {"♙", "♙", "♙", "♙", "♙", "♙", "♙", "♙"},
-        {"♖", "♘", "♗", "♕", "♔", "♗", "♘", "♖"}
+            { "♜", "♞", "♝", "♛", "♚", "♝", "♞", "♜" },
+            { "♟", "♟", "♟", "♟", "♟", "♟", "♟", "♟" },
+            { "⬜", "⬛", "⬜", "⬛", "⬜", "⬛", "⬜", "⬛" },
+            { "⬛", "⬜", "⬛", "⬜", "⬛", "⬜", "⬛", "⬜" },
+            { "⬜", "⬛", "⬜", "⬛", "⬜", "⬛", "⬜", "⬛" },
+            { "⬛", "⬜", "⬛", "⬜", "⬛", "⬜", "⬛", "⬜" },
+            { "♙", "♙", "♙", "♙", "♙", "♙", "♙", "♙" },
+            { "♖", "♘", "♗", "♕", "♔", "♗", "♘", "♖" }
     };
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         Member member = event.getMember();
         if (!PermissionManager.hasPermission(member, "chess.use")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", "You don't have permission to play chess!"
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions", "You don't have permission to play chess!")).setEphemeral(true).queue();
             return;
         }
 
@@ -71,15 +69,15 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
 
         if (!vsBot && opponent.getId().equals(player1.getId())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Opponent", "You can't play chess against yourself!"
-            )).setEphemeral(true).queue();
+                    "Invalid Opponent", "You can't play chess against yourself!")).setEphemeral(true).queue();
             return;
         }
 
         if (!vsBot && opponent.isBot()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Opponent", "You can't play chess against other bots! Use `/chess` with no opponent to play against me."
-            )).setEphemeral(true).queue();
+                    "Invalid Opponent",
+                    "You can't play chess against other bots! Use `/chess` with no opponent to play against me."))
+                    .setEphemeral(true).queue();
             return;
         }
 
@@ -87,8 +85,8 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
             Member opponentMember = event.getGuild().getMember(opponent);
             if (opponentMember == null || !PermissionManager.hasPermission(opponentMember, "chess.use")) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Opponent", "Your opponent doesn't have permission to play chess!"
-                )).setEphemeral(true).queue();
+                        "Invalid Opponent", "Your opponent doesn't have permission to play chess!")).setEphemeral(true)
+                        .queue();
                 return;
             }
         }
@@ -96,12 +94,11 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
         // Check if either player is already in a game
         String gameId1 = "chess_" + player1.getId();
         String gameId2 = vsBot ? null : "chess_" + opponent.getId();
-        
+
         if (activeGames.containsKey(gameId1) || (!vsBot && activeGames.containsKey(gameId2))) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Game in Progress", 
-                "One of the players is already in a chess game!"
-            )).setEphemeral(true).queue();
+                    "Game in Progress",
+                    "One of the players is already in a chess game!")).setEphemeral(true).queue();
             return;
         }
 
@@ -114,14 +111,13 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
 
         // Create initial game embed
         EmbedBuilder embed = createGameEmbed(game, player1, opponent);
-        
+
         event.replyEmbeds(embed.build())
-             .addComponents(ActionRow.of(
-                 Button.primary("chess_move", "Make Move"),
-                 Button.secondary("chess_resign", "Resign"),
-                 Button.danger("chess_draw", "Offer Draw")
-             ))
-             .queue();
+                .addComponents(ActionRow.of(
+                        Button.primary("chess_move", "Make Move"),
+                        Button.secondary("chess_resign", "Resign"),
+                        Button.danger("chess_draw", "Offer Draw")))
+                .queue();
 
         // Schedule game cleanup after 30 minutes
         scheduleGameCleanup(gameId1, vsBot ? null : gameId2);
@@ -139,8 +135,7 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
 
         if (game == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Game Not Found", "Your chess game has expired or doesn't exist."
-            )).setEphemeral(true).queue();
+                    "Game Not Found", "Your chess game has expired or doesn't exist.")).setEphemeral(true).queue();
             return;
         }
 
@@ -148,14 +143,12 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
         if (game.vsBot) {
             if (!userId.equals(game.whitePlayerId)) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Not Your Game", "This isn't your chess game!"
-                )).setEphemeral(true).queue();
+                        "Not Your Game", "This isn't your chess game!")).setEphemeral(true).queue();
                 return;
             }
         } else if (!game.isPlayerTurn(userId)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Not Your Turn", "Please wait for your opponent to make their move!"
-            )).setEphemeral(true).queue();
+                    "Not Your Turn", "Please wait for your opponent to make their move!")).setEphemeral(true).queue();
             return;
         }
 
@@ -170,11 +163,10 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
         // Make the player's move (simplified random simulation)
         Random random = new Random();
         boolean validMove = makeRandomMove(game, random, game.isWhiteTurn);
-        
+
         if (!validMove) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "No Valid Moves", "Unable to find a valid move. Try again!"
-            )).setEphemeral(true).queue();
+                    "No Valid Moves", "Unable to find a valid move. Try again!")).setEphemeral(true).queue();
             return;
         }
 
@@ -185,68 +177,68 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
             EmbedBuilder embed = createGameEmbed(game, currentPlayer, opponent);
             embed.setDescription("🏁 **Game Over!**\n" + game.getGameResult());
             embed.setColor(Color.GREEN);
-            
+
             event.editMessageEmbeds(embed.build())
-                 .setComponents()
-                 .queue();
-            
+                    .setComponents()
+                    .queue();
+
             activeGames.remove("chess_" + game.whitePlayerId);
             if (!game.vsBot) {
                 activeGames.remove("chess_" + game.blackPlayerId);
             }
             return;
         }
-        
+
         game.switchTurns();
-        
+
         // If playing against the bot, make the bot's move automatically
         if (game.vsBot && !game.isWhiteTurn) {
             boolean botMoved = makeRandomMove(game, random, false);
             if (botMoved) {
                 game.switchTurns();
             }
-            
+
             if (game.isGameOver()) {
                 EmbedBuilder embed = createGameEmbed(game, currentPlayer, opponent);
                 embed.setDescription("🏁 **Game Over!**\n" + game.getGameResult());
                 embed.setColor(Color.GREEN);
-                
+
                 event.editMessageEmbeds(embed.build())
-                     .setComponents()
-                     .queue();
-                
+                        .setComponents()
+                        .queue();
+
                 activeGames.remove("chess_" + game.whitePlayerId);
                 return;
             }
         }
 
         EmbedBuilder embed = createGameEmbed(game, currentPlayer, opponent);
-        embed.setFooter("Turn: " + (game.isWhiteTurn ? "White" : "Black") + 
-                       " | Move " + game.moveCount + " | Game will expire in 30 minutes", null);
-        
+        embed.setFooter("Turn: " + (game.isWhiteTurn ? "White" : "Black") +
+                " | Move " + game.moveCount + " | Game will expire in 30 minutes", null);
+
         event.editMessageEmbeds(embed.build()).queue();
     }
-    
+
     /**
      * Attempt a random valid move for the given side.
-     * White pieces: ♙♖♘♗♕♔  Black pieces: ♟♜♞♝♛♚
+     * White pieces: ♙♖♘♗♕♔ Black pieces: ♟♜♞♝♛♚
      */
     private boolean makeRandomMove(ChessGame game, Random random, boolean isWhite) {
         // Identify which pieces belong to this side
         Set<String> friendlyPieces = isWhite
-            ? Set.of("♙", "♖", "♘", "♗", "♕", "♔")
-            : Set.of("♟", "♜", "♞", "♝", "♛", "♚");
-        
+                ? Set.of("♙", "♖", "♘", "♗", "♕", "♔")
+                : Set.of("♟", "♜", "♞", "♝", "♛", "♚");
+
         // Collect all friendly piece positions
         List<int[]> piecePositions = new ArrayList<>();
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
                 if (friendlyPieces.contains(game.board[r][c])) {
-                    piecePositions.add(new int[]{r, c});
+                    piecePositions.add(new int[] { r, c });
                 }
             }
         }
-        
+
         // Shuffle and try moves
         Collections.shuffle(piecePositions, random);
         for (int[] pos : piecePositions) {
@@ -255,12 +247,13 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
             List<int[]> targets = new ArrayList<>();
             for (int r = 0; r < 8; r++) {
                 for (int c = 0; c < 8; c++) {
-                    if (r == fromRow && c == fromCol) continue;
+                    if (r == fromRow && c == fromCol)
+                        continue;
                     String target = game.board[r][c];
                     // Can move to empty squares or capture enemy pieces
                     if (!friendlyPieces.contains(target)) {
                         if (Math.abs(fromRow - r) <= 2 && Math.abs(fromCol - c) <= 2) {
-                            targets.add(new int[]{r, c});
+                            targets.add(new int[] { r, c });
                         }
                     }
                 }
@@ -281,19 +274,19 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
     private void handleResign(ButtonInteractionEvent event, ChessGame game) {
         String resigningPlayer = event.getUser().getId();
         String winner = resigningPlayer.equals(game.whitePlayerId) ? game.blackPlayerId : game.whitePlayerId;
-        
+
         User winnerUser = event.getJDA().getUserById(winner);
-        
+
         EmbedBuilder embed = new EmbedBuilder()
                 .setTitle("♔ Chess - Game Resigned")
                 .setDescription("🏳️ " + event.getUser().getAsMention() + " resigned!\n" +
-                              "🏆 " + (winnerUser != null ? winnerUser.getAsMention() : "Opponent") + " wins!")
+                        "🏆 " + (winnerUser != null ? winnerUser.getAsMention() : "Opponent") + " wins!")
                 .setColor(Color.RED)
                 .addField("Game Duration", game.getGameDuration(), true);
 
         event.editMessageEmbeds(embed.build())
-             .setComponents() // Remove buttons
-             .queue();
+                .setComponents() // Remove buttons
+                .queue();
 
         // Clean up game
         activeGames.remove("chess_" + game.whitePlayerId);
@@ -305,16 +298,17 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
     private void handleDrawOffer(ButtonInteractionEvent event, ChessGame game) {
         // In a full implementation, this would offer a draw to the opponent
         // For bot games, auto-accept. For PvP, accept immediately (simplified).
-        
+
         EmbedBuilder embed = new EmbedBuilder()
                 .setTitle("♔ Chess - Draw Agreed")
-                .setDescription("🤝 " + (game.vsBot ? "You and the bot agreed to a draw!" : "Both players agreed to a draw!"))
+                .setDescription(
+                        "🤝 " + (game.vsBot ? "You and the bot agreed to a draw!" : "Both players agreed to a draw!"))
                 .setColor(Color.YELLOW)
                 .addField("Game Duration", game.getGameDuration(), true);
 
         event.editMessageEmbeds(embed.build())
-             .setComponents() // Remove buttons
-             .queue();
+                .setComponents() // Remove buttons
+                .queue();
 
         // Clean up game
         activeGames.remove("chess_" + game.whitePlayerId);
@@ -328,13 +322,14 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
                 .setTitle("♔ Chess Game" + (game.vsBot ? " (vs Bot)" : ""))
                 .setColor(Color.BLUE)
                 .addField("White Player", player1 != null ? player1.getAsMention() : "Unknown", true)
-                .addField("Black Player", game.vsBot ? "🤖 Bot" : (player2 != null ? player2.getAsMention() : "Unknown"), true)
+                .addField("Black Player",
+                        game.vsBot ? "🤖 Bot" : (player2 != null ? player2.getAsMention() : "Unknown"), true)
                 .addField("Turn", game.isWhiteTurn ? "White" : "Black", true);
 
         // Add the chess board
         StringBuilder boardStr = new StringBuilder();
         boardStr.append("```\n  A B C D E F G H\n");
-        
+
         for (int row = 0; row < 8; row++) {
             boardStr.append(8 - row).append(" ");
             for (int col = 0; col < 8; col++) {
@@ -342,10 +337,10 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
             }
             boardStr.append(8 - row).append("\n");
         }
-        
+
         boardStr.append("  A B C D E F G H\n```");
         embed.addField("Board", boardStr.toString(), false);
-        
+
         embed.addField("Moves Made", String.valueOf(game.moveCount), true);
         embed.setFooter("Use buttons to play | Game will expire in 30 minutes", null);
 
@@ -354,17 +349,18 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
 
     private void scheduleGameCleanup(String gameId1, String gameId2) {
         CompletableFuture.delayedExecutor(30, TimeUnit.MINUTES)
-            .execute(() -> {
-                activeGames.remove(gameId1);
-                if (gameId2 != null) {
-                    activeGames.remove(gameId2);
-                }
-            });
+                .execute(() -> {
+                    activeGames.remove(gameId1);
+                    if (gameId2 != null) {
+                        activeGames.remove(gameId2);
+                    }
+                });
     }
 
     public static CommandData getCommandData() {
         return Commands.slash("chess", "Start a chess game against another player or the bot")
-                .addOption(OptionType.USER, "opponent", "The player to challenge (leave empty to play against the bot)", false);
+                .addOption(OptionType.USER, "opponent", "The player to challenge (leave empty to play against the bot)",
+                        false);
     }
 
     @Override
@@ -414,8 +410,8 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
         }
 
         boolean isPlayerTurn(String userId) {
-            return (isWhiteTurn && userId.equals(whitePlayerId)) || 
-                   (!isWhiteTurn && userId.equals(blackPlayerId));
+            return (isWhiteTurn && userId.equals(whitePlayerId)) ||
+                    (!isWhiteTurn && userId.equals(blackPlayerId));
         }
 
         String getCurrentPlayerId() {
@@ -434,7 +430,7 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
             // Simplified: game ends after 30 moves or if no pieces can move
             return moveCount >= 30 || hasNoValidMoves();
         }
-        
+
         private boolean hasNoValidMoves() {
             // Simple check - in real chess this would be much more complex
             int pieceCount = 0;

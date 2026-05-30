@@ -5,40 +5,45 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Represents a global chat channel that links text channels across multiple servers.
- * Messages sent in any linked channel are relayed to all other linked channels via webhooks.
+ * Represents a global chat channel that links text channels across multiple
+ * servers.
+ * Messages sent in any linked channel are relayed to all other linked channels
+ * via webhooks.
  */
 public class GlobalChatChannel {
 
-    private String channelId;          // Random unique ID (e.g. "gc-a1b2c3")
+    private String channelId; // Random unique ID (e.g. "gc-a1b2c3")
     private String name;
     private String description;
-    private String visibility;         // "public" or "private"
-    private String key;                // Join key (null if no key required)
+    private String visibility; // "public" or "private"
+    private String key; // Join key (null if no key required)
     private boolean keyRequired;
-    private String ownerId;            // Discord user ID of the creator
-    private Set<String> coOwnerIds;    // Discord user IDs of co-owners
-    private Set<String> moderatorIds;  // Discord user IDs of moderators
-    private List<String> rules;        // Channel rules list
+    private String ownerId; // Discord user ID of the creator
+    private Set<String> coOwnerIds; // Discord user IDs of co-owners
+    private Set<String> moderatorIds; // Discord user IDs of moderators
+    private List<String> rules; // Channel rules list
 
     // guildId -> textChannelId (one linked channel per guild)
     private Map<String, String> linkedChannels;
 
     // Moderation state
-    private Set<String> bannedServers;            // Guild IDs
-    private Map<String, Long> mutedServers;       // Guild ID -> unmute timestamp (epoch millis), 0 = permanent
+    private Set<String> bannedServers; // Guild IDs
+    private Map<String, Long> mutedServers; // Guild ID -> unmute timestamp (epoch millis), 0 = permanent
     private Map<String, List<String>> warnedServers; // Guild ID -> list of warning reasons
-    private Set<String> kickedServers;            // Guild IDs that were kicked (can rejoin)
+    private Set<String> kickedServers; // Guild IDs that were kicked (can rejoin)
 
-    private long createdAt;  // epoch millis
+    private long createdAt; // epoch millis
 
-    // Custom message format: used in webhook display name instead of default "[GC] user • server"
+    // Custom message format: used in webhook display name instead of default "[GC]
+    // user • server"
     // Default when null: prefix = "[GC]", suffix = "• {serverName}"
-    private String messagePrefix;  // e.g. "[Lounge]"
-    private String messageSuffix;  // e.g. "@ {serverName}"
+    private String messagePrefix; // e.g. "[Lounge]"
+    private String messageSuffix; // e.g. "@ {serverName}"
 
-    // Full display name template — overrides prefix+authorName+suffix entirely when non-null.
-    // Supports same placeholders: {user}, {username}, {displayname}, {server}, {pronouns}
+    // Full display name template — overrides prefix+authorName+suffix entirely when
+    // non-null.
+    // Supports same placeholders: {user}, {username}, {displayname}, {server},
+    // {pronouns}
     // e.g. "{user} @ {server}"
     private String nameFormat;
 
@@ -48,7 +53,8 @@ public class GlobalChatChannel {
     // Optional text appended to every relayed message (overridden by nameFormat)
     private String msgSuffix;
 
-    // Whether to relay via webhook (true, default) or as a plain bot message (false)
+    // Whether to relay via webhook (true, default) or as a plain bot message
+    // (false)
     private boolean webhookEnabled = true;
 
     public GlobalChatChannel() {
@@ -64,7 +70,7 @@ public class GlobalChatChannel {
     }
 
     public GlobalChatChannel(String channelId, String name, String description,
-                             String visibility, boolean keyRequired, String key, String ownerId) {
+            String visibility, boolean keyRequired, String key, String ownerId) {
         this();
         this.channelId = channelId;
         this.name = name;
@@ -136,9 +142,11 @@ public class GlobalChatChannel {
     }
 
     public boolean isServerMuted(String guildId) {
-        if (!mutedServers.containsKey(guildId)) return false;
+        if (!mutedServers.containsKey(guildId))
+            return false;
         long unmute = mutedServers.get(guildId);
-        if (unmute == 0) return true; // permanent
+        if (unmute == 0)
+            return true; // permanent
         if (Instant.now().toEpochMilli() >= unmute) {
             mutedServers.remove(guildId); // expired
             return false;
@@ -169,67 +177,179 @@ public class GlobalChatChannel {
 
     // Getters / setters
 
-    public String getChannelId() { return channelId; }
-    public void setChannelId(String channelId) { this.channelId = channelId; }
+    public String getChannelId() {
+        return channelId;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setChannelId(String channelId) {
+        this.channelId = channelId;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getName() {
+        return name;
+    }
 
-    public String getVisibility() { return visibility; }
-    public void setVisibility(String visibility) { this.visibility = visibility; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public String getKey() { return key; }
-    public void setKey(String key) { this.key = key; }
+    public String getDescription() {
+        return description;
+    }
 
-    public boolean isKeyRequired() { return keyRequired; }
-    public void setKeyRequired(boolean keyRequired) { this.keyRequired = keyRequired; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public String getOwnerId() { return ownerId; }
-    public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
+    public String getVisibility() {
+        return visibility;
+    }
 
-    public Set<String> getCoOwnerIds() { return coOwnerIds; }
-    public void setCoOwnerIds(Set<String> coOwnerIds) { this.coOwnerIds = coOwnerIds; }
+    public void setVisibility(String visibility) {
+        this.visibility = visibility;
+    }
 
-    public Set<String> getModeratorIds() { return moderatorIds; }
-    public void setModeratorIds(Set<String> moderatorIds) { this.moderatorIds = moderatorIds; }
+    public String getKey() {
+        return key;
+    }
 
-    public List<String> getRules() { return rules; }
-    public void setRules(List<String> rules) { this.rules = rules; }
+    public void setKey(String key) {
+        this.key = key;
+    }
 
-    public Map<String, String> getLinkedChannels() { return linkedChannels; }
-    public void setLinkedChannels(Map<String, String> linkedChannels) { this.linkedChannels = linkedChannels; }
+    public boolean isKeyRequired() {
+        return keyRequired;
+    }
 
-    public Set<String> getBannedServers() { return bannedServers; }
-    public void setBannedServers(Set<String> bannedServers) { this.bannedServers = bannedServers; }
+    public void setKeyRequired(boolean keyRequired) {
+        this.keyRequired = keyRequired;
+    }
 
-    public Map<String, Long> getMutedServers() { return mutedServers; }
-    public void setMutedServers(Map<String, Long> mutedServers) { this.mutedServers = mutedServers; }
+    public String getOwnerId() {
+        return ownerId;
+    }
 
-    public Map<String, List<String>> getWarnedServers() { return warnedServers; }
-    public void setWarnedServers(Map<String, List<String>> warnedServers) { this.warnedServers = warnedServers; }
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
 
-    public Set<String> getKickedServers() { return kickedServers; }
-    public void setKickedServers(Set<String> kickedServers) { this.kickedServers = kickedServers; }
+    public Set<String> getCoOwnerIds() {
+        return coOwnerIds;
+    }
 
-    public long getCreatedAt() { return createdAt; }
-    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
+    public void setCoOwnerIds(Set<String> coOwnerIds) {
+        this.coOwnerIds = coOwnerIds;
+    }
 
-    public String getMessagePrefix() { return messagePrefix; }
-    public void setMessagePrefix(String messagePrefix) { this.messagePrefix = messagePrefix; }
+    public Set<String> getModeratorIds() {
+        return moderatorIds;
+    }
 
-    public String getMessageSuffix() { return messageSuffix; }
-    public void setMessageSuffix(String messageSuffix) { this.messageSuffix = messageSuffix; }
+    public void setModeratorIds(Set<String> moderatorIds) {
+        this.moderatorIds = moderatorIds;
+    }
 
-    public String getNameFormat() { return nameFormat; }
-    public void setNameFormat(String nameFormat) { this.nameFormat = nameFormat; }
-    public String getMsgPrefix() { return msgPrefix; }
-    public void setMsgPrefix(String msgPrefix) { this.msgPrefix = msgPrefix; }
-    public String getMsgSuffix() { return msgSuffix; }
-    public void setMsgSuffix(String msgSuffix) { this.msgSuffix = msgSuffix; }
+    public List<String> getRules() {
+        return rules;
+    }
 
-    public boolean isWebhookEnabled() { return webhookEnabled; }
-    public void setWebhookEnabled(boolean webhookEnabled) { this.webhookEnabled = webhookEnabled; }
+    public void setRules(List<String> rules) {
+        this.rules = rules;
+    }
+
+    public Map<String, String> getLinkedChannels() {
+        return linkedChannels;
+    }
+
+    public void setLinkedChannels(Map<String, String> linkedChannels) {
+        this.linkedChannels = linkedChannels;
+    }
+
+    public Set<String> getBannedServers() {
+        return bannedServers;
+    }
+
+    public void setBannedServers(Set<String> bannedServers) {
+        this.bannedServers = bannedServers;
+    }
+
+    public Map<String, Long> getMutedServers() {
+        return mutedServers;
+    }
+
+    public void setMutedServers(Map<String, Long> mutedServers) {
+        this.mutedServers = mutedServers;
+    }
+
+    public Map<String, List<String>> getWarnedServers() {
+        return warnedServers;
+    }
+
+    public void setWarnedServers(Map<String, List<String>> warnedServers) {
+        this.warnedServers = warnedServers;
+    }
+
+    public Set<String> getKickedServers() {
+        return kickedServers;
+    }
+
+    public void setKickedServers(Set<String> kickedServers) {
+        this.kickedServers = kickedServers;
+    }
+
+    public long getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(long createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getMessagePrefix() {
+        return messagePrefix;
+    }
+
+    public void setMessagePrefix(String messagePrefix) {
+        this.messagePrefix = messagePrefix;
+    }
+
+    public String getMessageSuffix() {
+        return messageSuffix;
+    }
+
+    public void setMessageSuffix(String messageSuffix) {
+        this.messageSuffix = messageSuffix;
+    }
+
+    public String getNameFormat() {
+        return nameFormat;
+    }
+
+    public void setNameFormat(String nameFormat) {
+        this.nameFormat = nameFormat;
+    }
+
+    public String getMsgPrefix() {
+        return msgPrefix;
+    }
+
+    public void setMsgPrefix(String msgPrefix) {
+        this.msgPrefix = msgPrefix;
+    }
+
+    public String getMsgSuffix() {
+        return msgSuffix;
+    }
+
+    public void setMsgSuffix(String msgSuffix) {
+        this.msgSuffix = msgSuffix;
+    }
+
+    public boolean isWebhookEnabled() {
+        return webhookEnabled;
+    }
+
+    public void setWebhookEnabled(boolean webhookEnabled) {
+        this.webhookEnabled = webhookEnabled;
+    }
 }

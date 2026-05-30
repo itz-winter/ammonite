@@ -23,8 +23,7 @@ public class FlipCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
@@ -33,78 +32,75 @@ public class FlipCommand implements SlashCommand {
 
         if (betAmount <= 0) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Bet", "Bet amount must be greater than 0."
-            )).setEphemeral(true).queue();
+                    "Invalid Bet", "Bet amount must be greater than 0.")).setEphemeral(true).queue();
             return;
         }
 
         try {
             String guildId = event.getGuild().getId();
             String userId = event.getUser().getId();
-            
+
             long currentBalance = ServerBot.getStorageManager().getBalance(guildId, userId);
-            
+
             if (currentBalance < betAmount) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Insufficient Funds", 
-                    "You don't have enough points to place this bet.\n" +
-                    "Your balance: " + currentBalance + " points"
-                )).setEphemeral(true).queue();
+                        "Insufficient Funds",
+                        "You don't have enough points to place this bet.\n" +
+                                "Your balance: " + currentBalance + " points"))
+                        .setEphemeral(true).queue();
                 return;
             }
 
             // Flip the coin
             String result = RANDOM.nextBoolean() ? "heads" : "tails";
             boolean won = result.equals(prediction);
-            
+
             String resultEmoji = result.equals("heads") ? "🪙" : "⚪";
             String predictionEmoji = prediction.equals("heads") ? "🪙" : "⚪";
-            
+
             if (won) {
                 long winnings = betAmount; // Net profit is 1x the bet (2x return minus the original bet)
                 ServerBot.getStorageManager().addBalance(guildId, userId, winnings);
                 long newBalance = currentBalance + winnings;
-                
+
                 event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                    "🪙 Coin Flip - YOU WON! 🎉",
-                    "**Your Prediction:** " + predictionEmoji + " " + prediction.toUpperCase() + "\n" +
-                    "**Coin Result:** " + resultEmoji + " " + result.toUpperCase() + "\n" +
-                    "**Bet Amount:** " + betAmount + " points\n" +
-                    "**Winnings:** +" + winnings + " points\n" +
-                    "**New Balance:** " + newBalance + " points"
-                )).queue();
+                        "🪙 Coin Flip - YOU WON! 🎉",
+                        "**Your Prediction:** " + predictionEmoji + " " + prediction.toUpperCase() + "\n" +
+                                "**Coin Result:** " + resultEmoji + " " + result.toUpperCase() + "\n" +
+                                "**Bet Amount:** " + betAmount + " points\n" +
+                                "**Winnings:** +" + winnings + " points\n" +
+                                "**New Balance:** " + newBalance + " points"))
+                        .queue();
             } else {
                 // Subtract the bet amount
                 long newBalance = currentBalance - betAmount;
                 ServerBot.getStorageManager().addBalance(guildId, userId, -betAmount);
-                
+
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "🪙 Coin Flip - You Lost",
-                    "**Your Prediction:** " + predictionEmoji + " " + prediction.toUpperCase() + "\n" +
-                    "**Coin Result:** " + resultEmoji + " " + result.toUpperCase() + "\n" +
-                    "**Lost Amount:** " + betAmount + " points\n" +
-                    "**New Balance:** " + newBalance + " points"
-                )).queue();
+                        "🪙 Coin Flip - You Lost",
+                        "**Your Prediction:** " + predictionEmoji + " " + prediction.toUpperCase() + "\n" +
+                                "**Coin Result:** " + resultEmoji + " " + result.toUpperCase() + "\n" +
+                                "**Lost Amount:** " + betAmount + " points\n" +
+                                "**New Balance:** " + newBalance + " points"))
+                        .queue();
             }
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Coin Flip Failed", 
-                "Failed to process coin flip: " + e.getMessage()
-            )).setEphemeral(true).queue();
+                    "Coin Flip Failed",
+                    "Failed to process coin flip: " + e.getMessage())).setEphemeral(true).queue();
         }
     }
 
     public static CommandData getCommandData() {
         return Commands.slash("flip", "Flip a coin and bet on heads or tails")
                 .addOptions(
-                    new OptionData(OptionType.INTEGER, "amount", "Amount to bet", true)
-                        .setMinValue(1)
-                        .setMaxValue(10000),
-                    new OptionData(OptionType.STRING, "side", "Choose heads or tails", true)
-                        .addChoice("Heads 🪙", "heads")
-                        .addChoice("Tails ⚪", "tails")
-                );
+                        new OptionData(OptionType.INTEGER, "amount", "Amount to bet", true)
+                                .setMinValue(1)
+                                .setMaxValue(10000),
+                        new OptionData(OptionType.STRING, "side", "Choose heads or tails", true)
+                                .addChoice("Heads 🪙", "heads")
+                                .addChoice("Tails ⚪", "tails"));
     }
 
     @Override

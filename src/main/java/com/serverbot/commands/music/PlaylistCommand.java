@@ -35,45 +35,58 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
- * /playlist command — manage and play user-created custom playlists stored in the bot.
+ * /playlist command — manage and play user-created custom playlists stored in
+ * the bot.
  *
  * Subcommands:
- *   create  <name> [description]       — create a new playlist
- *   delete  <name>                     — delete a playlist (with confirmation)
- *   rename  <name> <newname>           — rename a playlist
- *   add     <name> <urls>              — add one or more space-separated URLs to a playlist
- *   remove  <name> <position>          — remove track at 1-based position
- *   reorder <name> <from> <to>         — move a track from one position to another
- *   list                               — list all your playlists
- *   show    <name>                     — show tracks in a playlist
- *   play    <name> [position]          — queue a playlist (optionally start from position)
+ * create <name> [description] — create a new playlist
+ * delete <name> — delete a playlist (with confirmation)
+ * rename <name> <newname> — rename a playlist
+ * add <name> <urls> — add one or more space-separated URLs to a playlist
+ * remove <name> <position> — remove track at 1-based position
+ * reorder <name> <from> <to> — move a track from one position to another
+ * list — list all your playlists
+ * show <name> — show tracks in a playlist
+ * play <name> [position] — queue a playlist (optionally start from position)
  */
 public class PlaylistCommand implements SlashCommand {
 
     @Override
-    public String getName() { return "playlist"; }
+    public String getName() {
+        return "playlist";
+    }
 
     @Override
-    public String getDescription() { return "Create, manage, and play your custom playlists."; }
+    public String getDescription() {
+        return "Create, manage, and play your custom playlists.";
+    }
 
     @Override
-    public CommandCategory getCategory() { return CommandCategory.MUSIC; }
+    public CommandCategory getCategory() {
+        return CommandCategory.MUSIC;
+    }
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         String sub = event.getSubcommandName();
-        if (sub == null) { event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "No subcommand specified.")).setEphemeral(true).queue(); return; }
+        if (sub == null) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "No subcommand specified.")).setEphemeral(true)
+                    .queue();
+            return;
+        }
         switch (sub) {
-            case "create"  -> handleCreate(event);
-            case "delete"  -> handleDelete(event);
-            case "rename"  -> handleRename(event);
-            case "add"     -> handleAdd(event);
-            case "remove"  -> handleRemove(event);
+            case "create" -> handleCreate(event);
+            case "delete" -> handleDelete(event);
+            case "rename" -> handleRename(event);
+            case "add" -> handleAdd(event);
+            case "remove" -> handleRemove(event);
             case "reorder" -> handleReorder(event);
-            case "list"    -> handleList(event);
-            case "show"    -> handleShow(event);
-            case "play"    -> handlePlay(event);
-            default -> event.replyEmbeds(EmbedUtils.createErrorEmbed("Unknown Subcommand", "Unknown subcommand: " + sub)).setEphemeral(true).queue();
+            case "list" -> handleList(event);
+            case "show" -> handleShow(event);
+            case "play" -> handlePlay(event);
+            default ->
+                event.replyEmbeds(EmbedUtils.createErrorEmbed("Unknown Subcommand", "Unknown subcommand: " + sub))
+                        .setEphemeral(true).queue();
         }
     }
 
@@ -84,21 +97,25 @@ public class PlaylistCommand implements SlashCommand {
         String name = event.getOption("name", OptionMapping::getAsString);
         String desc = event.getOption("description", "", OptionMapping::getAsString);
         if (name == null || name.isBlank()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Name", "Please provide a playlist name.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Name", "Please provide a playlist name."))
+                    .setEphemeral(true).queue();
             return;
         }
         if (name.length() > 50) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Name Too Long", "Playlist name must be 50 characters or less.")).setEphemeral(true).queue();
+            event.replyEmbeds(
+                    EmbedUtils.createErrorEmbed("Name Too Long", "Playlist name must be 50 characters or less."))
+                    .setEphemeral(true).queue();
             return;
         }
         boolean created = ServerBot.getStorageManager().createUserPlaylist(userId, name, desc);
         if (!created) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Already Exists", "You already have a playlist named **" + name + "**.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Already Exists",
+                    "You already have a playlist named **" + name + "**.")).setEphemeral(true).queue();
             return;
         }
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Playlist Created",
-            "**" + name + "** has been created.\nUse `/playlist add name:" + name + " urls:<url>` to add tracks."))
-            .setEphemeral(true).queue();
+                "**" + name + "** has been created.\nUse `/playlist add name:" + name + " urls:<url>` to add tracks."))
+                .setEphemeral(true).queue();
     }
 
     // delete
@@ -107,48 +124,51 @@ public class PlaylistCommand implements SlashCommand {
         String userId = event.getUser().getId();
         String name = event.getOption("name", OptionMapping::getAsString);
         if (name == null || name.isBlank()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Name", "Please provide a playlist name.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Name", "Please provide a playlist name."))
+                    .setEphemeral(true).queue();
             return;
         }
         FileStorageManager.UserPlaylist pl = ServerBot.getStorageManager().getUserPlaylist(userId, name);
         if (pl == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Found", "You don't have a playlist named **" + name + "**.")).setEphemeral(true).queue();
+            event.replyEmbeds(
+                    EmbedUtils.createErrorEmbed("Not Found", "You don't have a playlist named **" + name + "**."))
+                    .setEphemeral(true).queue();
             return;
         }
 
         Button confirm = Button.danger("playlist_delete:" + userId + ":" + name,
-            CustomEmojis.TRASH + " Delete");
-        Button cancel  = Button.secondary("playlist_cancel:" + userId, "Cancel");
+                CustomEmojis.TRASH + " Delete");
+        Button cancel = Button.secondary("playlist_cancel:" + userId, "Cancel");
 
         event.replyEmbeds(new EmbedBuilder()
-            .setColor(EmbedUtils.WARNING_COLOR)
-            .setTitle(CustomEmojis.WARN + " Confirm Deletion")
-            .setDescription("Are you sure you want to delete **" + name + "**?\n" +
-                "This will permanently remove all **" + pl.entries.size() + "** track(s).")
-            .build())
-            .setComponents(ActionRow.of(confirm, cancel))
-            .setEphemeral(true).queue();
+                .setColor(EmbedUtils.WARNING_COLOR)
+                .setTitle(CustomEmojis.WARN + " Confirm Deletion")
+                .setDescription("Are you sure you want to delete **" + name + "**?\n" +
+                        "This will permanently remove all **" + pl.entries.size() + "** track(s).")
+                .build())
+                .setComponents(ActionRow.of(confirm, cancel))
+                .setEphemeral(true).queue();
     }
 
     // rename
 
     private void handleRename(SlashCommandInteractionEvent event) {
-        String userId  = event.getUser().getId();
-        String name    = event.getOption("name",    OptionMapping::getAsString);
+        String userId = event.getUser().getId();
+        String name = event.getOption("name", OptionMapping::getAsString);
         String newName = event.getOption("newname", OptionMapping::getAsString);
         if (name == null || name.isBlank() || newName == null || newName.isBlank()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Options",
-                "Please provide both the current name and a new name.")).setEphemeral(true).queue();
+                    "Please provide both the current name and a new name.")).setEphemeral(true).queue();
             return;
         }
         if (newName.length() > 50) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Name Too Long",
-                "New playlist name must be 50 characters or less.")).setEphemeral(true).queue();
+                    "New playlist name must be 50 characters or less.")).setEphemeral(true).queue();
             return;
         }
         if (name.equalsIgnoreCase(newName)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Same Name",
-                "The new name is the same as the current name.")).setEphemeral(true).queue();
+                    "The new name is the same as the current name.")).setEphemeral(true).queue();
             return;
         }
         boolean renamed = ServerBot.getStorageManager().renameUserPlaylist(userId, name, newName);
@@ -156,43 +176,43 @@ public class PlaylistCommand implements SlashCommand {
             FileStorageManager.UserPlaylist existing = ServerBot.getStorageManager().getUserPlaylist(userId, name);
             if (existing == null) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Found",
-                    "You don't have a playlist named **" + name + "**.")).setEphemeral(true).queue();
+                        "You don't have a playlist named **" + name + "**.")).setEphemeral(true).queue();
             } else {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed("Name Taken",
-                    "You already have a playlist named **" + newName + "**.")).setEphemeral(true).queue();
+                        "You already have a playlist named **" + newName + "**.")).setEphemeral(true).queue();
             }
             return;
         }
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Playlist Renamed",
-            "**" + name + "** has been renamed to **" + newName + "**.")).setEphemeral(true).queue();
+                "**" + name + "** has been renamed to **" + newName + "**.")).setEphemeral(true).queue();
     }
 
     // add
 
     private void handleAdd(SlashCommandInteractionEvent event) {
-        String userId   = event.getUser().getId();
-        String name     = event.getOption("name", OptionMapping::getAsString);
+        String userId = event.getUser().getId();
+        String name = event.getOption("name", OptionMapping::getAsString);
         String urlInput = event.getOption("urls", OptionMapping::getAsString);
 
         if (name == null || urlInput == null || name.isBlank() || urlInput.isBlank()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Options",
-                "Please provide both a playlist name and at least one URL.")).setEphemeral(true).queue();
+                    "Please provide both a playlist name and at least one URL.")).setEphemeral(true).queue();
             return;
         }
         FileStorageManager.UserPlaylist pl = ServerBot.getStorageManager().getUserPlaylist(userId, name);
         if (pl == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Found",
-                "You don't have a playlist named **" + name + "**.")).setEphemeral(true).queue();
+                    "You don't have a playlist named **" + name + "**.")).setEphemeral(true).queue();
             return;
         }
 
         List<String> urlList = Arrays.stream(urlInput.trim().split("\\s+"))
-            .filter(u -> !u.isBlank())
-            .collect(Collectors.toList());
+                .filter(u -> !u.isBlank())
+                .collect(Collectors.toList());
 
         if (urlList.isEmpty()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("No URLs",
-                "Please provide at least one valid URL.")).setEphemeral(true).queue();
+                    "Please provide at least one valid URL.")).setEphemeral(true).queue();
             return;
         }
 
@@ -200,61 +220,77 @@ public class PlaylistCommand implements SlashCommand {
 
         int total = urlList.size();
         AtomicInteger processed = new AtomicInteger(0);
-        List<String> added  = Collections.synchronizedList(new ArrayList<>());
+        List<String> added = Collections.synchronizedList(new ArrayList<>());
         List<String> failed = Collections.synchronizedList(new ArrayList<>());
 
         for (String url : urlList) {
             MusicManager.getInstance().loadAndPlay(url, event.getGuild(),
-                new MusicManager.MusicLoadCallback() {
+                    new MusicManager.MusicLoadCallback() {
 
-                    private void finish() {
-                        if (processed.incrementAndGet() < total) return;
-                        StringBuilder sb = new StringBuilder();
-                        if (!added.isEmpty()) {
-                            sb.append(CustomEmojis.SUCCESS).append(" **Added ").append(added.size()).append(" track(s):**\n");
-                            for (String t : added) sb.append("— ").append(t).append("\n");
+                        private void finish() {
+                            if (processed.incrementAndGet() < total)
+                                return;
+                            StringBuilder sb = new StringBuilder();
+                            if (!added.isEmpty()) {
+                                sb.append(CustomEmojis.SUCCESS).append(" **Added ").append(added.size())
+                                        .append(" track(s):**\n");
+                                for (String t : added)
+                                    sb.append("— ").append(t).append("\n");
+                            }
+                            if (!failed.isEmpty()) {
+                                if (sb.length() > 0)
+                                    sb.append("\n");
+                                sb.append(CustomEmojis.ERROR).append(" **Failed ").append(failed.size())
+                                        .append(" URL(s):**\n");
+                                for (String f : failed)
+                                    sb.append("— ").append(f).append("\n");
+                            }
+                            FileStorageManager.UserPlaylist updated = ServerBot.getStorageManager()
+                                    .getUserPlaylist(userId, name);
+                            int totalTracks = updated != null ? updated.entries.size() : 0;
+                            event.getHook().editOriginalEmbeds(new EmbedBuilder()
+                                    .setColor(added.isEmpty() ? EmbedUtils.ERROR_COLOR : EmbedUtils.SUCCESS_COLOR)
+                                    .setTitle(CustomEmojis.NOTE + " Playlist Updated — " + name)
+                                    .setDescription(sb.toString())
+                                    .setFooter(totalTracks + " total track(s) in playlist")
+                                    .build()).queue();
                         }
-                        if (!failed.isEmpty()) {
-                            if (sb.length() > 0) sb.append("\n");
-                            sb.append(CustomEmojis.ERROR).append(" **Failed ").append(failed.size()).append(" URL(s):**\n");
-                            for (String f : failed) sb.append("— ").append(f).append("\n");
-                        }
-                        FileStorageManager.UserPlaylist updated = ServerBot.getStorageManager().getUserPlaylist(userId, name);
-                        int totalTracks = updated != null ? updated.entries.size() : 0;
-                        event.getHook().editOriginalEmbeds(new EmbedBuilder()
-                            .setColor(added.isEmpty() ? EmbedUtils.ERROR_COLOR : EmbedUtils.SUCCESS_COLOR)
-                            .setTitle(CustomEmojis.NOTE + " Playlist Updated — " + name)
-                            .setDescription(sb.toString())
-                            .setFooter(totalTracks + " total track(s) in playlist")
-                            .build()).queue();
-                    }
 
-                    @Override
-                    public void onTrackLoaded(AudioTrack track) {
-                        FileStorageManager.PlaylistEntry entry = new FileStorageManager.PlaylistEntry(
-                            url, track.getInfo().title, track.getInfo().author, track.getDuration());
-                        ServerBot.getStorageManager().addTrackToPlaylist(userId, name, entry);
-                        added.add(track.getInfo().title);
-                        finish();
-                    }
-
-                    @Override
-                    public void onPlaylistLoaded(com.sedmelluq.discord.lavaplayer.track.AudioPlaylist playlist) {
-                        AudioTrack track = playlist.getTracks().isEmpty() ? null : playlist.getTracks().get(0);
-                        if (track != null) {
+                        @Override
+                        public void onTrackLoaded(AudioTrack track) {
                             FileStorageManager.PlaylistEntry entry = new FileStorageManager.PlaylistEntry(
-                                url, track.getInfo().title, track.getInfo().author, track.getDuration());
+                                    url, track.getInfo().title, track.getInfo().author, track.getDuration());
                             ServerBot.getStorageManager().addTrackToPlaylist(userId, name, entry);
                             added.add(track.getInfo().title);
-                        } else {
-                            failed.add(url);
+                            finish();
                         }
-                        finish();
-                    }
 
-                    @Override public void onNoMatches()             { failed.add(url); finish(); }
-                    @Override public void onLoadFailed(String msg)  { failed.add(url + " *(load failed)*"); finish(); }
-                });
+                        @Override
+                        public void onPlaylistLoaded(com.sedmelluq.discord.lavaplayer.track.AudioPlaylist playlist) {
+                            AudioTrack track = playlist.getTracks().isEmpty() ? null : playlist.getTracks().get(0);
+                            if (track != null) {
+                                FileStorageManager.PlaylistEntry entry = new FileStorageManager.PlaylistEntry(
+                                        url, track.getInfo().title, track.getInfo().author, track.getDuration());
+                                ServerBot.getStorageManager().addTrackToPlaylist(userId, name, entry);
+                                added.add(track.getInfo().title);
+                            } else {
+                                failed.add(url);
+                            }
+                            finish();
+                        }
+
+                        @Override
+                        public void onNoMatches() {
+                            failed.add(url);
+                            finish();
+                        }
+
+                        @Override
+                        public void onLoadFailed(String msg) {
+                            failed.add(url + " *(load failed)*");
+                            finish();
+                        }
+                    });
         }
     }
 
@@ -262,68 +298,71 @@ public class PlaylistCommand implements SlashCommand {
 
     private void handleRemove(SlashCommandInteractionEvent event) {
         String userId = event.getUser().getId();
-        String name = event.getOption("name",     OptionMapping::getAsString);
-        Integer pos  = event.getOption("position", OptionMapping::getAsInt);
+        String name = event.getOption("name", OptionMapping::getAsString);
+        Integer pos = event.getOption("position", OptionMapping::getAsInt);
         if (name == null || pos == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Options", "Please provide the playlist name and track position.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Options",
+                    "Please provide the playlist name and track position.")).setEphemeral(true).queue();
             return;
         }
         int idx = pos - 1;
         FileStorageManager.UserPlaylist pl = ServerBot.getStorageManager().getUserPlaylist(userId, name);
         if (pl == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Found", "You don't have a playlist named **" + name + "**.")).setEphemeral(true).queue();
+            event.replyEmbeds(
+                    EmbedUtils.createErrorEmbed("Not Found", "You don't have a playlist named **" + name + "**."))
+                    .setEphemeral(true).queue();
             return;
         }
         if (idx < 0 || idx >= pl.entries.size()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Position",
-                "Position must be between **1** and **" + pl.entries.size() + "**.")).setEphemeral(true).queue();
+                    "Position must be between **1** and **" + pl.entries.size() + "**.")).setEphemeral(true).queue();
             return;
         }
         String removed = pl.entries.get(idx).title;
         ServerBot.getStorageManager().removeTrackFromPlaylist(userId, name, idx);
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Track Removed",
-            "Removed **" + removed + "** from **" + name + "**.")).setEphemeral(true).queue();
+                "Removed **" + removed + "** from **" + name + "**.")).setEphemeral(true).queue();
     }
 
     // reorder
 
     private void handleReorder(SlashCommandInteractionEvent event) {
         String userId = event.getUser().getId();
-        String name   = event.getOption("name", OptionMapping::getAsString);
-        Integer from  = event.getOption("from", OptionMapping::getAsInt);
-        Integer to    = event.getOption("to",   OptionMapping::getAsInt);
+        String name = event.getOption("name", OptionMapping::getAsString);
+        Integer from = event.getOption("from", OptionMapping::getAsInt);
+        Integer to = event.getOption("to", OptionMapping::getAsInt);
         if (name == null || from == null || to == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Options",
-                "Please provide the playlist name, and the `from` and `to` positions.")).setEphemeral(true).queue();
+                    "Please provide the playlist name, and the `from` and `to` positions.")).setEphemeral(true).queue();
             return;
         }
         FileStorageManager.UserPlaylist pl = ServerBot.getStorageManager().getUserPlaylist(userId, name);
         if (pl == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Found",
-                "You don't have a playlist named **" + name + "**.")).setEphemeral(true).queue();
+                    "You don't have a playlist named **" + name + "**.")).setEphemeral(true).queue();
             return;
         }
         if (pl.entries.isEmpty()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Empty Playlist",
-                "**" + name + "** has no tracks to reorder.")).setEphemeral(true).queue();
+                    "**" + name + "** has no tracks to reorder.")).setEphemeral(true).queue();
             return;
         }
         int size = pl.entries.size();
         if (from < 1 || from > size || to < 1 || to > size) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Position",
-                "Positions must be between **1** and **" + size + "**.")).setEphemeral(true).queue();
+                    "Positions must be between **1** and **" + size + "**.")).setEphemeral(true).queue();
             return;
         }
         if (from.equals(to)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Same Position",
-                "The `from` and `to` positions are the same.")).setEphemeral(true).queue();
+                    "The `from` and `to` positions are the same.")).setEphemeral(true).queue();
             return;
         }
         String trackTitle = pl.entries.get(from - 1).title;
         ServerBot.getStorageManager().reorderTrackInPlaylist(userId, name, from - 1, to - 1);
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Track Reordered",
-            "Moved **" + trackTitle + "** from position **" + from + "** to **" + to + "** in **" + name + "**."))
-            .setEphemeral(true).queue();
+                "Moved **" + trackTitle + "** from position **" + from + "** to **" + to + "** in **" + name + "**."))
+                .setEphemeral(true).queue();
     }
 
     // list
@@ -332,24 +371,25 @@ public class PlaylistCommand implements SlashCommand {
         String userId = event.getUser().getId();
         List<FileStorageManager.UserPlaylist> playlists = ServerBot.getStorageManager().getUserPlaylists(userId);
         if (playlists.isEmpty()) {
-            event.replyEmbeds(EmbedUtils.createInfoEmbed("No Playlists", "You have no saved playlists. Use `/playlist create` to make one.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createInfoEmbed("No Playlists",
+                    "You have no saved playlists. Use `/playlist create` to make one.")).setEphemeral(true).queue();
             return;
         }
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < playlists.size(); i++) {
             FileStorageManager.UserPlaylist pl = playlists.get(i);
             sb.append("`").append(i + 1).append(".` **").append(pl.name).append("** — ")
-              .append(pl.entries.size()).append(" track(s)");
+                    .append(pl.entries.size()).append(" track(s)");
             if (pl.description != null && !pl.description.isBlank())
                 sb.append("\n    *").append(pl.description).append("*");
             sb.append("\n");
         }
         event.replyEmbeds(new EmbedBuilder()
-            .setColor(EmbedUtils.INFO_COLOR)
-            .setTitle(CustomEmojis.NOTE + " Your Playlists")
-            .setDescription(sb.toString())
-            .setFooter("Use /playlist show name:<name> to see tracks")
-            .build()).setEphemeral(true).queue();
+                .setColor(EmbedUtils.INFO_COLOR)
+                .setTitle(CustomEmojis.NOTE + " Your Playlists")
+                .setDescription(sb.toString())
+                .setFooter("Use /playlist show name:<name> to see tracks")
+                .build()).setEphemeral(true).queue();
     }
 
     // show
@@ -358,16 +398,20 @@ public class PlaylistCommand implements SlashCommand {
         String userId = event.getUser().getId();
         String name = event.getOption("name", OptionMapping::getAsString);
         if (name == null || name.isBlank()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Name", "Please provide a playlist name.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Name", "Please provide a playlist name."))
+                    .setEphemeral(true).queue();
             return;
         }
         FileStorageManager.UserPlaylist pl = ServerBot.getStorageManager().getUserPlaylist(userId, name);
         if (pl == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Found", "You don't have a playlist named **" + name + "**.")).setEphemeral(true).queue();
+            event.replyEmbeds(
+                    EmbedUtils.createErrorEmbed("Not Found", "You don't have a playlist named **" + name + "**."))
+                    .setEphemeral(true).queue();
             return;
         }
         if (pl.entries.isEmpty()) {
-            event.replyEmbeds(EmbedUtils.createInfoEmbed("Empty Playlist", "**" + name + "** has no tracks yet. Use `/playlist add` to add some.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createInfoEmbed("Empty Playlist",
+                    "**" + name + "** has no tracks yet. Use `/playlist add` to add some.")).setEphemeral(true).queue();
             return;
         }
         StringBuilder sb = new StringBuilder();
@@ -375,16 +419,19 @@ public class PlaylistCommand implements SlashCommand {
         for (int i = 0; i < max; i++) {
             FileStorageManager.PlaylistEntry e = pl.entries.get(i);
             sb.append("`").append(i + 1).append(".` ").append(e.title != null ? e.title : e.url);
-            if (e.duration > 0) sb.append(" `").append(MusicUtils.formatDuration(e.duration)).append("`");
+            if (e.duration > 0)
+                sb.append(" `").append(MusicUtils.formatDuration(e.duration)).append("`");
             sb.append("\n");
         }
-        if (pl.entries.size() > 20) sb.append("*... and ").append(pl.entries.size() - 20).append(" more*");
+        if (pl.entries.size() > 20)
+            sb.append("*... and ").append(pl.entries.size() - 20).append(" more*");
         EmbedBuilder embed = new EmbedBuilder()
-            .setColor(EmbedUtils.INFO_COLOR)
-            .setTitle(CustomEmojis.NOTE + " " + pl.name)
-            .setDescription(sb.toString())
-            .setFooter(pl.entries.size() + " track(s) total");
-        if (pl.description != null && !pl.description.isBlank()) embed.addField("Description", pl.description, false);
+                .setColor(EmbedUtils.INFO_COLOR)
+                .setTitle(CustomEmojis.NOTE + " " + pl.name)
+                .setDescription(sb.toString())
+                .setFooter(pl.entries.size() + " track(s) total");
+        if (pl.description != null && !pl.description.isBlank())
+            embed.addField("Description", pl.description, false);
         event.replyEmbeds(embed.build()).setEphemeral(true).queue();
     }
 
@@ -394,16 +441,20 @@ public class PlaylistCommand implements SlashCommand {
         String userId = event.getUser().getId();
         String name = event.getOption("name", OptionMapping::getAsString);
         if (name == null || name.isBlank()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Name", "Please provide the playlist name to play.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Name", "Please provide the playlist name to play."))
+                    .setEphemeral(true).queue();
             return;
         }
         FileStorageManager.UserPlaylist pl = ServerBot.getStorageManager().getUserPlaylist(userId, name);
         if (pl == null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Found", "You don't have a playlist named **" + name + "**.")).setEphemeral(true).queue();
+            event.replyEmbeds(
+                    EmbedUtils.createErrorEmbed("Not Found", "You don't have a playlist named **" + name + "**."))
+                    .setEphemeral(true).queue();
             return;
         }
         if (pl.entries.isEmpty()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Empty Playlist", "**" + name + "** has no tracks. Add some with `/playlist add`.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Empty Playlist",
+                    "**" + name + "** has no tracks. Add some with `/playlist add`.")).setEphemeral(true).queue();
             return;
         }
 
@@ -411,7 +462,8 @@ public class PlaylistCommand implements SlashCommand {
         Member member = event.getMember();
         GuildVoiceState vs = member == null ? null : member.getVoiceState();
         if (vs == null || !vs.inAudioChannel()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Not in Voice Channel", "You need to be in a voice channel to play music.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Not in Voice Channel",
+                    "You need to be in a voice channel to play music.")).setEphemeral(true).queue();
             return;
         }
         AudioChannel voiceChannel = vs.getChannel();
@@ -427,48 +479,58 @@ public class PlaylistCommand implements SlashCommand {
         musicManager.joinChannel(voiceChannel);
 
         AtomicInteger queued = new AtomicInteger(0);
-        AtomicInteger total  = new AtomicInteger(toPlay.size());
-        String playlistName  = pl.name;
+        AtomicInteger total = new AtomicInteger(toPlay.size());
+        String playlistName = pl.name;
 
         // Queue all tracks sequentially; report after first track is loaded
         for (int i = 0; i < toPlay.size(); i++) {
             final int trackNum = i;
             FileStorageManager.PlaylistEntry entry = toPlay.get(i);
             musicManager.loadAndPlay(entry.url, event.getGuild(),
-                new MusicManager.MusicLoadCallback() {
-                    @Override
-                    public void onTrackLoaded(AudioTrack track) {
-                        GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
-                        gmm.getScheduler().queue(track);
-                        int done = queued.incrementAndGet();
-                        if (trackNum == 0) {
-                            // Reply after first track resolves
-                            event.getHook().editOriginalEmbeds(new EmbedBuilder()
-                                .setColor(EmbedUtils.SUCCESS_COLOR)
-                                .setTitle(CustomEmojis.NOTE + " Playing Playlist: " + playlistName)
-                                .setDescription("Queuing **" + total.get() + "** track(s)…\nFirst track: **" + track.getInfo().title + "**")
-                                .setFooter("Starting from position " + (startIdx + 1))
-                                .build()).queue();
-                        }
-                    }
-                    @Override
-                    public void onPlaylistLoaded(com.sedmelluq.discord.lavaplayer.track.AudioPlaylist playlist) {
-                        if (!playlist.getTracks().isEmpty()) {
+                    new MusicManager.MusicLoadCallback() {
+                        @Override
+                        public void onTrackLoaded(AudioTrack track) {
                             GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
-                            gmm.getScheduler().queue(playlist.getTracks().get(0));
+                            gmm.getScheduler().queue(track);
+                            int done = queued.incrementAndGet();
+                            if (trackNum == 0) {
+                                // Reply after first track resolves
+                                event.getHook().editOriginalEmbeds(new EmbedBuilder()
+                                        .setColor(EmbedUtils.SUCCESS_COLOR)
+                                        .setTitle(CustomEmojis.NOTE + " Playing Playlist: " + playlistName)
+                                        .setDescription("Queuing **" + total.get() + "** track(s)…\nFirst track: **"
+                                                + track.getInfo().title + "**")
+                                        .setFooter("Starting from position " + (startIdx + 1))
+                                        .build()).queue();
+                            }
                         }
-                        queued.incrementAndGet();
-                        if (trackNum == 0) {
-                            event.getHook().editOriginalEmbeds(new EmbedBuilder()
-                                .setColor(EmbedUtils.SUCCESS_COLOR)
-                                .setTitle(CustomEmojis.NOTE + " Playing Playlist: " + playlistName)
-                                .setDescription("Queuing **" + total.get() + "** track(s)…")
-                                .build()).queue();
+
+                        @Override
+                        public void onPlaylistLoaded(com.sedmelluq.discord.lavaplayer.track.AudioPlaylist playlist) {
+                            if (!playlist.getTracks().isEmpty()) {
+                                GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+                                gmm.getScheduler().queue(playlist.getTracks().get(0));
+                            }
+                            queued.incrementAndGet();
+                            if (trackNum == 0) {
+                                event.getHook().editOriginalEmbeds(new EmbedBuilder()
+                                        .setColor(EmbedUtils.SUCCESS_COLOR)
+                                        .setTitle(CustomEmojis.NOTE + " Playing Playlist: " + playlistName)
+                                        .setDescription("Queuing **" + total.get() + "** track(s)…")
+                                        .build()).queue();
+                            }
                         }
-                    }
-                    @Override public void onNoMatches() { queued.incrementAndGet(); }
-                    @Override public void onLoadFailed(String message) { queued.incrementAndGet(); }
-                });
+
+                        @Override
+                        public void onNoMatches() {
+                            queued.incrementAndGet();
+                        }
+
+                        @Override
+                        public void onLoadFailed(String message) {
+                            queued.incrementAndGet();
+                        }
+                    });
         }
     }
 
@@ -483,11 +545,11 @@ public class PlaylistCommand implements SlashCommand {
         String typed = event.getFocusedOption().getValue().toLowerCase();
         String userId = event.getUser().getId();
         List<Command.Choice> choices = ServerBot.getStorageManager()
-            .getUserPlaylists(userId).stream()
-            .filter(pl -> pl.name.toLowerCase().startsWith(typed))
-            .limit(25)
-            .map(pl -> new Command.Choice(pl.name, pl.name))
-            .collect(Collectors.toList());
+                .getUserPlaylists(userId).stream()
+                .filter(pl -> pl.name.toLowerCase().startsWith(typed))
+                .limit(25)
+                .map(pl -> new Command.Choice(pl.name, pl.name))
+                .collect(Collectors.toList());
         event.replyChoices(choices).queue();
     }
 
@@ -495,35 +557,37 @@ public class PlaylistCommand implements SlashCommand {
 
     public static CommandData getCommandData() {
         OptionData nameAutocomplete = new OptionData(OptionType.STRING, "name", "Playlist name", true)
-            .setAutoComplete(true);
+                .setAutoComplete(true);
 
         return Commands.slash("playlist", "Create, manage, and play your custom playlists.")
-            .addSubcommands(
-                new SubcommandData("create", "Create a new playlist")
-                    .addOption(OptionType.STRING, "name", "Playlist name (max 50 chars)", true)
-                    .addOption(OptionType.STRING, "description", "Optional description", false),
-                new SubcommandData("delete", "Delete one of your playlists (requires confirmation)")
-                    .addOptions(nameAutocomplete),
-                new SubcommandData("rename", "Rename one of your playlists")
-                    .addOptions(nameAutocomplete)
-                    .addOption(OptionType.STRING, "newname", "New playlist name (max 50 chars)", true),
-                new SubcommandData("add", "Add one or more URLs to a playlist (space-separated)")
-                    .addOptions(nameAutocomplete)
-                    .addOption(OptionType.STRING, "urls", "One or more YouTube/direct URLs (space-separated)", true),
-                new SubcommandData("remove", "Remove a track from a playlist by position")
-                    .addOptions(nameAutocomplete)
-                    .addOption(OptionType.INTEGER, "position", "1-based position of the track to remove", true),
-                new SubcommandData("reorder", "Move a track to a different position in a playlist")
-                    .addOptions(nameAutocomplete)
-                    .addOption(OptionType.INTEGER, "from", "Current 1-based position of the track", true)
-                    .addOption(OptionType.INTEGER, "to", "New 1-based position for the track", true),
-                new SubcommandData("list", "List all your playlists"),
-                new SubcommandData("show", "Show all tracks in a playlist")
-                    .addOptions(nameAutocomplete),
-                new SubcommandData("play", "Queue a saved playlist in your voice channel")
-                    .addOptions(nameAutocomplete)
-                    .addOption(OptionType.INTEGER, "position", "Start from this track position (default: 1)", false)
-            )
-            .setContexts(InteractionContextType.GUILD);
+                .addSubcommands(
+                        new SubcommandData("create", "Create a new playlist")
+                                .addOption(OptionType.STRING, "name", "Playlist name (max 50 chars)", true)
+                                .addOption(OptionType.STRING, "description", "Optional description", false),
+                        new SubcommandData("delete", "Delete one of your playlists (requires confirmation)")
+                                .addOptions(nameAutocomplete),
+                        new SubcommandData("rename", "Rename one of your playlists")
+                                .addOptions(nameAutocomplete)
+                                .addOption(OptionType.STRING, "newname", "New playlist name (max 50 chars)", true),
+                        new SubcommandData("add", "Add one or more URLs to a playlist (space-separated)")
+                                .addOptions(nameAutocomplete)
+                                .addOption(OptionType.STRING, "urls",
+                                        "One or more YouTube/direct URLs (space-separated)", true),
+                        new SubcommandData("remove", "Remove a track from a playlist by position")
+                                .addOptions(nameAutocomplete)
+                                .addOption(OptionType.INTEGER, "position", "1-based position of the track to remove",
+                                        true),
+                        new SubcommandData("reorder", "Move a track to a different position in a playlist")
+                                .addOptions(nameAutocomplete)
+                                .addOption(OptionType.INTEGER, "from", "Current 1-based position of the track", true)
+                                .addOption(OptionType.INTEGER, "to", "New 1-based position for the track", true),
+                        new SubcommandData("list", "List all your playlists"),
+                        new SubcommandData("show", "Show all tracks in a playlist")
+                                .addOptions(nameAutocomplete),
+                        new SubcommandData("play", "Queue a saved playlist in your voice channel")
+                                .addOptions(nameAutocomplete)
+                                .addOption(OptionType.INTEGER, "position",
+                                        "Start from this track position (default: 1)", false))
+                .setContexts(InteractionContextType.GUILD);
     }
 }

@@ -22,8 +22,7 @@ public class VolumeCommand implements SlashCommand {
 
         if (!musicManager.isConnected(event.getGuild())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Not Playing", "The bot is not currently playing music."
-            )).setEphemeral(true).queue();
+                    "Not Playing", "The bot is not currently playing music.")).setEphemeral(true).queue();
             return;
         }
 
@@ -35,9 +34,8 @@ public class VolumeCommand implements SlashCommand {
             // Just show current volume
             String volumeBar = createVolumeBar(currentVolume);
             event.replyEmbeds(EmbedUtils.createMusicEmbed(
-                "🔊 Volume",
-                "Current volume: **" + currentVolume + "%**\n" + volumeBar
-            )).queue();
+                    "🔊 Volume",
+                    "Current volume: **" + currentVolume + "%**\n" + volumeBar)).queue();
             return;
         }
 
@@ -47,9 +45,8 @@ public class VolumeCommand implements SlashCommand {
         String emoji = newVolume == 0 ? "🔇" : newVolume <= 50 ? "🔉" : "🔊";
         String volumeBar = createVolumeBar(newVolume);
         event.replyEmbeds(EmbedUtils.createMusicEmbed(
-            emoji + " Volume Set",
-            "Volume set to **" + newVolume + "%**\n" + volumeBar
-        )).queue();
+                emoji + " Volume Set",
+                "Volume set to **" + newVolume + "%**\n" + volumeBar)).queue();
     }
 
     private String createVolumeBar(int volume) {
@@ -65,11 +62,17 @@ public class VolumeCommand implements SlashCommand {
     }
 
     @Override
-    public String getName() { return "volume"; }
+    public String getName() {
+        return "volume";
+    }
 
     @Override
-    public String getDescription() { return "Sets the music volume in voicechat."; }
+    public String getDescription() {
+        return "Sets the music volume in voicechat.";
+    }
 
     @Override
-    public CommandCategory getCategory() { return CommandCategory.MUSIC; }
+    public CommandCategory getCategory() {
+        return CommandCategory.MUSIC;
+    }
 }

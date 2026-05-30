@@ -19,7 +19,7 @@ import java.util.Map;
  * Balance top command to show richest users
  */
 public class BaltopCommand implements SlashCommand {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(BaltopCommand.class);
 
     @Override
@@ -41,40 +41,37 @@ public class BaltopCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         try {
             String guildId = event.getGuild().getId();
-            
+
             // Get top 10 users from file storage
-            List<Map.Entry<String, Long>> sortedUsers = 
-                ServerBot.getStorageManager().getTopBalances(guildId, 10);
-            
+            List<Map.Entry<String, Long>> sortedUsers = ServerBot.getStorageManager().getTopBalances(guildId, 10);
+
             if (sortedUsers.isEmpty()) {
                 event.replyEmbeds(EmbedUtils.createInfoEmbed(
-                    "No Economy Data",
-                    "No users have any balance yet. Use `/balance` to get started!"
-                )).setEphemeral(true).queue();
+                        "No Economy Data",
+                        "No users have any balance yet. Use `/balance` to get started!")).setEphemeral(true).queue();
                 return;
             }
 
             // Build leaderboard embed
             EmbedBuilder embed = EmbedUtils.createEmbedBuilder(Color.GREEN) // Green color
-                .setTitle("Leaderboard")
-                .setDescription("Top " + Math.min(sortedUsers.size(), 10) + " richest users in the server:");
+                    .setTitle("Leaderboard")
+                    .setDescription("Top " + Math.min(sortedUsers.size(), 10) + " richest users in the server:");
 
             StringBuilder leaderboard = new StringBuilder();
             for (int i = 0; i < sortedUsers.size(); i++) {
                 Map.Entry<String, Long> entry = sortedUsers.get(i);
                 String userId = entry.getKey();
                 Long balance = entry.getValue();
-                
+
                 String medal = getMedal(i + 1);
-                leaderboard.append(String.format("%s **#%d** <@%s> - **%,d** coins\n", 
-                    medal, i + 1, userId, balance));
+                leaderboard.append(String.format("%s **#%d** <@%s> - **%,d** coins\n",
+                        medal, i + 1, userId, balance));
             }
 
             embed.setDescription(leaderboard.toString());
@@ -82,16 +79,16 @@ public class BaltopCommand implements SlashCommand {
             // Show user's position if not in top 10
             String currentUserId = event.getUser().getId();
             long currentUserBalance = ServerBot.getStorageManager().getBalance(guildId, currentUserId);
-            
+
             // Check if current user is in top 10
             boolean userInTop10 = sortedUsers.stream()
-                .anyMatch(entry -> entry.getKey().equals(currentUserId));
+                    .anyMatch(entry -> entry.getKey().equals(currentUserId));
 
             if (!userInTop10 && currentUserBalance > 0) {
                 // Calculate user's position by getting all users and finding position
-                List<Map.Entry<String, Long>> allUsers = 
-                    ServerBot.getStorageManager().getTopBalances(guildId, Integer.MAX_VALUE);
-                
+                List<Map.Entry<String, Long>> allUsers = ServerBot.getStorageManager().getTopBalances(guildId,
+                        Integer.MAX_VALUE);
+
                 int userPosition = 1;
                 for (Map.Entry<String, Long> entry : allUsers) {
                     if (entry.getKey().equals(currentUserId)) {
@@ -99,30 +96,33 @@ public class BaltopCommand implements SlashCommand {
                     }
                     userPosition++;
                 }
-                
-                embed.addField("Your Position", 
-                    String.format("#%d with %,d coins", userPosition, currentUserBalance), false);
+
+                embed.addField("Your Position",
+                        String.format("#%d with %,d coins", userPosition, currentUserBalance), false);
             }
 
             event.replyEmbeds(embed.build()).queue();
-            
+
             logger.info("Displayed balance leaderboard for guild {}", guildId);
 
         } catch (Exception e) {
             logger.error("Error executing baltop command", e);
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Error", 
-                "An error occurred while retrieving the leaderboard."
-            )).setEphemeral(true).queue();
+                    "Error",
+                    "An error occurred while retrieving the leaderboard.")).setEphemeral(true).queue();
         }
     }
 
     private String getMedal(int position) {
         switch (position) {
-            case 1: return "🥇";
-            case 2: return "🥈";
-            case 3: return "🥉";
-            default: return "🏅";
+            case 1:
+                return "🥇";
+            case 2:
+                return "🥈";
+            case 3:
+                return "🥉";
+            default:
+                return "🏅";
         }
     }
 

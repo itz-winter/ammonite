@@ -41,8 +41,7 @@ public class BlackjackCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
@@ -52,15 +51,13 @@ public class BlackjackCommand implements SlashCommand {
 
         if (points <= 0) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Invalid Amount", "You must bet at least 1 coin."
-            )).setEphemeral(true).queue();
+                    "Invalid Amount", "You must bet at least 1 coin.")).setEphemeral(true).queue();
             return;
         }
 
         if (points > 10000) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Bet Too High", "You cannot bet more than 10,000 coins at once."
-            )).setEphemeral(true).queue();
+                    "Bet Too High", "You cannot bet more than 10,000 coins at once.")).setEphemeral(true).queue();
             return;
         }
 
@@ -68,18 +65,18 @@ public class BlackjackCommand implements SlashCommand {
 
         if (userBalance < points) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Funds",
-                String.format("You only have %,d coins but tried to bet %,d coins.", userBalance, points)
-            )).setEphemeral(true).queue();
+                    "Insufficient Funds",
+                    String.format("You only have %,d coins but tried to bet %,d coins.", userBalance, points)))
+                    .setEphemeral(true).queue();
             return;
         }
 
         // Check if the user already has an active blackjack game
         if (BlackjackGame.hasActiveGame(user.getId())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Game In Progress",
-                "You already have an active blackjack game! Finish it before starting a new one."
-            )).setEphemeral(true).queue();
+                    "Game In Progress",
+                    "You already have an active blackjack game! Finish it before starting a new one."))
+                    .setEphemeral(true).queue();
             return;
         }
 
@@ -102,13 +99,13 @@ public class BlackjackCommand implements SlashCommand {
             long newBalance = ServerBot.getStorageManager().getBalance(guildId, user.getId());
 
             EmbedBuilder embed = EmbedUtils.createEmbedBuilder(Color.GREEN)
-                .setTitle("🃏 Blackjack - NATURAL BLACKJACK! 🎉")
-                .setDescription("**BLACKJACK!** You hit 21! 3:2 payout!")
-                .addField("Your Hand (" + playerTotal + ")", game.formatPlayerCards(), true)
-                .addField("Dealer Hand (" + game.getDealerTotal() + ")", game.formatDealerCards(false), true)
-                .addField("Bet Amount", String.format("%,d coins", points), true)
-                .addField("Winnings", String.format("+%,d coins", winnings - points), true)
-                .addField("New Balance", String.format("%,d coins", newBalance), false);
+                    .setTitle("🃏 Blackjack - NATURAL BLACKJACK! 🎉")
+                    .setDescription("**BLACKJACK!** You hit 21! 3:2 payout!")
+                    .addField("Your Hand (" + playerTotal + ")", game.formatPlayerCards(), true)
+                    .addField("Dealer Hand (" + game.getDealerTotal() + ")", game.formatDealerCards(false), true)
+                    .addField("Bet Amount", String.format("%,d coins", points), true)
+                    .addField("Winnings", String.format("+%,d coins", winnings - points), true)
+                    .addField("New Balance", String.format("%,d coins", newBalance), false);
 
             game.removeGame();
             event.replyEmbeds(embed.build()).queue();
@@ -117,11 +114,11 @@ public class BlackjackCommand implements SlashCommand {
 
         // Show the game state with buttons
         EmbedBuilder embed = EmbedUtils.createEmbedBuilder(Color.BLUE)
-            .setTitle("🃏 Blackjack")
-            .setDescription("Choose your action!")
-            .addField("Your Hand (" + playerTotal + ")", game.formatPlayerCards(), true)
-            .addField("Dealer Shows", game.formatSingleCard(dealerShowing) + " + ?", true)
-            .addField("Bet Amount", String.format("%,d coins", points), true);
+                .setTitle("🃏 Blackjack")
+                .setDescription("Choose your action!")
+                .addField("Your Hand (" + playerTotal + ")", game.formatPlayerCards(), true)
+                .addField("Dealer Shows", game.formatSingleCard(dealerShowing) + " + ?", true)
+                .addField("Bet Amount", String.format("%,d coins", points), true);
 
         // Only allow double down on first two cards and if player has enough balance
         long currentBalance = ServerBot.getStorageManager().getBalance(guildId, user.getId());
@@ -135,12 +132,12 @@ public class BlackjackCommand implements SlashCommand {
 
         if (canDoubleDown) {
             event.replyEmbeds(embed.build())
-                .addComponents(ActionRow.of(hitButton, standButton, doubleButton))
-                .queue();
+                    .addComponents(ActionRow.of(hitButton, standButton, doubleButton))
+                    .queue();
         } else {
             event.replyEmbeds(embed.build())
-                .addComponents(ActionRow.of(hitButton, standButton))
-                .queue();
+                    .addComponents(ActionRow.of(hitButton, standButton))
+                    .queue();
         }
     }
 

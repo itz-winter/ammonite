@@ -10,26 +10,34 @@ import java.nio.ByteBuffer;
  * Bridge between LavaPlayer's AudioPlayer and JDA's AudioSendHandler.
  *
  * KEY DESIGN:
- *  - canProvide() ALWAYS returns true. This ensures JDA's DefaultSendSystem continuously
- *    sends UDP packets (real audio or silence), which keeps the voice connection alive
- *    during the initial DAVE handshake and while the bot is idle in a channel.
+ * - canProvide() ALWAYS returns true. This ensures JDA's DefaultSendSystem
+ * continuously
+ * sends UDP packets (real audio or silence), which keeps the voice connection
+ * alive
+ * during the initial DAVE handshake and while the bot is idle in a channel.
  *
- *  - When the player is paused or has no track, provide20MsAudio() returns a standard
- *    Opus silence frame (0xF8, 0xFF, 0xFE). This is the minimal valid Opus packet
- *    that represents 20ms of silence.
+ * - When the player is paused or has no track, provide20MsAudio() returns a
+ * standard
+ * Opus silence frame (0xF8, 0xFF, 0xFE). This is the minimal valid Opus packet
+ * that represents 20ms of silence.
  *
- *  - RESUME FIX: When the player transitions from paused → playing (or from no-audio
- *    → audio), Discord clients need a short burst of silence frames BEFORE real audio
- *    to reset their Opus decoder state. We inject 5 silence frames (~100ms) on this
- *    transition. Without this, Discord may not decode audio after a pause because the
- *    Opus stream was interrupted mid-frame.
+ * - RESUME FIX: When the player transitions from paused → playing (or from
+ * no-audio
+ * → audio), Discord clients need a short burst of silence frames BEFORE real
+ * audio
+ * to reset their Opus decoder state. We inject 5 silence frames (~100ms) on
+ * this
+ * transition. Without this, Discord may not decode audio after a pause because
+ * the
+ * Opus stream was interrupted mid-frame.
  *
- *  - isOpus() returns true so JDA sends our bytes as-is without re-encoding.
+ * - isOpus() returns true so JDA sends our bytes as-is without re-encoding.
  */
 public class AudioPlayerSendHandler implements AudioSendHandler {
 
     /**
-     * Standard Opus silence frame — a valid 20ms Opus packet containing no audio data.
+     * Standard Opus silence frame — a valid 20ms Opus packet containing no audio
+     * data.
      * Defined by RFC 6716 §3.1 as the minimal Opus packet.
      */
     private static final byte[] SILENCE_BYTES = { (byte) 0xF8, (byte) 0xFF, (byte) 0xFE };
@@ -49,7 +57,8 @@ public class AudioPlayerSendHandler implements AudioSendHandler {
 
     /**
      * Counts down silence frames to inject after a no-audio → audio transition.
-     * When > 0, provide20MsAudio() returns silence even though real audio is available.
+     * When > 0, provide20MsAudio() returns silence even though real audio is
+     * available.
      */
     private int silenceBurstRemaining;
 

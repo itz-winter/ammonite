@@ -20,8 +20,7 @@ public class StatusCommand implements SlashCommand {
         // Check if user is bot owner
         if (!PermissionUtils.isBotOwner(event.getUser())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Bot Owner Only", "Only the bot owner can change the bot status."
-            )).setEphemeral(true).queue();
+                    "Bot Owner Only", "Only the bot owner can change the bot status.")).setEphemeral(true).queue();
             return;
         }
 
@@ -40,12 +39,12 @@ public class StatusCommand implements SlashCommand {
             Activity activity = Activity.customStatus(statusMessage);
             event.getJDA().getPresence().setActivity(activity);
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Status Updated", "Bot status has been set to:\n**" + statusMessage + "**"
-            )).setEphemeral(true).queue();
+                    "Status Updated", "Bot status has been set to:\n**" + statusMessage + "**")).setEphemeral(true)
+                    .queue();
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Status Update Failed", "Failed to update bot status: " + e.getMessage()
-            )).setEphemeral(true).queue();
+                    "Status Update Failed", "Failed to update bot status: " + e.getMessage())).setEphemeral(true)
+                    .queue();
         }
     }
 
@@ -53,12 +52,10 @@ public class StatusCommand implements SlashCommand {
         try {
             event.getJDA().getPresence().setActivity(null);
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Status Cleared", "Bot status has been cleared."
-            )).setEphemeral(true).queue();
+                    "Status Cleared", "Bot status has been cleared.")).setEphemeral(true).queue();
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Status Clear Failed", "Failed to clear bot status: " + e.getMessage()
-            )).setEphemeral(true).queue();
+                    "Status Clear Failed", "Failed to clear bot status: " + e.getMessage())).setEphemeral(true).queue();
         }
     }
 

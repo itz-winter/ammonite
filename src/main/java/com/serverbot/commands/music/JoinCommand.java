@@ -19,14 +19,14 @@ public class JoinCommand implements SlashCommand {
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         Member member = event.getMember();
-        if (member == null) return;
+        if (member == null)
+            return;
 
         GuildVoiceState voiceState = member.getVoiceState();
         if (voiceState == null || !voiceState.inAudioChannel()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Not in Voice Channel",
-                "You need to be in a voice channel for me to join."
-            )).setEphemeral(true).queue();
+                    "Not in Voice Channel",
+                    "You need to be in a voice channel for me to join.")).setEphemeral(true).queue();
             return;
         }
 
@@ -37,23 +37,20 @@ public class JoinCommand implements SlashCommand {
             AudioChannel currentChannel = musicManager.getConnectedChannel(event.getGuild());
             if (currentChannel != null && currentChannel.getIdLong() == channel.getIdLong()) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Already Connected",
-                    "I'm already in your voice channel!"
-                )).setEphemeral(true).queue();
+                        "Already Connected",
+                        "I'm already in your voice channel!")).setEphemeral(true).queue();
                 return;
             }
         }
 
         if (musicManager.joinChannel(channel)) {
             event.replyEmbeds(EmbedUtils.createMusicEmbed(
-                "🔊 Joined",
-                "Connected to **" + channel.getName() + "**"
-            )).queue();
+                    "🔊 Joined",
+                    "Connected to **" + channel.getName() + "**")).queue();
         } else {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Connection Failed",
-                "Failed to join **" + channel.getName() + "**. Check bot permissions."
-            )).setEphemeral(true).queue();
+                    "Connection Failed",
+                    "Failed to join **" + channel.getName() + "**. Check bot permissions.")).setEphemeral(true).queue();
         }
     }
 
@@ -62,11 +59,17 @@ public class JoinCommand implements SlashCommand {
     }
 
     @Override
-    public String getName() { return "join"; }
+    public String getName() {
+        return "join";
+    }
 
     @Override
-    public String getDescription() { return "Makes the bot join your voice channel."; }
+    public String getDescription() {
+        return "Makes the bot join your voice channel.";
+    }
 
     @Override
-    public CommandCategory getCategory() { return CommandCategory.MUSIC; }
+    public CommandCategory getCategory() {
+        return CommandCategory.MUSIC;
+    }
 }

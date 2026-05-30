@@ -17,21 +17,21 @@ import java.util.concurrent.TimeUnit;
  * Manages all slash commands for the bot
  */
 public class CommandManager {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(CommandManager.class);
     private final Map<String, SlashCommand> commands = new HashMap<>();
-    
+
     // Rate limiting for command updates
     private long lastCommandUpdate = 0;
     private static final long COMMAND_UPDATE_COOLDOWN = TimeUnit.HOURS.toMillis(1); // 1 hour cooldown
-    
+
     public CommandManager() {
         registerCommands();
     }
-    
+
     private void registerCommands() {
         logger.info("Registering commands...");
-        
+
         // Utility commands
         registerCommand(new com.serverbot.commands.utility.HelpCommand());
         registerCommand(new com.serverbot.commands.utility.EchoCommand());
@@ -53,11 +53,11 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.utility.ErrorCommand());
         registerCommand(new com.serverbot.commands.utility.RulesCommand());
         registerCommand(new com.serverbot.commands.utility.TalkAsCommand());
-        
+
         // Game commands
         registerCommand(new com.serverbot.commands.games.PokerCommand());
         registerCommand(new com.serverbot.commands.games.ChessCommand());
-        
+
         // Economy commands that work with file storage
         registerCommand(new com.serverbot.commands.economy.BalanceCommand());
         registerCommand(new com.serverbot.commands.economy.PayCommand());
@@ -75,8 +75,8 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.economy.SetBalanceCommand());
         registerCommand(new com.serverbot.commands.economy.AddBalanceCommand());
         registerCommand(new com.serverbot.commands.economy.SubtractBalanceCommand());
-        
-        // Moderation commands that work with file storage  
+
+        // Moderation commands that work with file storage
         registerCommand(new com.serverbot.commands.moderation.WarnCommand());
         registerCommand(new com.serverbot.commands.moderation.BanCommand());
         registerCommand(new com.serverbot.commands.moderation.MuteCommand());
@@ -90,19 +90,19 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.moderation.LockdownCommand());
         registerCommand(new com.serverbot.commands.moderation.PurgeCommand());
         registerCommand(new com.serverbot.commands.moderation.TimeoutCommand());
-        
+
         // Leveling commands that work with file storage
         registerCommand(new com.serverbot.commands.leveling.XpCommand());
         registerCommand(new com.serverbot.commands.leveling.LevelCommand());
         registerCommand(new com.serverbot.commands.leveling.RankCommand());
         registerCommand(new com.serverbot.commands.leveling.LeaderboardCommand());
         registerCommand(new com.serverbot.commands.leveling.LbCommand());
-        
+
         // Configuration commands that work with file storage
         registerCommand(new com.serverbot.commands.configuration.LevelsCommand());
         registerCommand(new com.serverbot.commands.configuration.PointsCommand());
         registerCommand(new com.serverbot.commands.configuration.ConfigCommand());
-        
+
         // Config commands - new comprehensive system
         registerCommand(new com.serverbot.commands.config.SettingsCommand());
         registerCommand(new com.serverbot.commands.config.PermissionsCommand());
@@ -111,7 +111,7 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.config.BackupCommand());
         registerCommand(new com.serverbot.commands.config.LoggingCommand());
         registerCommand(new com.serverbot.commands.config.AutomodCommand());
-    registerCommand(new com.serverbot.commands.config.LogCommand());
+        registerCommand(new com.serverbot.commands.config.LogCommand());
         registerCommand(new com.serverbot.commands.config.RolePersistenceCommand());
         registerCommand(new com.serverbot.commands.config.ReactionRoleCommand());
         registerCommand(new com.serverbot.commands.config.PunishmentDMCommand());
@@ -119,30 +119,30 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.config.PrefixCommand());
         registerCommand(new com.serverbot.commands.config.ServerMessagesCommand());
         registerCommand(new com.serverbot.commands.utility.SuspiciousListCommand());
-        
+
         // Support commands
         registerCommand(new com.serverbot.commands.support.TicketCommand());
-        
+
         // Ticket commands
         registerCommand(new com.serverbot.commands.tickets.TicketCommand());
-        
+
         // Proxy commands (PluralKit-style)
         registerCommand(new com.serverbot.commands.proxy.ProxyMemberCommand());
         registerCommand(new com.serverbot.commands.proxy.ProxySettingsCommand());
-        
+
         // Global chat commands
         registerCommand(new com.serverbot.commands.utility.GlobalChatCommand());
-        
+
         // Music playlist management
         registerCommand(new com.serverbot.commands.music.PlaylistCommand());
-        
+
         // Auto config command
         registerCommand(new com.serverbot.commands.config.AutoConfigCommand());
-        
+
         // Privacy & data management commands (Discord ToS compliance)
         registerCommand(new com.serverbot.commands.utility.PrivacyCommand());
         registerCommand(new com.serverbot.commands.utility.DeleteDataCommand());
-        
+
         // Music commands
         registerCommand(new com.serverbot.commands.music.PlayCommand());
         registerCommand(new com.serverbot.commands.music.SkipCommand());
@@ -154,36 +154,36 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.music.VolumeCommand());
         registerCommand(new com.serverbot.commands.music.RepeatCommand());
         registerCommand(new com.serverbot.commands.music.ShuffleCommand());
-        
+
         logger.info("Registered {} commands", commands.size());
     }
-    
+
     public void registerCommand(SlashCommand command) {
         commands.put(command.getName().toLowerCase(), command);
         logger.debug("Registered command: {}", command.getName());
     }
-    
+
     public SlashCommand getCommand(String name) {
         return commands.get(name.toLowerCase());
     }
-    
+
     public Map<String, SlashCommand> getAllCommands() {
         return new HashMap<>(commands);
     }
-    
+
     public void updateGlobalCommands(JDA jda) {
         // Rate limit command updates to prevent Discord API abuse
         long currentTime = System.currentTimeMillis();
         if (lastCommandUpdate > 0 && (currentTime - lastCommandUpdate) < COMMAND_UPDATE_COOLDOWN) {
-            logger.info("Skipping command update due to rate limiting. Last update was {} minutes ago.", 
-                (currentTime - lastCommandUpdate) / TimeUnit.MINUTES.toMillis(1));
+            logger.info("Skipping command update due to rate limiting. Last update was {} minutes ago.",
+                    (currentTime - lastCommandUpdate) / TimeUnit.MINUTES.toMillis(1));
             return;
         }
-        
+
         // Only update commands if not already updated recently to avoid rate limits
         logger.info("Updating global slash commands...");
         lastCommandUpdate = currentTime;
-        
+
         boolean hideOwner = false;
         try {
             if (ServerBot.getConfigManager() != null && ServerBot.getConfigManager().getConfig() != null) {
@@ -192,9 +192,9 @@ public class CommandManager {
         } catch (Exception e) {
             logger.warn("Could not read hide_owner_commands config, defaulting to false");
         }
-        
+
         List<CommandData> commandDataList = new ArrayList<>();
-        
+
         // Utility commands
         commandDataList.add(com.serverbot.commands.utility.HelpCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.EchoCommand.getCommandData());
@@ -212,20 +212,22 @@ public class CommandManager {
         commandDataList.add(com.serverbot.commands.utility.ErrorCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.RulesCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.TalkAsCommand.getCommandData());
-        
-        // Owner-only utility commands (hidden from slash command list when hide_owner_commands is true)
-        // These remain accessible via prefix commands (e.g., !statusmsg, !rpc, !appearance, !restart)
+
+        // Owner-only utility commands (hidden from slash command list when
+        // hide_owner_commands is true)
+        // These remain accessible via prefix commands (e.g., !statusmsg, !rpc,
+        // !appearance, !restart)
         if (!hideOwner) {
             commandDataList.add(com.serverbot.commands.utility.StatusCommand.getCommandData());
             commandDataList.add(com.serverbot.commands.utility.PresenceCommand.getCommandData());
             commandDataList.add(com.serverbot.commands.utility.RestartCommand.getCommandData());
             commandDataList.add(com.serverbot.commands.utility.AppearanceCommand.getCommandData());
         }
-        
+
         // Game commands
         commandDataList.add(com.serverbot.commands.games.PokerCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.games.ChessCommand.getCommandData());
-        
+
         // Economy commands
         commandDataList.add(com.serverbot.commands.economy.BalanceCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.economy.PayCommand.getCommandData());
@@ -243,7 +245,7 @@ public class CommandManager {
         commandDataList.add(com.serverbot.commands.economy.SetBalanceCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.economy.AddBalanceCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.economy.SubtractBalanceCommand.getCommandData());
-        
+
         // Moderation commands
         commandDataList.add(com.serverbot.commands.moderation.WarnCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.moderation.BanCommand.getCommandData());
@@ -258,57 +260,57 @@ public class CommandManager {
         commandDataList.add(com.serverbot.commands.moderation.LockdownCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.moderation.PurgeCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.moderation.TimeoutCommand.getCommandData());
-        
+
         // Leveling commands
         commandDataList.add(com.serverbot.commands.leveling.XpCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.leveling.LevelCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.leveling.RankCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.leveling.LeaderboardCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.leveling.LbCommand.getCommandData());
-        
+
         // Configuration commands
         commandDataList.add(com.serverbot.commands.configuration.LevelsCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.configuration.PointsCommand.getCommandData());
-        
+
         // Owner-only config commands (hidden when hide_owner_commands is true)
         if (!hideOwner) {
             commandDataList.add(com.serverbot.commands.configuration.ConfigCommand.getCommandData());
             commandDataList.add(com.serverbot.commands.config.BackupCommand.getCommandData());
             commandDataList.add(com.serverbot.commands.config.ServerMessagesCommand.getCommandData());
         }
-        
+
         // New comprehensive config commands
         commandDataList.add(com.serverbot.commands.config.SettingsCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.config.PermissionsCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.config.AntiSpamCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.config.WelcomeCommand.getCommandData());
-    commandDataList.add(com.serverbot.commands.config.LoggingCommand.getCommandData());
-    commandDataList.add(com.serverbot.commands.config.AutomodCommand.getCommandData());
-    commandDataList.add(com.serverbot.commands.config.LogCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.config.LoggingCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.config.AutomodCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.config.LogCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.config.RolePersistenceCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.config.ReactionRoleCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.config.PrefixCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.config.PunishmentDMCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.config.SuspiciousNotifyCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.SuspiciousListCommand.getCommandData());
-        
+
         // Ticket commands
         commandDataList.add(com.serverbot.commands.tickets.TicketCommand.getCommandData());
-        
+
         // Proxy commands (PluralKit-style)
         commandDataList.add(com.serverbot.commands.proxy.ProxyMemberCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.proxy.ProxySettingsCommand.getCommandData());
-        
+
         // Global chat commands
         commandDataList.add(com.serverbot.commands.utility.GlobalChatCommand.getCommandData());
-        
+
         // Auto config command
         commandDataList.add(com.serverbot.commands.config.AutoConfigCommand.getCommandData());
-        
+
         // Privacy & data management commands (Discord ToS compliance)
         commandDataList.add(com.serverbot.commands.utility.PrivacyCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.DeleteDataCommand.getCommandData());
-        
+
         // Music commands
         commandDataList.add(com.serverbot.commands.music.PlaylistCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.music.PlayCommand.getCommandData());
@@ -321,22 +323,22 @@ public class CommandManager {
         commandDataList.add(com.serverbot.commands.music.VolumeCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.music.RepeatCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.music.ShuffleCommand.getCommandData());
-        
+
         if (hideOwner) {
-            logger.info("Owner-only commands hidden from slash commands (hide_owner_commands=true). Use prefix commands instead.");
+            logger.info(
+                    "Owner-only commands hidden from slash commands (hide_owner_commands=true). Use prefix commands instead.");
         }
-        
+
         jda.updateCommands().addCommands(commandDataList).queue(
-            success -> {
-                logger.info("Successfully updated {} global commands", success.size());
-                logger.info("Commands may take up to 1 hour to appear globally");
-            },
-            error -> {
-                logger.error("Failed to update global commands: {}", error.getMessage());
-                if (error.getMessage().contains("rate limit")) {
-                    logger.warn("Hit Discord rate limit. Commands will be registered later.");
-                }
-            }
-        );
+                success -> {
+                    logger.info("Successfully updated {} global commands", success.size());
+                    logger.info("Commands may take up to 1 hour to appear globally");
+                },
+                error -> {
+                    logger.error("Failed to update global commands: {}", error.getMessage());
+                    if (error.getMessage().contains("rate limit")) {
+                        logger.warn("Hit Discord rate limit. Commands will be registered later.");
+                    }
+                });
     }
 }

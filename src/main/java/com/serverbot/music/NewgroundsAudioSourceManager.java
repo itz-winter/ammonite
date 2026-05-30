@@ -29,7 +29,8 @@ import java.util.regex.Pattern;
  * Audio source manager for Newgrounds audio tracks.
  * Handles URLs matching: https://www.newgrounds.com/audio/listen/{id}
  *
- * Newgrounds embeds audio metadata in JavaScript on the page. This source manager
+ * Newgrounds embeds audio metadata in JavaScript on the page. This source
+ * manager
  * scrapes the page HTML to extract the MP3 URL, title, artist, and duration,
  * then creates an AudioTrack that LavaPlayer can play.
  */
@@ -55,55 +56,48 @@ public class NewgroundsAudioSourceManager implements AudioSourceManager {
     // Matches: https://www.newgrounds.com/audio/listen/489111
     // Also handles http:// and optional trailing slash
     private static final Pattern URL_PATTERN = Pattern.compile(
-            "https?://(?:www\\.)?newgrounds\\.com/audio/listen/(\\d+)/?(?:\\?.*)?$"
-    );
+            "https?://(?:www\\.)?newgrounds\\.com/audio/listen/(\\d+)/?(?:\\?.*)?$");
 
     // The embedded JS on NG pages contains a JSON blob with the MP3 URL.
     // Look for the "filename" field which holds the CDN URL like:
-    //   "filename":"https:\/\/audio.ngfiles.com\/489000\/489111_Nuke-Powder.mp3"
+    // "filename":"https:\/\/audio.ngfiles.com\/489000\/489111_Nuke-Powder.mp3"
     // It may also appear URL-encoded or escaped.
     private static final Pattern FILENAME_PATTERN = Pattern.compile(
             "\"filename\"\\s*:\\s*\"(https?:[^\"]+\\.mp3[^\"]*)\"",
-            Pattern.CASE_INSENSITIVE
-    );
+            Pattern.CASE_INSENSITIVE);
 
     // Fallback: extract from the embedded player params.
     // Some pages use "url" instead of "filename"
     private static final Pattern URL_FIELD_PATTERN = Pattern.compile(
             "\"url\"\\s*:\\s*\"(https?://audio\\.ngfiles\\.com/[^\"]+)\"",
-            Pattern.CASE_INSENSITIVE
-    );
+            Pattern.CASE_INSENSITIVE);
 
     // Title: <title>Nuke Powder by MaelouX - Newgrounds</title>
     // or from og:title meta tag
     private static final Pattern TITLE_PATTERN = Pattern.compile(
             "<title>\\s*(.+?)\\s*(?:-\\s*Newgrounds)?\\s*</title>",
-            Pattern.CASE_INSENSITIVE
-    );
+            Pattern.CASE_INSENSITIVE);
 
     // og:title for cleaner data: <meta property="og:title" content="Nuke Powder" />
     private static final Pattern OG_TITLE_PATTERN = Pattern.compile(
             "<meta\\s+property=[\"']og:title[\"']\\s+content=[\"']([^\"']+)[\"']",
-            Pattern.CASE_INSENSITIVE
-    );
+            Pattern.CASE_INSENSITIVE);
 
-    // og:site_name or artist from the page: artist link like href="https://maeloux.newgrounds.com/"
+    // og:site_name or artist from the page: artist link like
+    // href="https://maeloux.newgrounds.com/"
     // The page has: <a href="https://USERNAME.newgrounds.com/" ...>USERNAME</a>
     private static final Pattern ARTIST_PATTERN = Pattern.compile(
             "<a\\s+href=[\"']https?://([^.]+)\\.newgrounds\\.com/[\"'][^>]*>\\s*\\1\\s*</a>",
-            Pattern.CASE_INSENSITIVE | Pattern.DOTALL
-    );
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     // Fallback artist from the <title> tag: "Title by Artist"
     private static final Pattern TITLE_ARTIST_PATTERN = Pattern.compile(
-            "^(.+?)\\s+by\\s+(.+?)$"
-    );
+            "^(.+?)\\s+by\\s+(.+?)$");
 
     // Duration from the page metadata: "3 min 9 sec" or data attributes
     // Look for the embedded duration in the JS params: "duration":189
     private static final Pattern DURATION_PATTERN = Pattern.compile(
-            "\"duration\"\\s*:\\s*(\\d+(?:\\.\\d+)?)"
-    );
+            "\"duration\"\\s*:\\s*(\\d+(?:\\.\\d+)?)");
 
     @Override
     public String getSourceName() {
@@ -127,8 +121,7 @@ public class NewgroundsAudioSourceManager implements AudioSourceManager {
             logger.error("Failed to load Newgrounds track {}: {}", audioId, e.getMessage(), e);
             throw new FriendlyException(
                     "Failed to load Newgrounds audio: " + e.getMessage(),
-                    FriendlyException.Severity.SUSPICIOUS, e
-            );
+                    FriendlyException.Severity.SUSPICIOUS, e);
         }
     }
 
@@ -140,8 +133,7 @@ public class NewgroundsAudioSourceManager implements AudioSourceManager {
         if (mp3Url == null) {
             throw new FriendlyException(
                     "Could not find audio stream URL for Newgrounds track " + audioId,
-                    FriendlyException.Severity.COMMON, null
-            );
+                    FriendlyException.Severity.COMMON, null);
         }
 
         // Extract metadata
@@ -168,9 +160,9 @@ public class NewgroundsAudioSourceManager implements AudioSourceManager {
                 title,
                 artist,
                 duration, // duration in milliseconds, 0 if unknown (will be detected on play)
-                audioId,  // identifier
-                false,    // not a stream
-                pageUrl   // URI for display
+                audioId, // identifier
+                false, // not a stream
+                pageUrl // URI for display
         );
 
         logger.info("Loaded Newgrounds track: '{}' by '{}' ({}ms) -> {}", title, artist, duration, mp3Url);
@@ -215,7 +207,7 @@ public class NewgroundsAudioSourceManager implements AudioSourceManager {
         Matcher m = FILENAME_PATTERN.matcher(html);
         if (m.find()) {
             String mp3Url = m.group(1)
-                    .replace("\\/", "/")  // Unescape JSON forward slashes
+                    .replace("\\/", "/") // Unescape JSON forward slashes
                     .replace("\\u002F", "/");
             logger.debug("Found MP3 URL via 'filename' field: {}", mp3Url);
             return mp3Url;
@@ -267,8 +259,7 @@ public class NewgroundsAudioSourceManager implements AudioSourceManager {
             // But og:title doesn't have "by Artist", so check the full title tag
             Matcher titleTag = Pattern.compile(
                     "<title>\\s*(.+?)\\s*-\\s*Newgrounds\\s*</title>",
-                    Pattern.CASE_INSENSITIVE
-            ).matcher(html);
+                    Pattern.CASE_INSENSITIVE).matcher(html);
             if (titleTag.find()) {
                 String fullTitle = titleTag.group(1).trim();
                 Matcher byPattern = TITLE_ARTIST_PATTERN.matcher(fullTitle);
@@ -316,7 +307,8 @@ public class NewgroundsAudioSourceManager implements AudioSourceManager {
      * Basic HTML entity unescaping.
      */
     private String unescapeHtml(String text) {
-        if (text == null) return null;
+        if (text == null)
+            return null;
         return text
                 .replace("&amp;", "&")
                 .replace("&lt;", "<")

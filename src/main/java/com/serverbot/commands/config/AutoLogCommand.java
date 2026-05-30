@@ -24,49 +24,48 @@ public class AutoLogCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         Member member = event.getMember();
         if (!PermissionManager.hasPermission(member, "admin.autolog")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", "You need the `admin.autolog` permission to configure auto-logging."
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions", "You need the `admin.autolog` permission to configure auto-logging."))
+                    .setEphemeral(true).queue();
             return;
         }
 
         String action = event.getOption("action").getAsString();
         OptionMapping actionTypeOption = event.getOption("actiontype");
         String actionType = actionTypeOption != null ? actionTypeOption.getAsString() : null;
-        
+
         try {
             String settingKey = getAutoLogSettingKey(action, actionType);
-            Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
+            Map<String, Object> guildSettings = ServerBot.getStorageManager()
+                    .getGuildSettings(event.getGuild().getId());
             boolean currentValue = Boolean.TRUE.equals(guildSettings.get(settingKey));
             boolean newValue = !currentValue; // Toggle the setting
-            
+
             // Update the setting
             ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), settingKey, newValue);
-            
+
             String actionDescription = getActionDescription(action, actionType);
             String statusText = newValue ? "**Enabled**" : "Disabled";
-            
+
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "AutoLog Updated", 
-                "**" + actionDescription + "** auto-logging has been " + statusText.toLowerCase() + ".\n\n" +
-                "**Status:** " + statusText
-            )).queue();
+                    "AutoLog Updated",
+                    "**" + actionDescription + "** auto-logging has been " + statusText.toLowerCase() + ".\n\n" +
+                            "**Status:** " + statusText))
+                    .queue();
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "AutoLog Error", 
-                "Failed to update auto-logging setting: " + e.getMessage()
-            )).setEphemeral(true).queue();
+                    "AutoLog Error",
+                    "Failed to update auto-logging setting: " + e.getMessage())).setEphemeral(true).queue();
         }
     }
-    
+
     private String getAutoLogSettingKey(String action, String actionType) {
         String base = "autoLog_" + action.toLowerCase();
         if (actionType != null) {
@@ -74,7 +73,7 @@ public class AutoLogCommand implements SlashCommand {
         }
         return base;
     }
-    
+
     private String getActionDescription(String action, String actionType) {
         String base = switch (action.toLowerCase()) {
             case "moderation" -> "Moderation Actions";
@@ -85,34 +84,33 @@ public class AutoLogCommand implements SlashCommand {
             case "all" -> "All Events";
             default -> action.substring(0, 1).toUpperCase() + action.substring(1);
         };
-        
+
         if (actionType != null) {
             base += " (" + actionType + ")";
         }
-        
+
         return base;
     }
 
     public static CommandData getCommandData() {
         return Commands.slash("autolog", "Configure automatic logging for different events")
                 .addOptions(
-                    new OptionData(OptionType.STRING, "action", "The type of events to auto-log", true)
-                        .addChoice("All Events", "all")
-                        .addChoice("Moderation", "moderation")
-                        .addChoice("Member Events", "member")
-                        .addChoice("Message Events", "message")
-                        .addChoice("Voice Events", "voice")
-                        .addChoice("Server Events", "server"),
-                    new OptionData(OptionType.STRING, "actiontype", "Specific event type (optional)", false)
-                        .addChoice("Joins", "joins")
-                        .addChoice("Leaves", "leaves")
-                        .addChoice("Bans", "bans")
-                        .addChoice("Kicks", "kicks")
-                        .addChoice("Mutes", "mutes")
-                        .addChoice("Warns", "warns")
-                        .addChoice("Deletes", "deletes")
-                        .addChoice("Edits", "edits")
-                );
+                        new OptionData(OptionType.STRING, "action", "The type of events to auto-log", true)
+                                .addChoice("All Events", "all")
+                                .addChoice("Moderation", "moderation")
+                                .addChoice("Member Events", "member")
+                                .addChoice("Message Events", "message")
+                                .addChoice("Voice Events", "voice")
+                                .addChoice("Server Events", "server"),
+                        new OptionData(OptionType.STRING, "actiontype", "Specific event type (optional)", false)
+                                .addChoice("Joins", "joins")
+                                .addChoice("Leaves", "leaves")
+                                .addChoice("Bans", "bans")
+                                .addChoice("Kicks", "kicks")
+                                .addChoice("Mutes", "mutes")
+                                .addChoice("Warns", "warns")
+                                .addChoice("Deletes", "deletes")
+                                .addChoice("Edits", "edits"));
     }
 
     @Override

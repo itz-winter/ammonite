@@ -22,16 +22,14 @@ public class SkipCommand implements SlashCommand {
 
         if (!musicManager.isConnected(event.getGuild())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Not Playing", "The bot is not currently playing music."
-            )).setEphemeral(true).queue();
+                    "Not Playing", "The bot is not currently playing music.")).setEphemeral(true).queue();
             return;
         }
 
         GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
         if (gmm.getScheduler().getCurrentTrack() == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Nothing Playing", "There is no track currently playing."
-            )).setEphemeral(true).queue();
+                    "Nothing Playing", "There is no track currently playing.")).setEphemeral(true).queue();
             return;
         }
 
@@ -46,9 +44,8 @@ public class SkipCommand implements SlashCommand {
                 : "Queue is now empty.";
 
         event.replyEmbeds(EmbedUtils.createMusicEmbed(
-            "⏭️ Skipped",
-            "Skipped **" + skipped + "** track" + (skipped != 1 ? "s" : "") + ".\n" + nowPlaying
-        )).queue();
+                "⏭️ Skipped",
+                "Skipped **" + skipped + "** track" + (skipped != 1 ? "s" : "") + ".\n" + nowPlaying)).queue();
     }
 
     public static CommandData getCommandData() {
@@ -57,11 +54,17 @@ public class SkipCommand implements SlashCommand {
     }
 
     @Override
-    public String getName() { return "skip"; }
+    public String getName() {
+        return "skip";
+    }
 
     @Override
-    public String getDescription() { return "Skips a number of tracks in the music queue."; }
+    public String getDescription() {
+        return "Skips a number of tracks in the music queue.";
+    }
 
     @Override
-    public CommandCategory getCategory() { return CommandCategory.MUSIC; }
+    public CommandCategory getCategory() {
+        return CommandCategory.MUSIC;
+    }
 }

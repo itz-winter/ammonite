@@ -32,6 +32,11 @@ public class AvatarCommand implements SlashCommand {
         return CommandCategory.UTILITY;
     }
 
+    @Override // must put this here cause it defaults to true for some fucking reason
+    public boolean isGuildOnly() {
+        return false;
+    }
+
     @Override
     public boolean requiresPermissions() {
         return false;

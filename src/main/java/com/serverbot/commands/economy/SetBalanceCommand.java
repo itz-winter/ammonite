@@ -22,26 +22,24 @@ public class SetBalanceCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         String subcommand = event.getSubcommandName();
         if (!"balance".equals(subcommand)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Unknown Subcommand", "Unknown subcommand: " + subcommand
-            )).setEphemeral(true).queue();
+                    "Unknown Subcommand", "Unknown subcommand: " + subcommand)).setEphemeral(true).queue();
             return;
         }
 
         Member member = event.getMember();
-        
+
         // Check for admin permissions
         if (!PermissionManager.hasPermission(member, "economy.admin.set")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", "You need the `economy.admin.set` permission to set user balances."
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions", "You need the `economy.admin.set` permission to set user balances."))
+                    .setEphemeral(true).queue();
             return;
         }
 
@@ -51,41 +49,38 @@ public class SetBalanceCommand implements SlashCommand {
         try {
             String guildId = event.getGuild().getId();
             String userId = target.getId();
-            
+
             // Get current balance for logging
             long currentBalance = ServerBot.getStorageManager().getBalance(guildId, userId);
-            
+
             // Set the new balance
             ServerBot.getStorageManager().setBalance(guildId, userId, amount);
-            
+
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "💰 Balance Set",
-                "**User:** " + target.getAsMention() + "\n" +
-                "**New Balance:** " + amount + " points\n" +
-                "**Previous Balance:** " + currentBalance + " points"
-            )).queue();
+                    "💰 Balance Set",
+                    "**User:** " + target.getAsMention() + "\n" +
+                            "**New Balance:** " + amount + " points\n" +
+                            "**Previous Balance:** " + currentBalance + " points"))
+                    .queue();
 
             // Log the action
             ServerBot.getStorageManager().logModerationAction(
-                guildId, userId, event.getUser().getId(), 
-                "BALANCE_SET", "Set balance to " + amount, String.valueOf(amount)
-            );
+                    guildId, userId, event.getUser().getId(),
+                    "BALANCE_SET", "Set balance to " + amount, String.valueOf(amount));
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Balance Operation Failed", 
-                "Failed to set balance: " + e.getMessage()
-            )).setEphemeral(true).queue();
+                    "Balance Operation Failed",
+                    "Failed to set balance: " + e.getMessage())).setEphemeral(true).queue();
         }
     }
 
     public static CommandData getCommandData() {
         return Commands.slash("set", "Set a user's balance")
                 .addSubcommands(
-                    new SubcommandData("balance", "Set user's balance to a specific amount")
-                        .addOption(OptionType.USER, "user", "User to set balance for", true)
-                        .addOption(OptionType.INTEGER, "amount", "Amount to set the balance to", true)
-                );
+                        new SubcommandData("balance", "Set user's balance to a specific amount")
+                                .addOption(OptionType.USER, "user", "User to set balance for", true)
+                                .addOption(OptionType.INTEGER, "amount", "Amount to set the balance to", true));
     }
 
     @Override

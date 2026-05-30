@@ -22,25 +22,22 @@ public class LeaderboardCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         // Check if leveling is enabled
         if (!isLevelingEnabled(event.getGuild().getId())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Leveling Disabled", "The leveling system is disabled in this server."
-            )).setEphemeral(true).queue();
+                    "Leveling Disabled", "The leveling system is disabled in this server.")).setEphemeral(true).queue();
             return;
         }
 
         List<LevelUser> topUsers = getTopUsers(event.getGuild().getId(), 10);
-        
+
         if (topUsers.isEmpty()) {
             event.replyEmbeds(EmbedUtils.createInfoEmbed(
-                "Leaderboard", "No users found with XP yet!"
-            )).queue();
+                    "Leaderboard", "No users found with XP yet!")).queue();
             return;
         }
 
@@ -57,10 +54,11 @@ public class LeaderboardCommand implements SlashCommand {
                 case 2 -> "🥉";
                 default -> (i + 1) + ".";
             };
-            
-            String username = event.getJDA().getUserById(user.userId) != null ? 
-                    event.getJDA().getUserById(user.userId).getName() : "Unknown User";
-            
+
+            String username = event.getJDA().getUserById(user.userId) != null
+                    ? event.getJDA().getUserById(user.userId).getName()
+                    : "Unknown User";
+
             leaderboard.append(position).append(" **").append(username).append("**\n")
                     .append("└ Level ").append(user.level).append(" (").append(user.experience).append(" XP)\n\n");
         }
@@ -72,8 +70,9 @@ public class LeaderboardCommand implements SlashCommand {
         if (userPosition > 10) {
             LevelUser userStats = getUserStats(event.getGuild().getId(), event.getUser().getId());
             if (userStats != null) {
-                embed.addField("Your Position", 
-                        "#" + userPosition + " - Level " + userStats.level + " (" + userStats.experience + " XP)", false);
+                embed.addField("Your Position",
+                        "#" + userPosition + " - Level " + userStats.level + " (" + userStats.experience + " XP)",
+                        false);
             }
         }
 
@@ -91,22 +90,23 @@ public class LeaderboardCommand implements SlashCommand {
 
     private List<LevelUser> getTopUsers(String guildId, int limit) {
         List<LevelUser> users = new ArrayList<>();
-        
+
         try {
             // Get all user level data and sort by level and experience
-            for (Map.Entry<String, Map<String, Object>> entry : ServerBot.getStorageManager().getAllLevelData().entrySet()) {
+            for (Map.Entry<String, Map<String, Object>> entry : ServerBot.getStorageManager().getAllLevelData()
+                    .entrySet()) {
                 String key = entry.getKey();
                 if (key.startsWith(guildId + ":")) {
                     String userId = key.substring(guildId.length() + 1);
                     Map<String, Object> data = entry.getValue();
-                    
+
                     int level = ((Number) data.getOrDefault("level", 0)).intValue();
                     long experience = ((Number) data.getOrDefault("experience", 0)).longValue();
-                    
+
                     users.add(new LevelUser(userId, level, experience));
                 }
             }
-            
+
             // Sort by level first, then by experience
             users.sort((u1, u2) -> {
                 if (u1.level != u2.level) {
@@ -114,9 +114,9 @@ public class LeaderboardCommand implements SlashCommand {
                 }
                 return Long.compare(u2.experience, u1.experience); // Higher XP first within same level
             });
-            
+
             return users.subList(0, Math.min(limit, users.size()));
-            
+
         } catch (Exception e) {
             e.printStackTrace();
             return new ArrayList<>();

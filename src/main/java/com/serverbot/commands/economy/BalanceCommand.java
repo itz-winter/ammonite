@@ -20,32 +20,28 @@ public class BalanceCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
-        User targetUser = event.getOption("user") != null ? 
-                event.getOption("user").getAsUser() : event.getUser();
+        User targetUser = event.getOption("user") != null ? event.getOption("user").getAsUser() : event.getUser();
 
         if (targetUser.isBot()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Target", 
-                "Invalid target!")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Target",
+                    "Invalid target!")).setEphemeral(true).queue();
             return;
         }
 
         FileStorageManager storage = ServerBot.getStorageManager();
         String guildId = event.getGuild().getId();
         String userId = targetUser.getId();
-        
+
         long balance = storage.getBalance(guildId, userId);
-        
-        String title = targetUser.equals(event.getUser()) ? 
-                "Your Balance" : 
-                targetUser.getName() + "'s Balance";
+
+        String title = targetUser.equals(event.getUser()) ? "Your Balance" : targetUser.getName() + "'s Balance";
 
         String description = String.format("**Balance:** %,d coins", balance);
-        
+
         event.replyEmbeds(EmbedUtils.createSuccessEmbed(title, description)).queue();
     }
 

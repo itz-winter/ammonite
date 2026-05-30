@@ -16,39 +16,39 @@ import java.util.Set;
  * Utility class for permission checks
  */
 public class PermissionUtils {
-    
+
     /**
      * Check if a member has administrator permissions
      */
     public static boolean hasAdminPermissions(Member member) {
         return member.hasPermission(Permission.ADMINISTRATOR);
     }
-    
+
     /**
      * Check if a member has moderation permissions
      */
     public static boolean hasModerationPermissions(Member member) {
-        return member.hasPermission(Permission.KICK_MEMBERS) || 
-               member.hasPermission(Permission.BAN_MEMBERS) ||
-               member.hasPermission(Permission.MANAGE_ROLES) ||
-               member.hasPermission(Permission.ADMINISTRATOR);
+        return member.hasPermission(Permission.KICK_MEMBERS) ||
+                member.hasPermission(Permission.BAN_MEMBERS) ||
+                member.hasPermission(Permission.MANAGE_ROLES) ||
+                member.hasPermission(Permission.ADMINISTRATOR);
     }
-    
+
     /**
      * Check if a member has moderator permissions (alias for compatibility)
      */
     public static boolean hasModeratorPermissions(Member member) {
         return hasModerationPermissions(member);
     }
-    
+
     /**
      * Check if a member has manage server permissions
      */
     public static boolean hasManageServerPermissions(Member member) {
         return member.hasPermission(Permission.MANAGE_SERVER) ||
-               member.hasPermission(Permission.ADMINISTRATOR);
+                member.hasPermission(Permission.ADMINISTRATOR);
     }
-    
+
     /**
      * Check if a member can interact with another member (hierarchy check)
      */
@@ -56,33 +56,33 @@ public class PermissionUtils {
         if (moderator.equals(target)) {
             return false; // Can't target yourself
         }
-        
+
         if (target.isOwner()) {
             return false; // Can't target server owner
         }
-        
+
         if (moderator.isOwner()) {
             return true; // Server owner can target anyone
         }
-        
+
         // Check role hierarchy
         return moderator.canInteract(target);
     }
-    
+
     /**
      * Check if the bot can interact with a member
      */
     public static boolean botCanInteractWith(Guild guild, Member target) {
         Member botMember = guild.getSelfMember();
-        
+
         if (target.isOwner()) {
             return false; // Bot can't target server owner
         }
-        
+
         // Check if bot has higher role hierarchy
         return botMember.canInteract(target);
     }
-    
+
     /**
      * Check if a user is the bot owner
      */
@@ -91,12 +91,12 @@ public class PermissionUtils {
         if (ownerId != null && user.getId().equals(ownerId)) {
             return true;
         }
-        
+
         // Check against all configured owners
         BotConfig config = ServerBot.getConfigManager().getConfig();
         return config != null && config.isOwner(user.getId());
     }
-    
+
     /**
      * Check if a user is the bot owner (overload without ownerId parameter)
      */
@@ -104,7 +104,7 @@ public class PermissionUtils {
         BotConfig config = ServerBot.getConfigManager().getConfig();
         return config != null && config.isOwner(user.getId());
     }
-    
+
     /**
      * Get permission level of a member
      * 0 = Normal user
@@ -117,59 +117,63 @@ public class PermissionUtils {
         if (isBotOwner(member.getUser(), botOwnerId)) {
             return 4;
         }
-        
+
         if (member.isOwner()) {
             return 3;
         }
-        
+
         if (hasAdminPermissions(member)) {
             return 2;
         }
-        
+
         if (hasModerationPermissions(member)) {
             return 1;
         }
-        
+
         return 0;
     }
-    
+
     /**
-     * Check if a member has permission to use a specific command based on custom role permissions
+     * Check if a member has permission to use a specific command based on custom
+     * role permissions
      */
     public static boolean hasCommandPermission(Member member, String commandName) {
         try {
             String guildId = member.getGuild().getId();
             Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
-            
+
             List<Role> memberRoles = member.getRoles();
-            
+
             // Check if any role explicitly denies this command
             for (Role role : memberRoles) {
                 @SuppressWarnings("unchecked")
-                Set<String> deniedCommands = (Set<String>) guildSettings.getOrDefault("rolePermissions_" + role.getId() + "_denied", new HashSet<>());
+                Set<String> deniedCommands = (Set<String>) guildSettings
+                        .getOrDefault("rolePermissions_" + role.getId() + "_denied", new HashSet<>());
                 if (deniedCommands.contains(commandName.toLowerCase())) {
                     return false; // Explicit deny takes precedence
                 }
             }
-            
+
             // Check if any role explicitly allows this command
             for (Role role : memberRoles) {
                 @SuppressWarnings("unchecked")
-                Set<String> allowedCommands = (Set<String>) guildSettings.getOrDefault("rolePermissions_" + role.getId() + "_allowed", new HashSet<>());
+                Set<String> allowedCommands = (Set<String>) guildSettings
+                        .getOrDefault("rolePermissions_" + role.getId() + "_allowed", new HashSet<>());
                 if (allowedCommands.contains(commandName.toLowerCase())) {
                     return true; // Explicit allow overrides default permissions
                 }
             }
-            
+
             // If no custom permissions are set, fall back to default Discord permissions
-            return true; // Default: allow (individual commands can still check their own permission requirements)
-            
+            return true; // Default: allow (individual commands can still check their own permission
+                         // requirements)
+
         } catch (Exception e) {
             // If there's an error, fall back to allowing the command (safer default)
             return true;
         }
     }
-    
+
     /**
      * Check if a member has permission to use a command requiring admin permissions
      */
@@ -178,20 +182,21 @@ public class PermissionUtils {
         if (!hasCommandPermission(member, commandName)) {
             return false;
         }
-        
+
         // Then check if they have admin permissions for admin-required commands
         return hasAdminPermissions(member);
     }
-    
+
     /**
-     * Check if a member has permission to use a command requiring moderation permissions
+     * Check if a member has permission to use a command requiring moderation
+     * permissions
      */
     public static boolean hasCommandPermissionWithModeration(Member member, String commandName) {
         // First check custom role permissions
         if (!hasCommandPermission(member, commandName)) {
             return false;
         }
-        
+
         // Then check if they have moderation permissions
         return hasModerationPermissions(member);
     }

@@ -14,16 +14,24 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 public class AutoConfigCommand implements SlashCommand {
 
     @Override
-    public String getName() { return "autoconfig"; }
+    public String getName() {
+        return "autoconfig";
+    }
 
     @Override
-    public String getDescription() { return "Launch the guided bot configuration wizard"; }
+    public String getDescription() {
+        return "Launch the guided bot configuration wizard";
+    }
 
     @Override
-    public CommandCategory getCategory() { return CommandCategory.CONFIGURATION; }
+    public CommandCategory getCategory() {
+        return CommandCategory.CONFIGURATION;
+    }
 
     @Override
-    public boolean requiresPermissions() { return false; }
+    public boolean requiresPermissions() {
+        return false;
+    }
 
     public static CommandData getCommandData() {
         return Commands.slash("autoconfig", "Launch the guided bot configuration wizard");

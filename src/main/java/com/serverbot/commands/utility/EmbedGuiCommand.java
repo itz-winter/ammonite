@@ -38,23 +38,29 @@ public class EmbedGuiCommand implements SlashCommand {
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         /*
-        if (!event.isFromGuild()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only","This command can only be used in servers.")).setEphemeral(true).queue();
-            return;
-        }*/
+         * if (!event.isFromGuild()) {
+         * event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only"
+         * ,"This command can only be used in servers.")).setEphemeral(true).queue();
+         * return;
+         * }
+         */
         Member member = event.getMember();
-        // Anyone can open the builder. Send permission requires embed.simple / embed.advanced or mod perms.
+        // Anyone can open the builder. Send permission requires embed.simple /
+        // embed.advanced or mod perms.
         boolean canSend = PermissionManager.hasPermission(member, "embed.simple")
-                       || PermissionManager.hasPermission(member, "embed.advanced")
-                       || PermissionUtils.hasModeratorPermissions(member);
+                || PermissionManager.hasPermission(member, "embed.advanced")
+                || PermissionUtils.hasModeratorPermissions(member);
 
         // Resolve target channel
         GuildMessageChannel targetTmp = event.getChannel().asGuildMessageChannel();
         OptionMapping chOpt = event.getOption("channel");
         if (chOpt != null) {
-            try { targetTmp = chOpt.getAsChannel().asGuildMessageChannel(); }
-            catch (Exception e) {
-                event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Channel","That channel cannot receive messages.")).setEphemeral(true).queue();
+            try {
+                targetTmp = chOpt.getAsChannel().asGuildMessageChannel();
+            } catch (Exception e) {
+                event.replyEmbeds(
+                        EmbedUtils.createErrorEmbed("Invalid Channel", "That channel cannot receive messages."))
+                        .setEphemeral(true).queue();
                 return;
             }
         }
@@ -74,33 +80,63 @@ public class EmbedGuiCommand implements SlashCommand {
 
     // Static helpers used by EmbedGuiListener too
 
-    /** Build the single GUI message: preview embed + status embed + control buttons. */
+    /**
+     * Build the single GUI message: preview embed + status embed + control buttons.
+     */
     public static MessageEditData buildGuiEdit(EmbedGuiSession s, GuildMessageChannel target, String userId) {
         return new MessageEditBuilder()
-            .setEmbeds(buildPreview(s).build(), buildStatus(s, target).build())
-            .setComponents(buildRows(userId, s.canSend))
-            .build();
+                .setEmbeds(buildPreview(s).build(), buildStatus(s, target).build())
+                .setComponents(buildRows(userId, s.canSend))
+                .build();
     }
 
-    /** The preview embed — exactly what will be sent (or a placeholder if empty). */
+    /**
+     * The preview embed — exactly what will be sent (or a placeholder if empty).
+     */
     public static EmbedBuilder buildPreview(EmbedGuiSession s) {
         EmbedBuilder eb = new EmbedBuilder();
         boolean hasContent = false;
 
-        if (s.title != null)       { eb.setTitle(s.title, s.titleUrl); hasContent = true; }
-        if (s.description != null) { eb.setDescription(s.description.replace("\\n","\n")); hasContent = true; }
+        if (s.title != null) {
+            eb.setTitle(s.title, s.titleUrl);
+            hasContent = true;
+        }
+        if (s.description != null) {
+            eb.setDescription(s.description.replace("\\n", "\n"));
+            hasContent = true;
+        }
         if (s.colorHex != null) {
-            try { eb.setColor(Color.decode(s.colorHex.startsWith("#") ? s.colorHex : "#"+s.colorHex)); }
-            catch (Exception ignored) {}
+            try {
+                eb.setColor(Color.decode(s.colorHex.startsWith("#") ? s.colorHex : "#" + s.colorHex));
+            } catch (Exception ignored) {
+            }
         } else {
             eb.setColor(new Color(0x2B2D31)); // near-invisible dark default
         }
-        if (s.timestamp)           { eb.setTimestamp(java.time.Instant.now()); hasContent = true; }
-        if (s.authorName != null)  { eb.setAuthor(s.authorName, s.authorUrl, s.authorIconUrl); hasContent = true; }
-        if (s.footerText != null)  { eb.setFooter(s.footerText, s.footerIconUrl); hasContent = true; }
-        if (s.imageUrl != null)    { eb.setImage(s.imageUrl); hasContent = true; }
-        if (s.thumbnailUrl != null){ eb.setThumbnail(s.thumbnailUrl); hasContent = true; }
-        for (EmbedGuiSession.FieldEntry f : s.fields) { eb.addField(f.name, f.value, f.inline); hasContent = true; }
+        if (s.timestamp) {
+            eb.setTimestamp(java.time.Instant.now());
+            hasContent = true;
+        }
+        if (s.authorName != null) {
+            eb.setAuthor(s.authorName, s.authorUrl, s.authorIconUrl);
+            hasContent = true;
+        }
+        if (s.footerText != null) {
+            eb.setFooter(s.footerText, s.footerIconUrl);
+            hasContent = true;
+        }
+        if (s.imageUrl != null) {
+            eb.setImage(s.imageUrl);
+            hasContent = true;
+        }
+        if (s.thumbnailUrl != null) {
+            eb.setThumbnail(s.thumbnailUrl);
+            hasContent = true;
+        }
+        for (EmbedGuiSession.FieldEntry f : s.fields) {
+            eb.addField(f.name, f.value, f.inline);
+            hasContent = true;
+        }
 
         if (!hasContent) {
             eb.setColor(new Color(0x5865F2));
@@ -111,60 +147,83 @@ public class EmbedGuiCommand implements SlashCommand {
 
     /** A small status embed shown below the preview. */
     public static EmbedBuilder buildStatus(EmbedGuiSession s, GuildMessageChannel target) {
-        String targetMention = target != null ? "<#"+target.getId()+">" : "<#"+s.targetChannelId+">";
-        String sendNote = s.canSend ? "" : "\n⚠️ *You don't have permission to send — use **Export JSON** to copy the embed.*";
+        String targetMention = target != null ? "<#" + target.getId() + ">" : "<#" + s.targetChannelId + ">";
+        String sendNote = s.canSend ? ""
+                : "\n⚠️ *You don't have permission to send — use **Export JSON** to copy the embed.*";
         return new EmbedBuilder()
-            .setColor(new Color(0x36393F))
-            .addField("📊 Builder Status",
-                "**Fields:** " + s.fields.size() + "/25  •  " +
-                "**Buttons:** " + s.buttons.size() + "/25  •  " +
-                "**Timestamp:** " + (s.timestamp ? "✅ On" : "❌ Off") + "\n" +
-                "**Target:** " + targetMention + sendNote, false);
+                .setColor(new Color(0x36393F))
+                .addField("📊 Builder Status",
+                        "**Fields:** " + s.fields.size() + "/25  •  " +
+                                "**Buttons:** " + s.buttons.size() + "/25  •  " +
+                                "**Timestamp:** " + (s.timestamp ? "✅ On" : "❌ Off") + "\n" +
+                                "**Target:** " + targetMention + sendNote,
+                        false);
     }
 
-    /** The 3 rows of control buttons. canSend=false disables the Send button for users without send permission. */
+    /**
+     * The 3 rows of control buttons. canSend=false disables the Send button for
+     * users without send permission.
+     */
     public static List<ActionRow> buildRows(String userId, boolean canSend) {
         String u = userId;
-        Emoji NOTE    = Emoji.fromFormatted("<:NOTE:1436161206233858070>");
-        Emoji TRASH   = Emoji.fromFormatted("<:TRASH:1436161220007825458>");
-        Emoji SAVE    = Emoji.fromFormatted("<:SAVE:1436161201880170526>");
+        Emoji NOTE = Emoji.fromFormatted("<:NOTE:1436161206233858070>");
+        Emoji TRASH = Emoji.fromFormatted("<:TRASH:1436161220007825458>");
+        Emoji SAVE = Emoji.fromFormatted("<:SAVE:1436161201880170526>");
         Emoji SUCCESS = Emoji.fromFormatted("<:SUCCESS:1436158779996504066>");
-        Button sendBtn = Button.success("egui:send:"+u, "Send").withEmoji(SUCCESS);
-        if (!canSend) sendBtn = sendBtn.asDisabled();
+        Button sendBtn = Button.success("egui:send:" + u, "Send").withEmoji(SUCCESS);
+        if (!canSend)
+            sendBtn = sendBtn.asDisabled();
         return Arrays.asList(
-            ActionRow.of(
-                Button.secondary("egui:title:"+u,  "📝 Title"),
-                Button.secondary("egui:desc:"+u,   "Description").withEmoji(NOTE),
-                Button.secondary("egui:color:"+u,  "🎨 Color"),
-                Button.secondary("egui:author:"+u, "👤 Author"),
-                Button.secondary("egui:footer:"+u, "📋 Footer")
-            ),
-            ActionRow.of(
-                Button.secondary("egui:image:"+u,  "🖼 Image"),
-                Button.secondary("egui:thumb:"+u,  "🔲 Thumbnail"),
-                Button.success("egui:field:"+u,    "➕ Add Field"),
-                Button.danger("egui:rmfield:"+u,   "Remove Field").withEmoji(TRASH),
-                Button.secondary("egui:ts:"+u,     "🕐 Timestamp")
-            ),
-            ActionRow.of(
-                Button.success("egui:addbtn:"+u,   "➕ Add Button"),
-                Button.danger("egui:rmbtn:"+u,     "Remove Button").withEmoji(TRASH),
-                Button.danger("egui:clear:"+u,     "Clear All").withEmoji(TRASH),
-                Button.secondary("egui:export:"+u, "Export JSON").withEmoji(SAVE),
-                sendBtn
-            )
-        );
+                ActionRow.of(
+                        Button.secondary("egui:title:" + u, "📝 Title"),
+                        Button.secondary("egui:desc:" + u, "Description").withEmoji(NOTE),
+                        Button.secondary("egui:color:" + u, "🎨 Color"),
+                        Button.secondary("egui:author:" + u, "👤 Author"),
+                        Button.secondary("egui:footer:" + u, "📋 Footer")),
+                ActionRow.of(
+                        Button.secondary("egui:image:" + u, "🖼 Image"),
+                        Button.secondary("egui:thumb:" + u, "🔲 Thumbnail"),
+                        Button.success("egui:field:" + u, "➕ Add Field"),
+                        Button.danger("egui:rmfield:" + u, "Remove Field").withEmoji(TRASH),
+                        Button.secondary("egui:ts:" + u, "🕐 Timestamp")),
+                ActionRow.of(
+                        Button.success("egui:addbtn:" + u, "➕ Add Button"),
+                        Button.danger("egui:rmbtn:" + u, "Remove Button").withEmoji(TRASH),
+                        Button.danger("egui:clear:" + u, "Clear All").withEmoji(TRASH),
+                        Button.secondary("egui:export:" + u, "Export JSON").withEmoji(SAVE),
+                        sendBtn));
     }
 
     public static CommandData getCommandData() {
-        return Commands.slash("embedgui","Interactive embed builder with live preview, full controls, and JSON export.")
-            .addOptions(
-                new OptionData(OptionType.CHANNEL,"channel","Channel to send the final embed to (default: current channel)",false)
-            );
+        return Commands
+                .slash("embedgui", "Interactive embed builder with live preview, full controls, and JSON export.")
+                .addOptions(
+                        new OptionData(OptionType.CHANNEL, "channel",
+                                "Channel to send the final embed to (default: current channel)", false));
     }
 
-    @Override public String getName()              { return "embedgui"; }
-    @Override public String getDescription()       { return "Interactive embed builder with live preview."; }
-    @Override public CommandCategory getCategory() { return CommandCategory.UTILITY; }
-    @Override public boolean requiresPermissions() { return true; }
+    @Override
+    public String getName() {
+        return "embedgui";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Interactive embed builder with live preview.";
+    }
+
+    @Override
+    public boolean isGuildOnly() {
+        return false;
+    }
+
+    @Override
+    public CommandCategory getCategory() {
+        return CommandCategory.UTILITY;
+    }
+
+    @Override
+    public boolean requiresPermissions() {
+        return true;
+    }
 }

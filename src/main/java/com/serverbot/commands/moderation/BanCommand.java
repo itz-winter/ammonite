@@ -33,46 +33,44 @@ public class BanCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage(
-                "Guild Only", "This command can only be used in servers.", USAGE
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.", USAGE)).setEphemeral(true).queue();
             return;
         }
 
         Member moderator = event.getMember();
         if (!PermissionManager.hasPermission(moderator, "mod.ban")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", 
-                "You need the `mod.ban` permission to use this command.\n\n" +
-                "Ask a server admin to grant you the `mod.ban` permission."
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions",
+                    "You need the `mod.ban` permission to use this command.\n\n" +
+                            "Ask a server admin to grant you the `mod.ban` permission."))
+                    .setEphemeral(true).queue();
             return;
         }
 
         User target = event.getOption("user").getAsUser();
-        String durationStr = event.getOption("duration") != null ? 
-                event.getOption("duration").getAsString() : null;
-        String reason = event.getOption("reason") != null ? 
-                event.getOption("reason").getAsString() : "No reason provided";
+        String durationStr = event.getOption("duration") != null ? event.getOption("duration").getAsString() : null;
+        String reason = event.getOption("reason") != null ? event.getOption("reason").getAsString()
+                : "No reason provided";
 
         Member targetMember = event.getGuild().getMember(target);
-        
+
         // Check if target is in guild and can be banned
         if (targetMember != null) {
             if (!moderator.canInteract(targetMember)) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Cannot Ban User", 
-                    "You cannot ban this user due to role hierarchy.\n\n" +
-                    "Your highest role must be above the target user's highest role."
-                )).setEphemeral(true).queue();
+                        "Cannot Ban User",
+                        "You cannot ban this user due to role hierarchy.\n\n" +
+                                "Your highest role must be above the target user's highest role."))
+                        .setEphemeral(true).queue();
                 return;
             }
 
             if (!event.getGuild().getSelfMember().canInteract(targetMember)) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Cannot Ban User", 
-                    "I cannot ban this user due to role hierarchy.\n\n" +
-                    "Move my role higher than the target user's highest role."
-                )).setEphemeral(true).queue();
+                        "Cannot Ban User",
+                        "I cannot ban this user due to role hierarchy.\n\n" +
+                                "Move my role higher than the target user's highest role."))
+                        .setEphemeral(true).queue();
                 return;
             }
         }
@@ -83,12 +81,11 @@ public class BanCommand implements SlashCommand {
             banDuration = TimeUtils.parseDuration(durationStr);
             if (banDuration == null) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage(
-                    "Invalid Duration", 
-                    "Please provide a valid duration format.\n\n" +
-                    "**Valid formats:** `1d`, `2h`, `30m`, `1w`, `12h30m`\n" +
-                    "**Units:** `s`=seconds, `m`=minutes, `h`=hours, `d`=days, `w`=weeks",
-                    USAGE, EXAMPLE
-                )).setEphemeral(true).queue();
+                        "Invalid Duration",
+                        "Please provide a valid duration format.\n\n" +
+                                "**Valid formats:** `1d`, `2h`, `30m`, `1w`, `12h30m`\n" +
+                                "**Units:** `s`=seconds, `m`=minutes, `h`=hours, `d`=days, `w`=weeks",
+                        USAGE, EXAMPLE)).setEphemeral(true).queue();
                 return;
             }
         } else {
@@ -104,18 +101,17 @@ public class BanCommand implements SlashCommand {
                     // Send confirmation
                     String durationText = banDuration != null ? TimeUtils.formatDuration(banDuration) : "Permanent";
                     event.getHook().sendMessageEmbeds(EmbedUtils.createModerationEmbed(
-                        "User Banned", target, moderator.getUser(), reason + "\n**Duration:** " + durationText
-                    )).queue();
+                            "User Banned", target, moderator.getUser(), reason + "\n**Duration:** " + durationText))
+                            .queue();
 
                     // Send DM notification if configured
                     PunishmentNotificationService.getInstance().sendPunishmentNotification(
-                        event.getGuild().getId(), 
-                        target.getId(), 
-                        PunishmentNotificationService.PunishmentType.BAN, 
-                        reason, 
-                        banDuration, 
-                        moderator.getEffectiveName()
-                    );
+                            event.getGuild().getId(),
+                            target.getId(),
+                            PunishmentNotificationService.PunishmentType.BAN,
+                            reason,
+                            banDuration,
+                            moderator.getEffectiveName());
 
                     // Schedule unban if temporary
                     if (banDuration != null) {
@@ -124,14 +120,13 @@ public class BanCommand implements SlashCommand {
 
                     // Log to file storage and mod log channel
                     logBan(event.getGuild().getId(), target.getId(), moderator.getId(), reason, banDuration);
-                    
+
                     // Log to AutoLog channel
                     AutoLogUtils.logBan(event.getGuild(), target, moderator.getUser(), reason, banDuration);
 
                 }, error -> {
                     event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                        "Ban Failed", "Failed to ban user: " + error.getMessage()
-                    )).setEphemeral(true).queue();
+                            "Ban Failed", "Failed to ban user: " + error.getMessage())).setEphemeral(true).queue();
                 });
     }
 
@@ -139,7 +134,7 @@ public class BanCommand implements SlashCommand {
         try {
             long unbanTimestamp = System.currentTimeMillis() + duration.toMillis();
             SchedulerService.getInstance().scheduleUnban(guildId, userId, reason, unbanTimestamp);
-            
+
             // Also store in file storage for backup/tracking
             Map<String, Object> tempPunishment = new HashMap<>();
             tempPunishment.put("guildId", guildId);

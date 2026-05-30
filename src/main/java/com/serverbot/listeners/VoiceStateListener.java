@@ -8,12 +8,17 @@ import org.slf4j.LoggerFactory;
 /**
  * Logs bot voice state changes for diagnostics.
  *
- * Music state cleanup is handled by {@link com.serverbot.music.GuildAudioConnectionListener},
+ * Music state cleanup is handled by
+ * {@link com.serverbot.music.GuildAudioConnectionListener},
  * which listens to JDA's internal ConnectionStatus and uses
- * {@link net.dv8tion.jda.api.audio.hooks.ConnectionStatus#shouldReconnect()} to distinguish
- * transient reconnects from genuine permanent disconnects. Do NOT add cleanup logic here —
- * GuildVoiceUpdateEvent fires for every auto-reconnect attempt and cannot reliably
- * distinguish "bot was kicked" from "bot is reconnecting to a new voice server".
+ * {@link net.dv8tion.jda.api.audio.hooks.ConnectionStatus#shouldReconnect()} to
+ * distinguish
+ * transient reconnects from genuine permanent disconnects. Do NOT add cleanup
+ * logic here —
+ * GuildVoiceUpdateEvent fires for every auto-reconnect attempt and cannot
+ * reliably
+ * distinguish "bot was kicked" from "bot is reconnecting to a new voice
+ * server".
  */
 public class VoiceStateListener extends ListenerAdapter {
 

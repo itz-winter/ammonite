@@ -19,18 +19,16 @@ public class LeaveCommand implements SlashCommand {
 
         if (!musicManager.isConnected(event.getGuild())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Not Connected",
-                "I'm not currently in a voice channel."
-            )).setEphemeral(true).queue();
+                    "Not Connected",
+                    "I'm not currently in a voice channel.")).setEphemeral(true).queue();
             return;
         }
 
         musicManager.leaveChannel(event.getGuild());
 
         event.replyEmbeds(EmbedUtils.createMusicEmbed(
-            "👋 Disconnected",
-            "Left the voice channel and cleared the queue."
-        )).queue();
+                "👋 Disconnected",
+                "Left the voice channel and cleared the queue.")).queue();
     }
 
     public static CommandData getCommandData() {
@@ -38,11 +36,17 @@ public class LeaveCommand implements SlashCommand {
     }
 
     @Override
-    public String getName() { return "leave"; }
+    public String getName() {
+        return "leave";
+    }
 
     @Override
-    public String getDescription() { return "Makes the bot leave the voice channel."; }
+    public String getDescription() {
+        return "Makes the bot leave the voice channel.";
+    }
 
     @Override
-    public CommandCategory getCategory() { return CommandCategory.MUSIC; }
+    public CommandCategory getCategory() {
+        return CommandCategory.MUSIC;
+    }
 }

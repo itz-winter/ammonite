@@ -22,7 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Central manager for all music playback across guilds.
- * Handles audio source registration, guild manager lifecycle, and voice connections.
+ * Handles audio source registration, guild manager lifecycle, and voice
+ * connections.
  */
 public class MusicManager {
 
@@ -36,23 +37,27 @@ public class MusicManager {
         this.playerManager = new DefaultAudioPlayerManager();
         this.musicManagers = new ConcurrentHashMap<>();
 
-        // Register the working YouTube source from youtube-source plugin (dev.lavalink.youtube).
-        // This replaces LavaPlayer's broken built-in YouTube source which YouTube blocks.
+        // Register the working YouTube source from youtube-source plugin
+        // (dev.lavalink.youtube).
+        // This replaces LavaPlayer's broken built-in YouTube source which YouTube
+        // blocks.
         // allowSearch=true enables ytsearch: queries, allowDirectVideoIds/PlaylistIds
         // enables direct URL resolution.
         YoutubeAudioSourceManager ytSourceManager = new YoutubeAudioSourceManager(
-                /*allowSearch=*/ true,
-                /*allowDirectVideoIds=*/ true,
-                /*allowDirectPlaylistIds=*/ true
-        );
+                /* allowSearch= */ true,
+                /* allowDirectVideoIds= */ true,
+                /* allowDirectPlaylistIds= */ true);
         playerManager.registerSourceManager(ytSourceManager);
         logger.info("Registered youtube-source plugin (dev.lavalink.youtube) with search enabled");
 
         // Register Spotify source if credentials are configured.
-        // Spotify is a "mirroring" source — it resolves track metadata from Spotify's API,
+        // Spotify is a "mirroring" source — it resolves track metadata from Spotify's
+        // API,
         // then searches YouTube (or other registered sources) to find the actual audio.
-        // The providers array tells the resolver HOW to find audio: first try YouTube ISRC
-        // lookup (exact match by International Standard Recording Code), then fall back to
+        // The providers array tells the resolver HOW to find audio: first try YouTube
+        // ISRC
+        // lookup (exact match by International Standard Recording Code), then fall back
+        // to
         // a YouTube search by track title + artist.
         try {
             com.serverbot.utils.BotConfig config = com.serverbot.ServerBot.getConfigManager().getConfig();
@@ -60,13 +65,12 @@ public class MusicManager {
             String clientSecret = config.getSpotifyClientSecret();
             String countryCode = config.getSpotifyCountryCode();
             if (clientId != null && !clientId.isEmpty() && clientSecret != null && !clientSecret.isEmpty()) {
-                String[] providers = new String[]{
+                String[] providers = new String[] {
                         "ytsearch:\"%ISRC%\"",
                         "ytsearch:%QUERY%"
                 };
                 SpotifySourceManager spotifySource = new SpotifySourceManager(
-                        providers, clientId, clientSecret, countryCode, playerManager
-                );
+                        providers, clientId, clientSecret, countryCode, playerManager);
                 // Do NOT prefer anonymous tokens — Spotify regularly changes their web
                 // player's token endpoint, causing "Failed to retrieve secret" errors.
                 // Client credentials tokens work for most content (tracks, albums, normal
@@ -128,6 +132,7 @@ public class MusicManager {
 
     /**
      * Join a voice channel.
+     * 
      * @return true if successfully joined or already in the channel
      */
     public boolean joinChannel(AudioChannel channel) {
@@ -143,7 +148,8 @@ public class MusicManager {
             // a close-and-reconnect instruction (code 4014/4015) during the initial
             // handshake, telling the client to reconnect to a different voice server.
             // With auto-reconnect disabled, JDA would give up on the first close,
-            // causing the bot to immediately leave after joining. Our AudioPlayerSendHandler
+            // causing the bot to immediately leave after joining. Our
+            // AudioPlayerSendHandler
             // continuously sends silence frames when idle, keeping the UDP stream alive
             // so a reconnect loop will NOT occur even with auto-reconnect on.
             audioManager.setAutoReconnect(true);
@@ -172,7 +178,8 @@ public class MusicManager {
 
     /**
      * Clean up all music state for a guild without closing the audio connection.
-     * Called when the bot is disconnected externally (kicked, channel deleted, etc.)
+     * Called when the bot is disconnected externally (kicked, channel deleted,
+     * etc.)
      */
     public synchronized void cleanupGuild(Guild guild) {
         GuildMusicManager musicManager = musicManagers.remove(guild.getIdLong());
@@ -199,9 +206,11 @@ public class MusicManager {
     }
 
     /**
-     * Load search results for a text query and return multiple results for selection.
-     * @param query search query text (not a URL)
-     * @param guild the guild to play in
+     * Load search results for a text query and return multiple results for
+     * selection.
+     * 
+     * @param query    search query text (not a URL)
+     * @param guild    the guild to play in
      * @param callback callback for search results
      */
     public void loadSearchResults(String query, Guild guild, SearchResultsCallback callback) {
@@ -252,6 +261,7 @@ public class MusicManager {
             public void trackLoaded(AudioTrack track) {
                 callback.onSearchResults(List.of(track));
             }
+
             @Override
             public void playlistLoaded(AudioPlaylist playlist) {
                 if (playlist.isSearchResult() && !playlist.getTracks().isEmpty()) {
@@ -261,10 +271,12 @@ public class MusicManager {
                     callback.onNoResults();
                 }
             }
+
             @Override
             public void noMatches() {
                 callback.onNoResults();
             }
+
             @Override
             public void loadFailed(FriendlyException exception) {
                 callback.onNoResults();
@@ -274,8 +286,9 @@ public class MusicManager {
 
     /**
      * Load and play a track or playlist.
-     * @param query URL or search query
-     * @param guild the guild to play in
+     * 
+     * @param query    URL or search query
+     * @param guild    the guild to play in
      * @param callback callback for result handling
      */
     public void loadAndPlay(String query, Guild guild, MusicLoadCallback callback) {
@@ -333,6 +346,7 @@ public class MusicManager {
                             logger.info("SoundCloud track loaded: {}", track.getInfo().title);
                             callback.onTrackLoaded(track);
                         }
+
                         @Override
                         public void playlistLoaded(AudioPlaylist playlist) {
                             if (playlist.isSearchResult() && !playlist.getTracks().isEmpty()) {
@@ -343,14 +357,17 @@ public class MusicManager {
                                 callback.onNoMatches();
                             }
                         }
+
                         @Override
                         public void noMatches() {
                             logger.warn("No matches found on YouTube or SoundCloud for: {}", originalQuery);
                             callback.onNoMatches();
                         }
+
                         @Override
                         public void loadFailed(FriendlyException exception) {
-                            logger.warn("SoundCloud fallback also failed for: {} - {}", originalQuery, exception.getMessage());
+                            logger.warn("SoundCloud fallback also failed for: {} - {}", originalQuery,
+                                    exception.getMessage());
                             callback.onNoMatches();
                         }
                     });
@@ -372,6 +389,7 @@ public class MusicManager {
                         public void trackLoaded(AudioTrack track) {
                             callback.onTrackLoaded(track);
                         }
+
                         @Override
                         public void playlistLoaded(AudioPlaylist playlist) {
                             if (playlist.isSearchResult() && !playlist.getTracks().isEmpty()) {
@@ -381,10 +399,12 @@ public class MusicManager {
                                 callback.onLoadFailed(exception.getMessage());
                             }
                         }
+
                         @Override
                         public void noMatches() {
                             callback.onLoadFailed(exception.getMessage());
                         }
+
                         @Override
                         public void loadFailed(FriendlyException scException) {
                             callback.onLoadFailed(exception.getMessage());
@@ -399,13 +419,15 @@ public class MusicManager {
 
     /**
      * Load a playlist with index range selection, then queue tracks.
-     * @param query URL of the playlist
-     * @param guild the guild
+     * 
+     * @param query      URL of the playlist
+     * @param guild      the guild
      * @param startIndex 1-based start index (inclusive)
-     * @param endIndex 1-based end index (inclusive), -1 for end
-     * @param callback result callback
+     * @param endIndex   1-based end index (inclusive), -1 for end
+     * @param callback   result callback
      */
-    public void loadPlaylistWithRange(String query, Guild guild, int startIndex, int endIndex, MusicLoadCallback callback) {
+    public void loadPlaylistWithRange(String query, Guild guild, int startIndex, int endIndex,
+            MusicLoadCallback callback) {
         GuildMusicManager musicManager = getGuildMusicManager(guild);
 
         playerManager.loadItemOrdered(musicManager, query, new AudioLoadResultHandler() {
@@ -463,11 +485,16 @@ public class MusicManager {
      */
     public interface MusicLoadCallback {
         void onTrackLoaded(AudioTrack track);
+
         void onPlaylistLoaded(AudioPlaylist playlist);
-        default void onPlaylistRangeLoaded(String playlistName, List<AudioTrack> tracks, int start, int end, int total) {
+
+        default void onPlaylistRangeLoaded(String playlistName, List<AudioTrack> tracks, int start, int end,
+                int total) {
             // Default: treat as full playlist load — override for range-specific behavior
         }
+
         void onNoMatches();
+
         void onLoadFailed(String message);
     }
 
@@ -476,6 +503,7 @@ public class MusicManager {
      */
     public interface SearchResultsCallback {
         void onSearchResults(List<AudioTrack> tracks);
+
         void onNoResults();
     }
 }

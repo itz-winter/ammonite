@@ -20,8 +20,7 @@ public class PayCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
@@ -30,20 +29,20 @@ public class PayCommand implements SlashCommand {
         long amount = event.getOption("amount").getAsLong();
 
         if (recipient.isBot()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Recipient", 
-                "You cannot pay bots!")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Recipient",
+                    "You cannot pay bots!")).setEphemeral(true).queue();
             return;
         }
 
         if (recipient.equals(sender)) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Recipient", 
-                "You cannot pay yourself!")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Recipient",
+                    "You cannot pay yourself!")).setEphemeral(true).queue();
             return;
         }
 
         if (amount <= 0) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Amount", 
-                "Amount must be greater than 0!")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Amount",
+                    "Amount must be greater than 0!")).setEphemeral(true).queue();
             return;
         }
 
@@ -53,11 +52,12 @@ public class PayCommand implements SlashCommand {
         String recipientId = recipient.getId();
 
         long senderBalance = storage.getBalance(guildId, senderId);
-        
+
         if (senderBalance < amount) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Insufficient Funds", 
-                String.format("You need %,d coins but only have %,d coins!", 
-                    amount, senderBalance))).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Insufficient Funds",
+                    String.format("You need %,d coins but only have %,d coins!",
+                            amount, senderBalance)))
+                    .setEphemeral(true).queue();
             return;
         }
 
@@ -66,13 +66,12 @@ public class PayCommand implements SlashCommand {
         storage.addBalance(guildId, recipientId, amount);
 
         String description = String.format(
-            "**%s** paid **%,d coins** to **%s**\n\n" +
-            "**%s's new balance:** %,d coins\n" +
-            "**%s's new balance:** %,d coins",
-            sender.getName(), amount, recipient.getName(),
-            sender.getName(), storage.getBalance(guildId, senderId),
-            recipient.getName(), storage.getBalance(guildId, recipientId)
-        );
+                "**%s** paid **%,d coins** to **%s**\n\n" +
+                        "**%s's new balance:** %,d coins\n" +
+                        "**%s's new balance:** %,d coins",
+                sender.getName(), amount, recipient.getName(),
+                sender.getName(), storage.getBalance(guildId, senderId),
+                recipient.getName(), storage.getBalance(guildId, recipientId));
 
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("💸 Payment Sent", description)).queue();
     }

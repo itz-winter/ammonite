@@ -31,7 +31,8 @@ import java.util.Map;
 /**
  * Welcome system configuration.
  * Running /welcome with no action opens an ephemeral GUI panel.
- * Toggle actions (enable, dm-enable) flip current state — no extra boolean needed.
+ * Toggle actions (enable, dm-enable) flip current state — no extra boolean
+ * needed.
  */
 public class WelcomeCommand implements SlashCommand {
 
@@ -48,19 +49,22 @@ public class WelcomeCommand implements SlashCommand {
         }
 
         OptionMapping actionOpt = event.getOption("action");
-        if (actionOpt == null) { openPanel(event); return; }
+        if (actionOpt == null) {
+            openPanel(event);
+            return;
+        }
 
         switch (actionOpt.getAsString()) {
-            case "enable"     -> handleEnable(event);
-            case "message"    -> handleMessage(event);
-            case "color"      -> handleEmbedColor(event);
-            case "channel"    -> handleChannel(event);
-            case "auto-role"  -> handleAutoRole(event);
-            case "test"       -> handleTest(event);
-            case "dm-enable"  -> handleDMEnable(event);
+            case "enable" -> handleEnable(event);
+            case "message" -> handleMessage(event);
+            case "color" -> handleEmbedColor(event);
+            case "channel" -> handleChannel(event);
+            case "auto-role" -> handleAutoRole(event);
+            case "test" -> handleTest(event);
+            case "dm-enable" -> handleDMEnable(event);
             case "dm-message" -> handleDMMessage(event);
-            case "dm-test"    -> handleDMTest(event);
-            default           -> openPanel(event);
+            case "dm-test" -> handleDMTest(event);
+            default -> openPanel(event);
         }
     }
 
@@ -86,23 +90,26 @@ public class WelcomeCommand implements SlashCommand {
     }
 
     public static EmbedBuilder buildPanelEmbed(Map<String, Object> settings, Guild guild) {
-        boolean chEnabled  = Boolean.TRUE.equals(settings.get("welcomeEnabled"));
-        boolean dmEnabled  = Boolean.TRUE.equals(settings.get("welcomeDMEnabled"));
-        String  channelId  = (String) settings.get("welcomeChannelId");
-        String  autoRoleId = (String) settings.get("welcomeAutoRoleId");
-        String  message    = (String) settings.getOrDefault("welcomeMessage",
+        boolean chEnabled = Boolean.TRUE.equals(settings.get("welcomeEnabled"));
+        boolean dmEnabled = Boolean.TRUE.equals(settings.get("welcomeDMEnabled"));
+        String channelId = (String) settings.get("welcomeChannelId");
+        String autoRoleId = (String) settings.get("welcomeAutoRoleId");
+        String message = (String) settings.getOrDefault("welcomeMessage",
                 "Welcome to {server}, {user}! We're glad to have you here. \uD83C\uDF89");
-        String  dmMessage  = (String) settings.get("welcomeDMMessage");
-        String  colorHex   = (String) settings.getOrDefault("welcomeEmbedColor", "#00FF00");
+        String dmMessage = (String) settings.get("welcomeDMMessage");
+        String colorHex = (String) settings.getOrDefault("welcomeEmbedColor", "#00FF00");
 
         int colorInt;
-        try { colorInt = Integer.parseInt(colorHex.replace("#", ""), 16); }
-        catch (Exception e) { colorInt = 0x00FF00; }
+        try {
+            colorInt = Integer.parseInt(colorHex.replace("#", ""), 16);
+        } catch (Exception e) {
+            colorInt = 0x00FF00;
+        }
 
-        String chanDisplay = channelId  != null ? "<#" + channelId + ">"   : "*Not set*";
+        String chanDisplay = channelId != null ? "<#" + channelId + ">" : "*Not set*";
         String roleDisplay = autoRoleId != null ? "<@&" + autoRoleId + ">" : "*None*";
-        String msgPreview  = message.length()   > 90 ? message.substring(0, 87)   + "\u2026" : message;
-        String dmPreview   = dmMessage != null
+        String msgPreview = message.length() > 90 ? message.substring(0, 87) + "\u2026" : message;
+        String dmPreview = dmMessage != null
                 ? (dmMessage.length() > 90 ? dmMessage.substring(0, 87) + "\u2026" : dmMessage)
                 : "*Uses channel message as fallback*";
 
@@ -112,14 +119,16 @@ public class WelcomeCommand implements SlashCommand {
                 .setThumbnail(guild.getIconUrl())
                 .addField("\uD83D\uDCE2  Channel Welcome",
                         (chEnabled ? CustomEmojis.ON : CustomEmojis.OFF)
-                        + "  **Status**  |  Channel: " + chanDisplay, false)
+                                + "  **Status**  |  Channel: " + chanDisplay,
+                        false)
                 .addField(CustomEmojis.NOTE + "  Welcome Message",
                         "`" + msgPreview + "`", false)
                 .addField("\uD83C\uDFA8  Embed Color", "**" + colorHex.toUpperCase() + "**", true)
                 .addField("\uD83D\uDC65  Auto-Role", roleDisplay, true)
                 .addField("\uD83D\uDCE8  DM Welcome",
                         (dmEnabled ? CustomEmojis.ON : CustomEmojis.OFF)
-                        + "  **Status**  |  `" + dmPreview + "`", false)
+                                + "  **Status**  |  `" + dmPreview + "`",
+                        false)
                 .addField("\uD83D\uDCCB  Placeholders",
                         "`{user}`  `{username}`  `{server}`  `{membercount}`", false)
                 .setFooter("Use buttons to configure  \u2022  Changes apply immediately");
@@ -129,34 +138,34 @@ public class WelcomeCommand implements SlashCommand {
         boolean chEnabled = Boolean.TRUE.equals(settings.get("welcomeEnabled"));
         boolean dmEnabled = Boolean.TRUE.equals(settings.get("welcomeDMEnabled"));
 
-        Emoji ON_E   = Emoji.fromFormatted(CustomEmojis.ON);
-        Emoji OFF_E  = Emoji.fromFormatted(CustomEmojis.OFF);
+        Emoji ON_E = Emoji.fromFormatted(CustomEmojis.ON);
+        Emoji OFF_E = Emoji.fromFormatted(CustomEmojis.OFF);
         Emoji NOTE_E = Emoji.fromFormatted(CustomEmojis.NOTE);
-        Emoji REF_E  = Emoji.fromFormatted(CustomEmojis.REFRESH);
+        Emoji REF_E = Emoji.fromFormatted(CustomEmojis.REFRESH);
 
         Button toggleBtn = chEnabled
-                ? Button.danger ("wgui:toggle:"   + uid, "Channel: ON" ).withEmoji(ON_E)
-                : Button.success("wgui:toggle:"   + uid, "Channel: OFF").withEmoji(OFF_E);
+                ? Button.danger("wgui:toggle:" + uid, "Channel: ON").withEmoji(ON_E)
+                : Button.success("wgui:toggle:" + uid, "Channel: OFF").withEmoji(OFF_E);
         Button dmToggleBtn = dmEnabled
-                ? Button.danger ("wgui:dmtoggle:" + uid, "DM: ON" ).withEmoji(ON_E)
+                ? Button.danger("wgui:dmtoggle:" + uid, "DM: ON").withEmoji(ON_E)
                 : Button.success("wgui:dmtoggle:" + uid, "DM: OFF").withEmoji(OFF_E);
 
         return List.of(
                 ActionRow.of(
                         toggleBtn,
-                        Button.secondary("wgui:channel:"   + uid, "Set Channel" ).withEmoji(Emoji.fromUnicode("\uD83D\uDCE2")),
-                        Button.secondary("wgui:message:"   + uid, "Set Message" ).withEmoji(NOTE_E),
-                        Button.secondary("wgui:color:"     + uid, "Set Color"   ).withEmoji(Emoji.fromUnicode("\uD83C\uDFA8")),
-                        Button.secondary("wgui:autorole:"  + uid, "Auto-Role"   ).withEmoji(Emoji.fromUnicode("\uD83D\uDC65"))
-                ),
+                        Button.secondary("wgui:channel:" + uid, "Set Channel")
+                                .withEmoji(Emoji.fromUnicode("\uD83D\uDCE2")),
+                        Button.secondary("wgui:message:" + uid, "Set Message").withEmoji(NOTE_E),
+                        Button.secondary("wgui:color:" + uid, "Set Color").withEmoji(Emoji.fromUnicode("\uD83C\uDFA8")),
+                        Button.secondary("wgui:autorole:" + uid, "Auto-Role")
+                                .withEmoji(Emoji.fromUnicode("\uD83D\uDC65"))),
                 ActionRow.of(
                         dmToggleBtn,
-                        Button.secondary("wgui:dmmessage:" + uid, "DM Message"  ).withEmoji(NOTE_E),
-                        Button.secondary("wgui:test:"      + uid, "Test Welcome").withEmoji(Emoji.fromUnicode("\uD83D\uDD04")),
-                        Button.secondary("wgui:dmtest:"    + uid, "Test DM"     ).withEmoji(Emoji.fromUnicode("\uD83D\uDCEC")),
-                        Button.secondary("wgui:refresh:"   + uid, "Refresh"     ).withEmoji(REF_E)
-                )
-        );
+                        Button.secondary("wgui:dmmessage:" + uid, "DM Message").withEmoji(NOTE_E),
+                        Button.secondary("wgui:test:" + uid, "Test Welcome")
+                                .withEmoji(Emoji.fromUnicode("\uD83D\uDD04")),
+                        Button.secondary("wgui:dmtest:" + uid, "Test DM").withEmoji(Emoji.fromUnicode("\uD83D\uDCEC")),
+                        Button.secondary("wgui:refresh:" + uid, "Refresh").withEmoji(REF_E)));
     }
 
     // Quick actions
@@ -187,7 +196,7 @@ public class WelcomeCommand implements SlashCommand {
         if (opt == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Text",
                     "Usage: `/welcome action:message text:<message>`\n"
-                    + "Placeholders: `{user}` `{username}` `{server}` `{membercount}`"))
+                            + "Placeholders: `{user}` `{username}` `{server}` `{membercount}`"))
                     .setEphemeral(true).queue();
             return;
         }
@@ -214,15 +223,18 @@ public class WelcomeCommand implements SlashCommand {
             return;
         }
         String color = opt.getAsString().trim();
-        if (!color.startsWith("#")) color = "#" + color;
+        if (!color.startsWith("#"))
+            color = "#" + color;
         if (!color.matches("#[0-9A-Fa-f]{6}")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Color", "Use hex format: `#FF0000`"))
                     .setEphemeral(true).queue();
             return;
         }
         try {
-            ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "welcomeEmbedColor", color.toUpperCase());
-            event.replyEmbeds(EmbedUtils.createSuccessEmbed("Color Updated", "Embed color \u2192 **" + color.toUpperCase() + "**")).queue();
+            ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "welcomeEmbedColor",
+                    color.toUpperCase());
+            event.replyEmbeds(EmbedUtils.createSuccessEmbed("Color Updated",
+                    "Embed color \u2192 **" + color.toUpperCase() + "**")).queue();
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Failed", e.getMessage())).setEphemeral(true).queue();
         }
@@ -268,9 +280,9 @@ public class WelcomeCommand implements SlashCommand {
     public void handleTest(SlashCommandInteractionEvent event) {
         try {
             Map<String, Object> s = ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
-            String raw   = (String) s.getOrDefault("welcomeMessage",
+            String raw = (String) s.getOrDefault("welcomeMessage",
                     "Welcome to {server}, {user}! We're glad to have you here. \uD83C\uDF89");
-            String msg   = applyPlaceholders(raw, event);
+            String msg = applyPlaceholders(raw, event);
             String color = (String) s.getOrDefault("welcomeEmbedColor", "#00FF00");
             EmbedBuilder eb = new EmbedBuilder()
                     .setColor(Integer.parseInt(color.replace("#", ""), 16))
@@ -324,11 +336,11 @@ public class WelcomeCommand implements SlashCommand {
     public void handleDMTest(SlashCommandInteractionEvent event) {
         try {
             Map<String, Object> s = ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
-            String raw   = s.containsKey("welcomeDMMessage")
+            String raw = s.containsKey("welcomeDMMessage")
                     ? (String) s.get("welcomeDMMessage")
                     : (String) s.getOrDefault("welcomeMessage",
                             "Welcome to {server}, {user}! \uD83C\uDF89");
-            String msg   = applyPlaceholders(raw, event);
+            String msg = applyPlaceholders(raw, event);
             String color = (String) s.getOrDefault("welcomeEmbedColor", "#00FF00");
             EmbedBuilder eb = new EmbedBuilder()
                     .setColor(Integer.parseInt(color.replace("#", ""), 16))
@@ -342,8 +354,7 @@ public class WelcomeCommand implements SlashCommand {
                             suc -> event.replyEmbeds(EmbedUtils.createSuccessEmbed("DM Sent",
                                     "Test DM sent to your inbox.")).setEphemeral(true).queue(),
                             fail -> event.replyEmbeds(EmbedUtils.createErrorEmbed("DM Failed",
-                                    "Could not send DM \u2014 are your DMs open?")).setEphemeral(true).queue()
-                    );
+                                    "Could not send DM \u2014 are your DMs open?")).setEphemeral(true).queue());
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Test Failed", e.getMessage())).setEphemeral(true).queue();
         }
@@ -353,40 +364,56 @@ public class WelcomeCommand implements SlashCommand {
 
     public static String applyPlaceholders(String template, SlashCommandInteractionEvent event) {
         return template
-                .replace("{user}",        event.getUser().getAsMention())
-                .replace("{username}",    event.getUser().getEffectiveName())
-                .replace("{server}",      event.getGuild().getName())
+                .replace("{user}", event.getUser().getAsMention())
+                .replace("{username}", event.getUser().getEffectiveName())
+                .replace("{server}", event.getGuild().getName())
                 .replace("{membercount}", String.valueOf(event.getGuild().getMemberCount()));
     }
 
     // Metadata
 
-    @Override public String getName()              { return "welcome"; }
-    @Override public String getDescription()       { return "Configure welcome messages \u2014 run with no args for the GUI panel"; }
-    @Override public CommandCategory getCategory() { return CommandCategory.CONFIGURATION; }
-    @Override public boolean requiresPermissions() { return true; }
+    @Override
+    public String getName() {
+        return "welcome";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Configure welcome messages \u2014 run with no args for the GUI panel";
+    }
+
+    @Override
+    public CommandCategory getCategory() {
+        return CommandCategory.CONFIGURATION;
+    }
+
+    @Override
+    public boolean requiresPermissions() {
+        return true;
+    }
 
     public static CommandData getCommandData() {
         OptionData actionOpt = new OptionData(OptionType.STRING, "action",
                 "Action to perform \u2014 omit to open the interactive GUI panel", false)
                 .addChoice("Toggle Channel Welcome", "enable")
-                .addChoice("Set Message",            "message")
-                .addChoice("Set Embed Color",        "color")
-                .addChoice("Set Channel",            "channel")
-                .addChoice("Set Auto-Role",          "auto-role")
-                .addChoice("Test Welcome",           "test")
-                .addChoice("Toggle DM Welcome",      "dm-enable")
-                .addChoice("Set DM Message",         "dm-message")
-                .addChoice("Test DM Welcome",        "dm-test");
+                .addChoice("Set Message", "message")
+                .addChoice("Set Embed Color", "color")
+                .addChoice("Set Channel", "channel")
+                .addChoice("Set Auto-Role", "auto-role")
+                .addChoice("Test Welcome", "test")
+                .addChoice("Toggle DM Welcome", "dm-enable")
+                .addChoice("Set DM Message", "dm-message")
+                .addChoice("Test DM Welcome", "dm-test");
 
-        return Commands.slash("welcome", "Configure welcome messages and auto-roles \u2014 run with no args for the GUI panel")
+        return Commands
+                .slash("welcome", "Configure welcome messages and auto-roles \u2014 run with no args for the GUI panel")
                 .addOptions(
                         actionOpt,
-                        new OptionData(OptionType.STRING,  "text",    "Message text (for message/dm-message)", false),
-                        new OptionData(OptionType.STRING,  "color",   "Hex color e.g. #FF0000 (for color)",    false),
-                        new OptionData(OptionType.ROLE,    "role",    "Role for new members, omit to clear",   false),
-                        new OptionData(OptionType.CHANNEL, "channel", "Welcome channel (for channel action)",  false),
-                        new OptionData(OptionType.BOOLEAN, "enabled", "Explicitly on/off \u2014 omit to toggle", false)
-                );
+                        new OptionData(OptionType.STRING, "text", "Message text (for message/dm-message)", false),
+                        new OptionData(OptionType.STRING, "color", "Hex color e.g. #FF0000 (for color)", false),
+                        new OptionData(OptionType.ROLE, "role", "Role for new members, omit to clear", false),
+                        new OptionData(OptionType.CHANNEL, "channel", "Welcome channel (for channel action)", false),
+                        new OptionData(OptionType.BOOLEAN, "enabled", "Explicitly on/off \u2014 omit to toggle",
+                                false));
     }
 }

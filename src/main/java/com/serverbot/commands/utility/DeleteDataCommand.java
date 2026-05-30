@@ -23,7 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Allows users to request deletion of all their personal data stored by the bot.
+ * Allows users to request deletion of all their personal data stored by the
+ * bot.
  * Uses a confirmation button to prevent accidental data loss.
  * Required for compliance with the Discord Developer Terms of Service.
  */
@@ -72,15 +73,17 @@ public class DeleteDataCommand extends ListenerAdapter implements SlashCommand {
                 .setDescription("You are about to **permanently delete** all of your personal data stored by this bot.")
                 .addField("⚠️ This will delete:",
                         "• Economy balances and transaction history\n" +
-                        "• Leveling XP and progress\n" +
-                        "• Warning records (where you are the subject)\n" +
-                        "• Moderation log entries (where you are the target)\n" +
-                        "• Suspicious account records\n" +
-                        "• Pending report messages\n" +
-                        "• Proxy members and groups you own", false)
+                                "• Leveling XP and progress\n" +
+                                "• Warning records (where you are the subject)\n" +
+                                "• Moderation log entries (where you are the target)\n" +
+                                "• Suspicious account records\n" +
+                                "• Pending report messages\n" +
+                                "• Proxy members and groups you own",
+                        false)
                 .addField(CustomEmojis.ERROR + " Warning",
                         "**This action is irreversible.** Your economy balance, levels, and all other " +
-                        "data will be permanently erased across all servers.", false)
+                                "data will be permanently erased across all servers.",
+                        false)
                 .setFooter("This confirmation expires in 2 minutes.");
 
         // Store pending confirmation
@@ -90,8 +93,7 @@ public class DeleteDataCommand extends ListenerAdapter implements SlashCommand {
                 .addComponents(ActionRow.of(
                         Button.danger(BUTTON_CONFIRM + ":" + userId, "Confirm Deletion")
                                 .withEmoji(net.dv8tion.jda.api.entities.emoji.Emoji.fromFormatted(CustomEmojis.TRASH)),
-                        Button.secondary(BUTTON_CANCEL + ":" + userId, "Cancel")
-                ))
+                        Button.secondary(BUTTON_CANCEL + ":" + userId, "Cancel")))
                 .setEphemeral(true)
                 .queue();
     }
@@ -150,8 +152,8 @@ public class DeleteDataCommand extends ListenerAdapter implements SlashCommand {
             logger.error("Error during data deletion for user {}: {}", clickerId, e.getMessage(), e);
             event.getHook().sendMessageEmbeds(
                     EmbedUtils.createErrorEmbed("Data Deletion Error",
-                            "An error occurred while deleting your data. Please contact the bot owner.")
-            ).setEphemeral(true).queue();
+                            "An error occurred while deleting your data. Please contact the bot owner."))
+                    .setEphemeral(true).queue();
             return;
         }
 
@@ -160,10 +162,12 @@ public class DeleteDataCommand extends ListenerAdapter implements SlashCommand {
                 .setDescription("Your personal data has been permanently deleted.")
                 .addField("Summary",
                         "• **" + categoriesCleared + "** data categories cleared\n" +
-                        "• **" + proxyMembersDeleted + "** proxy members removed", false)
+                                "• **" + proxyMembersDeleted + "** proxy members removed",
+                        false)
                 .addField("Note",
                         "Server-level configuration data (e.g. guild settings, permissions) is managed by " +
-                        "server administrators and is not affected by this command.", false);
+                                "server administrators and is not affected by this command.",
+                        false);
 
         event.getHook().sendMessageEmbeds(result.build()).setEphemeral(true).queue();
         logger.info("User {} deleted all their personal data ({} categories, {} proxy members)",
@@ -182,12 +186,13 @@ public class DeleteDataCommand extends ListenerAdapter implements SlashCommand {
         pendingConfirmations.remove(clickerId);
         event.editComponents().queue();
         event.getHook().sendMessageEmbeds(
-                EmbedUtils.createInfoEmbed("Cancelled", "Data deletion cancelled. Your data has not been modified.")
-        ).setEphemeral(true).queue();
+                EmbedUtils.createInfoEmbed("Cancelled", "Data deletion cancelled. Your data has not been modified."))
+                .setEphemeral(true).queue();
     }
 
     /**
      * Deletes all proxy members and groups owned by a specific user.
+     * 
      * @return the number of proxy members deleted
      */
     private int deleteProxyDataForUser(ProxyService proxyService, String userId) {

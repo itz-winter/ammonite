@@ -21,34 +21,33 @@ public class LevelsCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         Member member = event.getMember();
         if (!PermissionUtils.hasManageServerPermissions(member)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Permissions", "You need Manage Server permissions to use this command."
-            )).setEphemeral(true).queue();
+                    "Insufficient Permissions", "You need Manage Server permissions to use this command."))
+                    .setEphemeral(true).queue();
             return;
         }
 
         String action = event.getOption("action").getAsString().toLowerCase();
         boolean enable = action.equals("enable");
-        
+
         try {
             updateLevelsSettings(event.getGuild().getId(), enable);
-            
+
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Leveling " + (enable ? "Enabled" : "Disabled"),
-                "The leveling/XP system has been " + (enable ? "enabled" : "disabled") + " for this server."
-            )).queue();
-            
+                    "Leveling " + (enable ? "Enabled" : "Disabled"),
+                    "The leveling/XP system has been " + (enable ? "enabled" : "disabled") + " for this server."))
+                    .queue();
+
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Configuration Failed", "Failed to update leveling settings: " + e.getMessage()
-            )).setEphemeral(true).queue();
+                    "Configuration Failed", "Failed to update leveling settings: " + e.getMessage())).setEphemeral(true)
+                    .queue();
         }
     }
 
@@ -60,10 +59,9 @@ public class LevelsCommand implements SlashCommand {
     public static CommandData getCommandData() {
         return Commands.slash("levels", "Enable or disable the leveling system")
                 .addOptions(
-                    new OptionData(OptionType.STRING, "action", "Enable or disable", true)
-                        .addChoice("Enable", "enable")
-                        .addChoice("Disable", "disable")
-                );
+                        new OptionData(OptionType.STRING, "action", "Enable or disable", true)
+                                .addChoice("Enable", "enable")
+                                .addChoice("Disable", "disable"));
     }
 
     @Override

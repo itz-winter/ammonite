@@ -30,15 +30,14 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
     private static final Random random = new Random();
 
     // Card representations
-    private static final String[] SUITS = {"♠", "♥", "♦", "♣"};
-    private static final String[] RANKS = {"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"};
+    private static final String[] SUITS = { "♠", "♥", "♦", "♣" };
+    private static final String[] RANKS = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Guild Only", "This command can only be used in servers."
-            )).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
@@ -50,19 +49,18 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
         long userBalance = ServerBot.getStorageManager().getBalance(guildId, userId);
         if (userBalance < betAmount) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Insufficient Funds", 
-                "You need at least " + betAmount + " points to play poker.\n" +
-                "Your current balance: " + userBalance + " points"
-            )).setEphemeral(true).queue();
+                    "Insufficient Funds",
+                    "You need at least " + betAmount + " points to play poker.\n" +
+                            "Your current balance: " + userBalance + " points"))
+                    .setEphemeral(true).queue();
             return;
         }
 
         // Check if user is already in a game
         if (activeGames.containsKey(userId)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Game in Progress", 
-                "You're already playing poker! Finish your current game first."
-            )).setEphemeral(true).queue();
+                    "Game in Progress",
+                    "You're already playing poker! Finish your current game first.")).setEphemeral(true).queue();
             return;
         }
 
@@ -75,14 +73,13 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
 
         // Create initial embed with hand
         EmbedBuilder embed = createGameEmbed(game);
-        
+
         event.replyEmbeds(embed.build())
-             .addComponents(ActionRow.of(
-                 Button.primary("poker_hold", "Hold Current Hand"),
-                 Button.secondary("poker_discard", "Discard & Draw"),
-                 Button.danger("poker_fold", "Fold")
-             ))
-             .queue();
+                .addComponents(ActionRow.of(
+                        Button.primary("poker_hold", "Hold Current Hand"),
+                        Button.secondary("poker_discard", "Discard & Draw"),
+                        Button.danger("poker_fold", "Fold")))
+                .queue();
 
         // Schedule game cleanup after 5 minutes
         scheduleGameCleanup(userId);
@@ -99,15 +96,13 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
 
         if (game == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Game Not Found", "Your poker game has expired or doesn't exist."
-            )).setEphemeral(true).queue();
+                    "Game Not Found", "Your poker game has expired or doesn't exist.")).setEphemeral(true).queue();
             return;
         }
 
         if (!game.userId.equals(userId)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Not Your Game", "This isn't your poker game!"
-            )).setEphemeral(true).queue();
+                    "Not Your Game", "This isn't your poker game!")).setEphemeral(true).queue();
             return;
         }
 
@@ -122,7 +117,7 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
         // Evaluate final hand
         String handType = evaluateHand(game.hand);
         long payout = calculatePayout(handType, game.betAmount);
-        
+
         // Update balance
         if (payout > 0) {
             long currentBalance = ServerBot.getStorageManager().getBalance(game.guildId, game.userId);
@@ -130,10 +125,10 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
         }
 
         EmbedBuilder embed = createFinalEmbed(game, handType, payout);
-        
+
         event.editMessageEmbeds(embed.build())
-             .setComponents() // Remove buttons
-             .queue();
+                .setComponents() // Remove buttons
+                .queue();
 
         activeGames.remove(game.userId);
     }
@@ -141,8 +136,7 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
     private void handleDiscard(ButtonInteractionEvent event, PokerGame game) {
         if (game.hasDiscarded) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Already Discarded", "You can only discard once per game!"
-            )).setEphemeral(true).queue();
+                    "Already Discarded", "You can only discard once per game!")).setEphemeral(true).queue();
             return;
         }
 
@@ -151,19 +145,18 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
             int indexToReplace = random.nextInt(game.hand.size());
             game.hand.set(indexToReplace, drawCard());
         }
-        
+
         game.hasDiscarded = true;
 
         EmbedBuilder embed = createGameEmbed(game);
         embed.setDescription("📝 **Cards discarded and redrawn!**\n" +
-                           "You can now **Hold** or **Fold** your final hand.");
+                "You can now **Hold** or **Fold** your final hand.");
 
         event.editMessageEmbeds(embed.build())
-             .setComponents(ActionRow.of(
-                 Button.primary("poker_hold", "Hold Current Hand"),
-                 Button.danger("poker_fold", "Fold")
-             ))
-             .queue();
+                .setComponents(ActionRow.of(
+                        Button.primary("poker_hold", "Hold Current Hand"),
+                        Button.danger("poker_fold", "Fold")))
+                .queue();
     }
 
     private void handleFold(ButtonInteractionEvent event, PokerGame game) {
@@ -174,8 +167,8 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
                 .addField("Your Hand", formatHand(game.hand), false);
 
         event.editMessageEmbeds(embed.build())
-             .setComponents() // Remove buttons
-             .queue();
+                .setComponents() // Remove buttons
+                .queue();
 
         activeGames.remove(game.userId);
     }
@@ -200,12 +193,12 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
 
         if (payout > 0) {
             embed.setDescription("🎉 **You won!**")
-                 .setColor(Color.GREEN)
-                 .addField("Payout", "+" + payout + " points", true);
+                    .setColor(Color.GREEN)
+                    .addField("Payout", "+" + payout + " points", true);
         } else {
             embed.setDescription("😢 **You lost!**")
-                 .setColor(Color.RED)
-                 .addField("Loss", "-" + game.betAmount + " points", true);
+                    .setColor(Color.RED)
+                    .addField("Loss", "-" + game.betAmount + " points", true);
         }
 
         long newBalance = ServerBot.getStorageManager().getBalance(game.guildId, game.userId);
@@ -217,7 +210,8 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
     private String formatHand(List<Card> hand) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < hand.size(); i++) {
-            if (i > 0) sb.append(" ");
+            if (i > 0)
+                sb.append(" ");
             sb.append(hand.get(i).toString());
         }
         return sb.toString();
@@ -232,7 +226,7 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
     private List<Card> drawInitialHand() {
         List<Card> hand = new ArrayList<>();
         Set<String> drawn = new HashSet<>();
-        
+
         while (hand.size() < 5) {
             Card card = drawCard();
             String cardStr = card.toString();
@@ -241,7 +235,7 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
                 drawn.add(cardStr);
             }
         }
-        
+
         return hand;
     }
 
@@ -249,26 +243,34 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
         // Simple hand evaluation - just check for pairs, three of a kind, etc.
         Map<String, Integer> rankCounts = new HashMap<>();
         Map<String, Integer> suitCounts = new HashMap<>();
-        
+
         for (Card card : hand) {
             rankCounts.merge(card.rank, 1, Integer::sum);
             suitCounts.merge(card.suit, 1, Integer::sum);
         }
-        
+
         boolean isFlush = suitCounts.values().stream().anyMatch(count -> count >= 5);
         boolean isStraight = checkStraight(hand);
-        
+
         int maxRankCount = rankCounts.values().stream().mapToInt(Integer::intValue).max().orElse(0);
         long pairCount = rankCounts.values().stream().mapToLong(count -> count >= 2 ? 1 : 0).sum();
-        
-        if (isFlush && isStraight) return "Straight Flush";
-        if (maxRankCount == 4) return "Four of a Kind";
-        if (maxRankCount == 3 && pairCount == 2) return "Full House";
-        if (isFlush) return "Flush";
-        if (isStraight) return "Straight";
-        if (maxRankCount == 3) return "Three of a Kind";
-        if (pairCount == 2) return "Two Pair";
-        if (pairCount == 1) return "One Pair";
+
+        if (isFlush && isStraight)
+            return "Straight Flush";
+        if (maxRankCount == 4)
+            return "Four of a Kind";
+        if (maxRankCount == 3 && pairCount == 2)
+            return "Full House";
+        if (isFlush)
+            return "Flush";
+        if (isStraight)
+            return "Straight";
+        if (maxRankCount == 3)
+            return "Three of a Kind";
+        if (pairCount == 2)
+            return "Two Pair";
+        if (pairCount == 1)
+            return "One Pair";
         return "High Card";
     }
 
@@ -285,9 +287,9 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
             }
         }
         Collections.sort(values);
-        
+
         for (int i = 1; i < values.size(); i++) {
-            if (values.get(i) != values.get(i-1) + 1) {
+            if (values.get(i) != values.get(i - 1) + 1) {
                 return false;
             }
         }
@@ -309,9 +311,10 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
     }
 
     private void scheduleGameCleanup(String userId) {
-        // Use CompletableFuture.delayedExecutor instead of Timer to avoid daemon threads
+        // Use CompletableFuture.delayedExecutor instead of Timer to avoid daemon
+        // threads
         CompletableFuture.delayedExecutor(5, TimeUnit.MINUTES)
-            .execute(() -> activeGames.remove(userId));
+                .execute(() -> activeGames.remove(userId));
     }
 
     public static CommandData getCommandData() {
