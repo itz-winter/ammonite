@@ -6419,7 +6419,7 @@ public class PrefixCommandService {
         )).queue();
     }
 
-    // ── Global Chat prefix handlers ───────────────────────────────────────────
+    // Global Chat prefix handlers
     // Works in both DMs and guilds. Only link/unlink are guild-only.
 
     /**

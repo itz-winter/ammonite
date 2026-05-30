@@ -123,7 +123,7 @@ public class AntiSpamGuiListener extends ListenerAdapter {
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Helpers
 
     private void refreshPanel(ButtonInteractionEvent event, String guildId, Guild guild, String userId) {
         event.editMessage(AntiSpamCommand.buildPanelEdit(

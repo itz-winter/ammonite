@@ -6,7 +6,7 @@
   <title>Commands — Ammonite</title>
   <link rel="stylesheet" href="common.css">
   <style>
-    /* ── commands-specific overrides ── */
+    /* commands-specific overrides */
     .cmd-controls { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; }
     .cmd-search { width: 100%; padding: 10px 14px; font-size: 0.95rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-surface); color: var(--text-primary); box-sizing: border-box; }
     .cmd-search:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 3px var(--brand-light); }
@@ -1086,7 +1086,22 @@
             </div>
             <div class="cmd-detail">
                 <h4>Syntax</h4>
-                <div class="syntax-block">/prefix <span class="required">&lt;action&gt;</span></div>
+                <div class="syntax-block">/prefix <span class="required">&lt;action&gt;</span> <span class="optional">[prefix]</span></div>
+                <h4>Subcommands</h4>
+                <ul>
+                    <li><code>enable</code> — enable prefix commands (resets to <code>!</code> if none configured)</li>
+                    <li><code>disable</code> — disable prefix commands entirely</li>
+                    <li><code>add &lt;prefix&gt;</code> — add a new prefix (e.g. <code>?</code> or <code>sb!</code>)</li>
+                    <li><code>remove &lt;prefix&gt;</code> — remove a prefix; removing the last one auto-disables prefix commands</li>
+                    <li><code>set &lt;prefix&gt;</code> — replace all prefixes with a single one</li>
+                    <li><code>status</code> — show current prefixes and enabled/disabled state</li>
+                </ul>
+                <h4>Details</h4>
+                <ul>
+                    <li>Prefix commands are separate from slash commands and are disabled by default.</li>
+                    <li>If all prefixes are removed, prefix commands are automatically disabled.</li>
+                    <li>Re-enabling with no prefixes configured will reset to <code>!</code>.</li>
+                </ul>
             </div>
         </div>
 

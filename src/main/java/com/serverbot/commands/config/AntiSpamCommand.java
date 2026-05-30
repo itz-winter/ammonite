@@ -70,7 +70,7 @@ public class AntiSpamCommand implements SlashCommand {
         }
     }
 
-    // ── Panel ─────────────────────────────────────────────────────────────────
+    // Panel
 
     private void openPanel(SlashCommandInteractionEvent event) {
         Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
@@ -168,7 +168,7 @@ public class AntiSpamCommand implements SlashCommand {
         );
     }
 
-    // ── Quick actions ─────────────────────────────────────────────────────────
+    // Quick actions
 
     public void handleToggle(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
@@ -262,7 +262,7 @@ public class AntiSpamCommand implements SlashCommand {
                 v == 0 ? "Bans will be **permanent**." : "Ban duration is now **" + v + "h**.")).queue();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Helpers
 
     public static int getInt(Map<String, Object> settings, String key, int def) {
         Object v = settings.get(key);
@@ -271,7 +271,7 @@ public class AntiSpamCommand implements SlashCommand {
         try { return Integer.parseInt(v.toString()); } catch (Exception e) { return def; }
     }
 
-    // ── Metadata ──────────────────────────────────────────────────────────────
+    // Metadata
 
     @Override public String getName()              { return "antispam"; }
     @Override public String getDescription()       { return "Configure anti-spam \u2014 run with no args for the GUI panel"; }

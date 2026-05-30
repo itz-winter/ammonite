@@ -72,7 +72,9 @@ public class JokeCommand implements SlashCommand {
         "Did you hear about the mathematician who's afraid of negative numbers? He'll stop at nothing to avoid them!",
         "I'm reading a book about anti-gravity. It's impossible to put down!",
         "Want to hear a joke about construction? I'm still working on it!",
-        "What do you call a factory that makes okay products? A satisfactory!"
+        "What do you call a factory that makes okay products? A satisfactory!",
+        "Why did the chicken join a band? Because it had the drumsticks!",
+        "Why did the coffee file a police report? It got mugged!",
     };
 
     @Override

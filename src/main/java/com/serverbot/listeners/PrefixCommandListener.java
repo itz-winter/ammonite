@@ -24,7 +24,12 @@ public class PrefixCommandListener extends ListenerAdapter {
         if (event.getAuthor().isBot()) {
             return;
         }
-        
+
+        // If we're in a guild and prefix commands are disabled, skip entirely
+        if (event.isFromGuild() && !ServerBot.getStorageManager().arePrefixCommandsEnabled(event.getGuild().getId())) {
+            return;
+        }
+
         String content = event.getMessage().getContentRaw();
 
         // Check the hardcoded default "!" and proxy prefix first, then any guild-specific

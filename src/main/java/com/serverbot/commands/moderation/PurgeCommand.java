@@ -61,7 +61,7 @@ public class PurgeCommand implements SlashCommand {
     private static final int FETCH_CHUNK = 100;
     private static final int MAX_FETCH   = 1000;
 
-    // ── Entry point ───────────────────────────────────────────────────────────────
+    // Entry point
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
@@ -80,7 +80,7 @@ public class PurgeCommand implements SlashCommand {
             return;
         }
 
-        // ── Resolve target channel (defaults to the channel the command was run in) ──
+        // Resolve target channel (defaults to the channel the command was run in)
 
         OptionMapping channelOpt = event.getOption("channel");
         GuildMessageChannel channel;
@@ -107,7 +107,7 @@ public class PurgeCommand implements SlashCommand {
             return;
         }
 
-        // ── Parse options ────────────────────────────────────────────────────────
+        // Parse options
 
         boolean all          = event.getOption("all",       false, OptionMapping::getAsBoolean);
         boolean amountExplicit = event.getOption("amount") != null;
@@ -134,7 +134,7 @@ public class PurgeCommand implements SlashCommand {
         boolean filterEmbeds = event.getOption("has_embed", false, OptionMapping::getAsBoolean);
         String  contains     = event.getOption("contains",  null,  OptionMapping::getAsString);
 
-        // ── Contradiction checks ─────────────────────────────────────────────────
+        // Contradiction checks
 
         if (filterBots && filterHumans) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
@@ -154,7 +154,7 @@ public class PurgeCommand implements SlashCommand {
             return;
         }
 
-        // ── Resolve timestamps / message URL anchors ─────────────────────────────
+        // Resolve timestamps / message URL anchors
 
         OffsetDateTime afterTime  = null;
         OffsetDateTime beforeTime = null;
@@ -217,7 +217,7 @@ public class PurgeCommand implements SlashCommand {
 
         event.deferReply(true).queue();
 
-        // ── Collect & delete ─────────────────────────────────────────────────────
+        // Collect & delete
 
         List<Message> collected = new ArrayList<>();
         fetchChunk(channel, collected, fAmount, fFromId, fToId,
@@ -242,7 +242,7 @@ public class PurgeCommand implements SlashCommand {
         );
     }
 
-    // ── Paginated history fetcher ─────────────────────────────────────────────────
+    // Paginated history fetcher
 
     private void fetchChunk(GuildMessageChannel channel,
                             List<Message> collected,
@@ -323,7 +323,7 @@ public class PurgeCommand implements SlashCommand {
             long           msgId   = msg.getIdLong();
             OffsetDateTime msgTime = msg.getTimeCreated();
 
-            // ── Range / time filters ─────────────────────────────────────
+            // Range / time filters
             if (toMsgId   != -1 && msgId > toMsgId)   continue; // newer than range end
             if (fromMsgId != -1 && msgId < fromMsgId) { stop = true; break; } // past range start
 
@@ -337,7 +337,7 @@ public class PurgeCommand implements SlashCommand {
                 continue;
             }
 
-            // ── Content / author filters ─────────────────────────────────
+            // Content / author filters
             if (filterUser   != null && !msg.getAuthor().getId().equals(filterUser.getId())) continue;
             if (filterBots   && !msg.getAuthor().isBot())  continue;
             if (filterHumans &&  msg.getAuthor().isBot())  continue;
@@ -360,7 +360,7 @@ public class PurgeCommand implements SlashCommand {
                 filterLinks, filterEmbeds, contains, all, next, onDone, onError);
     }
 
-    // ── Deletion ──────────────────────────────────────────────────────────────────
+    // Deletion
 
     private void deleteMessages(SlashCommandInteractionEvent event,
                                 GuildMessageChannel channel,
@@ -441,7 +441,7 @@ public class PurgeCommand implements SlashCommand {
         );
     }
 
-    // ── Response helpers ──────────────────────────────────────────────────────────
+    // Response helpers
 
     private void sendSuccess(SlashCommandInteractionEvent event, int count, String summary) {
         String desc = "Deleted **" + count + "** message" + (count != 1 ? "s" : "") + ".";
@@ -457,7 +457,7 @@ public class PurgeCommand implements SlashCommand {
         )).queue();
     }
 
-    // ── Utility helpers ───────────────────────────────────────────────────────────
+    // Utility helpers
 
     /** Returns the snowflake ID from a Discord message URL, or null if it's not a URL. */
     private static Long extractMsgId(String input) {
@@ -535,7 +535,7 @@ public class PurgeCommand implements SlashCommand {
         return String.join(", ", parts);
     }
 
-    // ── Command definition ────────────────────────────────────────────────────────
+    // Command definition
 
     public static CommandData getCommandData() {
         return Commands.slash("purge", "Bulk-delete messages with optional composable filters.")

@@ -176,7 +176,7 @@ public class WelcomeGuiListener extends ListenerAdapter {
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Helpers
 
     private void refreshPanel(ButtonInteractionEvent event, String guildId, Guild guild, String userId) {
         Map<String, Object> fresh = ServerBot.getStorageManager().getGuildSettings(guildId);
@@ -213,7 +213,7 @@ public class WelcomeGuiListener extends ListenerAdapter {
         }
     }
 
-    // ── Modals ────────────────────────────────────────────────────────────────
+    // Modals
 
     private Modal channelModal(String uid, Map<String, Object> settings) {
         String cur = settings.containsKey("welcomeChannelId") ? "<#" + settings.get("welcomeChannelId") + ">" : "";

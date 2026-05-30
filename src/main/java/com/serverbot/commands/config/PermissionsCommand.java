@@ -68,7 +68,7 @@ public class PermissionsCommand implements SlashCommand {
         event.replyChoices(choices).queue();
     }
 
-    // ── Handlers ──────────────────────────────────────────────────────────────
+    // Handlers
 
     private void handleView(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
@@ -185,7 +185,7 @@ public class PermissionsCommand implements SlashCommand {
         }
     }
 
-    // ── UI helpers ────────────────────────────────────────────────────────────
+    // UI helpers
 
     private EmbedBuilder buildPermEmbed(String name, String icon, Map<String, Boolean> perms, String guildName) {
         EmbedBuilder eb = new EmbedBuilder()
@@ -226,7 +226,7 @@ public class PermissionsCommand implements SlashCommand {
         event.replyEmbeds(eb.build()).setEphemeral(true).queue();
     }
 
-    // ── Metadata ──────────────────────────────────────────────────────────────
+    // Metadata
 
     @Override public String getName()              { return "permissions"; }
     @Override public String getDescription()       { return "Manage server permission nodes for users, roles, and @everyone"; }

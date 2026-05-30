@@ -73,9 +73,9 @@ public class SlotsCommand implements SlashCommand {
                 event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                     "🎰 SLOTS - " + winType + " 🎉",
                     "```\n" +
-                    "┌─────────────┐\n" +
+                    "┌┐\n" +
                     "│  " + slotResult + "  │\n" +
-                    "└─────────────┘\n" +
+                    "└┘\n" +
                     "```\n" +
                     "**Bet Amount:** " + betAmount + " points\n" +
                     "**Winnings:** +" + netWinnings + " points\n" +
@@ -89,9 +89,9 @@ public class SlotsCommand implements SlashCommand {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "🎰 SLOTS - No Win",
                     "```\n" +
-                    "┌─────────────┐\n" +
+                    "┌┐\n" +
                     "│  " + slotResult + "  │\n" +
-                    "└─────────────┘\n" +
+                    "└┘\n" +
                     "```\n" +
                     "**Lost Amount:** " + betAmount + " points\n" +
                     "**New Balance:** " + newBalance + " points"

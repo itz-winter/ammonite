@@ -128,13 +128,24 @@
           <li>Other admins join with <code>/globalchat join &lt;code&gt;</code></li>
           <li>Messages relay to all linked channels via webhooks</li>
         </ol>
+        <h3>Management Panel</h3>
+        <p>Use <code>/globalchat manage</code> to open an interactive panel in your DMs. All actions use <strong>modal forms</strong> — no need to type in chat.</p>
+        <ul>
+          <li><strong>Edit Channel</strong> — update name, description, visibility, join key, and webhook mode</li>
+          <li><strong>Display Format</strong> — customise the name format, message prefix, and message suffix shown on relayed messages</li>
+          <li><strong>Set Rules</strong> — configure channel rules shown to members on join</li>
+          <li><strong>Add Moderator</strong> — grant a user moderator access to the channel</li>
+          <li><strong>Kick / Ban / Warn / Mute</strong> — moderate linked servers directly from the panel</li>
+          <li><strong>Unmute / Clear Warnings</strong> — reverse moderation actions</li>
+          <li><strong>View Linked</strong> — list all servers currently linked to the channel</li>
+        </ul>
         <h3>Safety Features</h3>
         <ul>
-          <li><strong>Attribution</strong> — relayed messages prefixed with <code>[GC]</code></li>
+          <li><strong>Attribution</strong> — relayed messages prefixed with <code>[GC]</code> (customisable)</li>
           <li><strong>Rate limiting</strong> — 3-second per-user cooldown</li>
           <li><strong>Content limits</strong> — 2000 chars, max 5 attachments</li>
           <li><strong>Server muting</strong> — mute specific servers from sending or receiving</li>
-          <li><strong>Moderation</strong> — owners can kick/ban servers</li>
+          <li><strong>Moderation</strong> — owners and moderators can kick, ban, warn, or mute servers</li>
         </ul>
       </div>
 

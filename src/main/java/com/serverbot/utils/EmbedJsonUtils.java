@@ -42,7 +42,7 @@ public final class EmbedJsonUtils {
 
     private EmbedJsonUtils() {}
 
-    // ── Embed JSON → EmbedBuilder ─────────────────────────────────────────────
+    // Embed JSON → EmbedBuilder
 
     /**
      * Parse the raw JSON string and return the root JsonObject.
@@ -88,7 +88,7 @@ public final class EmbedJsonUtils {
         JsonObject obj = parseRootObject(json);
         List<Button> result = new ArrayList<>();
 
-        // ── Discord API format: "components" array of action rows ────────────
+        // Discord API format: "components" array of action rows
         if (obj.has("components") && obj.get("components").isJsonArray()) {
             for (JsonElement rowEl : obj.getAsJsonArray("components")) {
                 if (!rowEl.isJsonObject()) continue;
@@ -108,7 +108,7 @@ public final class EmbedJsonUtils {
             if (!result.isEmpty()) return result;
         }
 
-        // ── Legacy format: "buttons" flat array ──────────────────────────────
+        // Legacy format: "buttons" flat array
         if (!obj.has("buttons") || !obj.get("buttons").isJsonArray()) return result;
         for (JsonElement el : obj.getAsJsonArray("buttons")) {
             if (!el.isJsonObject() || result.size() >= 25) continue;
@@ -242,7 +242,7 @@ public final class EmbedJsonUtils {
         return eb;
     }
 
-    // ── Button JSON → List<Button> ────────────────────────────────────────────
+    // Button JSON → List<Button>
 
     /**
      * Parse a standalone button JSON array string into a list of JDA Buttons.
@@ -267,7 +267,7 @@ public final class EmbedJsonUtils {
         return result;
     }
 
-    // ── EmbedGuiSession → EmbedBuilder / Buttons ─────────────────────────────
+    // EmbedGuiSession → EmbedBuilder / Buttons
 
     /**
      * Build a JDA EmbedBuilder from a GUI session's current state.
@@ -306,7 +306,7 @@ public final class EmbedJsonUtils {
         return result;
     }
 
-    // ── EmbedGuiSession → JSON string ─────────────────────────────────────────
+    // EmbedGuiSession → JSON string
 
     /**
      * Serialise the current session state to a JSON string compatible with /embed.
@@ -392,7 +392,7 @@ public final class EmbedJsonUtils {
         return GSON.toJson(arr);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Helpers
 
     public static Color parseColor(String hex) {
         if (hex == null || hex.isBlank()) return new Color(0x5865F2);

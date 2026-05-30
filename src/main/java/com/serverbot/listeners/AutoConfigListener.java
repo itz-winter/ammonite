@@ -46,7 +46,7 @@ public class AutoConfigListener extends ListenerAdapter {
     /** Per-guild wizard state: guildId → current step + accumulated choices */
     private static final Map<String, SetupState> activeSetups = new ConcurrentHashMap<>();
 
-    // ── GuildJoinEvent ───────────────────────────────────────────────
+    // GuildJoinEvent
 
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
@@ -85,7 +85,7 @@ public class AutoConfigListener extends ListenerAdapter {
                 .queue();
     }
 
-    // ── Button interactions ──────────────────────────────────────────
+    // Button interactions
 
     @Override
     public void onButtonInteraction(ButtonInteractionEvent event) {
@@ -186,7 +186,7 @@ public class AutoConfigListener extends ListenerAdapter {
         }
     }
 
-    // ── Entity Select interactions (channel / role selectors) ────────
+    // Entity Select interactions (channel / role selectors)
 
     @Override
     public void onEntitySelectInteraction(EntitySelectInteractionEvent event) {
@@ -250,7 +250,7 @@ public class AutoConfigListener extends ListenerAdapter {
         }
     }
 
-    // ── String Select interaction (feature toggle) ──────────────────
+    // String Select interaction (feature toggle)
 
     @Override
     public void onStringSelectInteraction(StringSelectInteractionEvent event) {
@@ -292,7 +292,7 @@ public class AutoConfigListener extends ListenerAdapter {
         sendStep7Complete(event.getChannel().asTextChannel(), guildId);
     }
 
-    // ── Step senders ─────────────────────────────────────────────────
+    // Step senders
 
     private void sendStep2ModLog(ButtonInteractionEvent event, String guildId) {
         EmbedBuilder eb = new EmbedBuilder()
@@ -457,7 +457,7 @@ public class AutoConfigListener extends ListenerAdapter {
         channel.sendMessageEmbeds(eb.build()).queue();
     }
 
-    // ── Setup state ──────────────────────────────────────────────────
+    // Setup state
 
     private static class SetupState {
         final String guildId;

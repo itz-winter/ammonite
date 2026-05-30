@@ -152,7 +152,7 @@ public class EmbedGuiListener extends ListenerAdapter {
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Helpers
 
     /** Edit the existing GUI message after a button (non-modal) action. */
     private void refreshGui(ButtonInteractionEvent event, EmbedGuiSession session, String userId) {
@@ -218,7 +218,7 @@ public class EmbedGuiListener extends ListenerAdapter {
         return (s == null || s.isBlank()) ? null : s.trim();
     }
 
-    // ── Modal builders ────────────────────────────────────────────────────────
+    // Modal builders
 
     private Modal titleModal(String uid, EmbedGuiSession s) {
         TextInput.Builder val = TextInput.create("val", TextInputStyle.SHORT)

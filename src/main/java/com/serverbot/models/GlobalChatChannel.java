@@ -42,6 +42,12 @@ public class GlobalChatChannel {
     // e.g. "{user} @ {server}"
     private String nameFormat;
 
+    // Optional text prepended to every relayed message (overridden by nameFormat)
+    private String msgPrefix;
+
+    // Optional text appended to every relayed message (overridden by nameFormat)
+    private String msgSuffix;
+
     // Whether to relay via webhook (true, default) or as a plain bot message (false)
     private boolean webhookEnabled = true;
 
@@ -69,7 +75,7 @@ public class GlobalChatChannel {
         this.ownerId = ownerId;
     }
 
-    // ── Ownership / role checks ──────────────────────────────────────
+    // Ownership / role checks
 
     public boolean isOwner(String userId) {
         return ownerId != null && ownerId.equals(userId);
@@ -91,7 +97,7 @@ public class GlobalChatChannel {
         return isOwner(userId) || isCoOwner(userId) || isModerator(userId);
     }
 
-    // ── Linked channels ──────────────────────────────────────────────
+    // Linked channels
 
     public boolean isGuildLinked(String guildId) {
         return linkedChannels.containsKey(guildId);
@@ -109,7 +115,7 @@ public class GlobalChatChannel {
         linkedChannels.remove(guildId);
     }
 
-    // ── Server moderation ────────────────────────────────────────────
+    // Server moderation
 
     public boolean isServerBanned(String guildId) {
         return bannedServers.contains(guildId);
@@ -161,7 +167,7 @@ public class GlobalChatChannel {
         return warnedServers.getOrDefault(guildId, Collections.emptyList());
     }
 
-    // ── Getters / setters ────────────────────────────────────────────
+    // Getters / setters
 
     public String getChannelId() { return channelId; }
     public void setChannelId(String channelId) { this.channelId = channelId; }
@@ -219,6 +225,10 @@ public class GlobalChatChannel {
 
     public String getNameFormat() { return nameFormat; }
     public void setNameFormat(String nameFormat) { this.nameFormat = nameFormat; }
+    public String getMsgPrefix() { return msgPrefix; }
+    public void setMsgPrefix(String msgPrefix) { this.msgPrefix = msgPrefix; }
+    public String getMsgSuffix() { return msgSuffix; }
+    public void setMsgSuffix(String msgSuffix) { this.msgSuffix = msgSuffix; }
 
     public boolean isWebhookEnabled() { return webhookEnabled; }
     public void setWebhookEnabled(boolean webhookEnabled) { this.webhookEnabled = webhookEnabled; }

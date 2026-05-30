@@ -68,7 +68,7 @@ public class SettingsCommand implements SlashCommand {
         }
     }
 
-    // ── Panel ─────────────────────────────────────────────────────────────────
+    // Panel
 
     private void openPanel(SlashCommandInteractionEvent event) {
         Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
@@ -181,7 +181,7 @@ public class SettingsCommand implements SlashCommand {
         );
     }
 
-    // ── Toggle handlers ───────────────────────────────────────────────────────
+    // Toggle handlers
 
     public void handleEconomyToggle(SlashCommandInteractionEvent event) {
         toggle(event, "economyEnabled", "Economy");
@@ -212,7 +212,7 @@ public class SettingsCommand implements SlashCommand {
                 label + " is now **" + (next ? "on" : "off") + "**.")).queue();
     }
 
-    // ── Numeric handlers ──────────────────────────────────────────────────────
+    // Numeric handlers
 
     private void handleInt(SlashCommandInteractionEvent event, String key, String label, int min, int max) {
         OptionMapping opt = event.getOption("value");
@@ -232,7 +232,7 @@ public class SettingsCommand implements SlashCommand {
                 label + " is now **" + v + "**.")).queue();
     }
 
-    // ── Role / Channel handlers ───────────────────────────────────────────────
+    // Role / Channel handlers
 
     public void handleMuteRole(SlashCommandInteractionEvent event) {
         OptionMapping opt = event.getOption("role");
@@ -267,7 +267,7 @@ public class SettingsCommand implements SlashCommand {
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Helpers
 
     public static int getInt(Map<String, Object> settings, String key, int def) {
         Object v = settings.get(key);
@@ -276,7 +276,7 @@ public class SettingsCommand implements SlashCommand {
         try { return Integer.parseInt(v.toString()); } catch (Exception e) { return def; }
     }
 
-    // ── Metadata ──────────────────────────────────────────────────────────────
+    // Metadata
 
     @Override public String getName()              { return "settings"; }
     @Override public String getDescription()       { return "Configure server settings \u2014 run with no args for the GUI panel"; }

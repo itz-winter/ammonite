@@ -17,7 +17,6 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.interactions.InteractionContextType;
 
-import java.awt.*;
 import java.util.*;
 import java.util.List;
 
@@ -51,11 +50,13 @@ public class PrefixCommand implements SlashCommand {
         }
 
         switch (subcommand) {
-            case "set"    -> handleSetPrefix(event);
-            case "add"    -> handleAddPrefix(event);
-            case "remove" -> handleRemovePrefix(event);
-            case "status" -> showStatus(event);
-            default       -> showStatus(event);
+            case "set"     -> handleSetPrefix(event);
+            case "add"     -> handleAddPrefix(event);
+            case "remove"  -> handleRemovePrefix(event);
+            case "enable"  -> handleEnable(event);
+            case "disable" -> handleDisable(event);
+            case "status"  -> showStatus(event);
+            default        -> showStatus(event);
         }
     }
 
@@ -125,14 +126,6 @@ public class PrefixCommand implements SlashCommand {
             return;
         }
         String removePrefix = prefixOption.getAsString().trim();
-        List<String> current = ServerBot.getStorageManager().getPrefixes(guildId);
-        if (current.size() == 1 && current.contains(removePrefix)) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Cannot Remove",
-                "You cannot remove the only active prefix. Use `/prefix set` to change it instead."
-            )).setEphemeral(true).queue();
-            return;
-        }
         boolean removed = ServerBot.getStorageManager().removePrefix(guildId, removePrefix);
         if (!removed) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
@@ -141,11 +134,60 @@ public class PrefixCommand implements SlashCommand {
             return;
         }
         List<String> remaining = ServerBot.getStorageManager().getPrefixes(guildId);
+        // Auto-disable if no prefixes remain
+        if (remaining.isEmpty() || (remaining.size() == 1 && remaining.get(0).equals("!"))) {
+            // Actually check stored list directly
+        }
+        // Re-fetch raw stored list to check truly empty
+        Map<String, Object> rawSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
+        Object stored = rawSettings.get("commandPrefixes");
+        boolean listEmpty = !(stored instanceof List) || ((List<?>) stored).isEmpty();
+        if (listEmpty) {
+            ServerBot.getStorageManager().setPrefixCommandsEnabled(guildId, false);
+            DismissibleMessage.reply(event, new EmbedBuilder()
+                .setColor(EmbedUtils.WARNING_COLOR)
+                .setTitle(CustomEmojis.WARN + " Last Prefix Removed")
+                .setDescription("Removed `" + removePrefix + "`. No prefixes remain — **prefix commands have been automatically disabled.**\n\n" +
+                    "Use `/prefix enable` or `/prefix add` to re-enable them.")
+                .build(), true);
+        } else {
+            DismissibleMessage.reply(event, new EmbedBuilder()
+                .setColor(EmbedUtils.SUCCESS_COLOR)
+                .setTitle(CustomEmojis.SUCCESS + " Prefix Removed")
+                .setDescription("Removed `" + removePrefix + "` from the active prefix list.")
+                .addField("Remaining Prefixes", String.join("  ", remaining.stream().map(p -> "`" + p + "`").toList()), false)
+                .build(), true);
+        }
+    }
+
+    private void handleEnable(SlashCommandInteractionEvent event) {
+        String guildId = event.getGuild().getId();
+        ServerBot.getStorageManager().setPrefixCommandsEnabled(guildId, true);
+        List<String> prefixes = ServerBot.getStorageManager().getPrefixes(guildId);
+        // If no prefixes are configured, set a default
+        Map<String, Object> rawSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
+        Object stored = rawSettings.get("commandPrefixes");
+        boolean listEmpty = !(stored instanceof List) || ((List<?>) stored).isEmpty();
+        if (listEmpty) {
+            ServerBot.getStorageManager().setPrefix(guildId, "!");
+            prefixes = List.of("!");
+        }
         DismissibleMessage.reply(event, new EmbedBuilder()
             .setColor(EmbedUtils.SUCCESS_COLOR)
-            .setTitle(CustomEmojis.SUCCESS + " Prefix Removed")
-            .setDescription("Removed `" + removePrefix + "` from the active prefix list.")
-            .addField("Remaining Prefixes", String.join("  ", remaining.stream().map(p -> "`" + p + "`").toList()), false)
+            .setTitle(CustomEmojis.SUCCESS + " Prefix Commands Enabled")
+            .setDescription("Prefix commands are now **enabled** for this server.")
+            .addField("Active Prefixes", String.join("  ", prefixes.stream().map(p -> "`" + p + "`").toList()), false)
+            .build(), true);
+    }
+
+    private void handleDisable(SlashCommandInteractionEvent event) {
+        String guildId = event.getGuild().getId();
+        ServerBot.getStorageManager().setPrefixCommandsEnabled(guildId, false);
+        DismissibleMessage.reply(event, new EmbedBuilder()
+            .setColor(EmbedUtils.SUCCESS_COLOR)
+            .setTitle(CustomEmojis.SUCCESS + " Prefix Commands Disabled")
+            .setDescription("Prefix commands are now **disabled** for this server. Slash commands (`/`) still work.\n\n" +
+                "Use `/prefix enable` to re-enable them.")
             .build(), true);
     }
 
@@ -171,17 +213,32 @@ public class PrefixCommand implements SlashCommand {
 
     private void showStatus(SlashCommandInteractionEvent event) {
         String guildId = event.getGuild().getId();
+        boolean enabled = ServerBot.getStorageManager().arePrefixCommandsEnabled(guildId);
         List<String> prefixes = ServerBot.getStorageManager().getPrefixes(guildId);
-        String prefixDisplay = String.join("  ", prefixes.stream().map(p -> "`" + p + "`").toList());
+
+        // Check if there are actually configured prefixes (not just the fallback "!")
+        Map<String, Object> rawSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
+        Object stored = rawSettings.get("commandPrefixes");
+        boolean hasPrefixes = stored instanceof List && !((List<?>) stored).isEmpty();
+
+        String statusLine = enabled
+            ? CustomEmojis.ON + " **Enabled**"
+            : CustomEmojis.OFF + " **Disabled**";
+        String prefixDisplay = hasPrefixes
+            ? String.join("  ", prefixes.stream().map(p -> "`" + p + "`").toList())
+            : "*(none configured — use `/prefix add` to add one)*";
 
         EmbedBuilder embed = new EmbedBuilder()
-            .setColor(EmbedUtils.INFO_COLOR)
-            .setTitle(CustomEmojis.SETTING + " Prefix Settings")
+            .setColor(enabled ? EmbedUtils.SUCCESS_COLOR : EmbedUtils.WARNING_COLOR)
+            .setTitle(CustomEmojis.SETTING + " Prefix Command Settings")
+            .addField("Status", statusLine, true)
             .addField("Active Prefixes", prefixDisplay, false)
-            .addField("Usage",
+            .addField("Subcommands",
+                "`/prefix enable` — Enable prefix commands\n" +
+                "`/prefix disable` — Disable prefix commands\n" +
                 "`/prefix set prefix:<new>` — Replace all prefixes with one\n" +
                 "`/prefix add prefix:<p>` — Add an additional prefix\n" +
-                "`/prefix remove prefix:<p>` — Remove a prefix\n" +
+                "`/prefix remove prefix:<p>` — Remove a prefix (removing all auto-disables)\n" +
                 "`/prefix status` — Show this status", false);
 
         DismissibleMessage.reply(event, embed.build(), true);
@@ -199,11 +256,13 @@ public class PrefixCommand implements SlashCommand {
     public static CommandData getCommandData() {
         return Commands.slash("prefix", "Configure command prefix settings for this server")
             .addSubcommands(
+                new SubcommandData("enable",  "Enable prefix commands for this server"),
+                new SubcommandData("disable", "Disable prefix commands for this server"),
                 new SubcommandData("set", "Replace all prefixes with a single new prefix")
                     .addOption(OptionType.STRING, "prefix", "The new prefix (1-5 characters)", false),
                 new SubcommandData("add", "Add an additional command prefix")
                     .addOption(OptionType.STRING, "prefix", "The prefix to add (1-5 characters, no spaces)", true),
-                new SubcommandData("remove", "Remove a command prefix")
+                new SubcommandData("remove", "Remove a command prefix (removing all auto-disables prefix commands)")
                     .addOption(OptionType.STRING, "prefix", "The prefix to remove", true),
                 new SubcommandData("status", "Show current prefix settings")
             )

@@ -72,7 +72,7 @@ public class EmbedGuiCommand implements SlashCommand {
         });
     }
 
-    // ── Static helpers used by EmbedGuiListener too ───────────────────────────
+    // Static helpers used by EmbedGuiListener too
 
     /** Build the single GUI message: preview embed + status embed + control buttons. */
     public static MessageEditData buildGuiEdit(EmbedGuiSession s, GuildMessageChannel target, String userId) {

@@ -37,7 +37,7 @@ public class AutoLogListener extends ListenerAdapter {
     
     private static final Logger logger = LoggerFactory.getLogger(AutoLogListener.class);
 
-    // ── Message cache (Vencord-style: cache on receive, read on delete/edit) ─────
+    // Message cache (Vencord-style: cache on receive, read on delete/edit)
 
     /** Cached metadata for a recently received message, used for delete/edit logging. */
     private record CachedMessage(String content, String authorMention, String authorId, String authorTag) {}
@@ -94,7 +94,7 @@ public class AutoLogListener extends ListenerAdapter {
         }
     }
 
-    // ── Message caching ───────────────────────────────────────────────────────────
+    // Message caching
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
@@ -674,7 +674,7 @@ public class AutoLogListener extends ListenerAdapter {
         return text.substring(0, maxLength - 3) + "...";
     }
 
-    // ── Grouped delete log (shared by onMessageBulkDelete and logOldMessagePurge) ─
+    // Grouped delete log (shared by onMessageBulkDelete and logOldMessagePurge)
 
     /**
      * Logs a batch of deleted messages as a paginated multi-embed entry.

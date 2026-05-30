@@ -16,7 +16,7 @@ public class DismissButtonListener extends ListenerAdapter {
     public void onButtonInteraction(ButtonInteractionEvent event) {
         String buttonId = event.getComponentId();
 
-        // ── Playlist delete confirm ──────────────────────────────────────────
+        // Playlist delete confirm
         if (buttonId.startsWith("playlist_delete:")) {
             // format: playlist_delete:{userId}:{playlistName}
             String[] parts = buttonId.split(":", 3);
@@ -44,7 +44,7 @@ public class DismissButtonListener extends ListenerAdapter {
             return;
         }
 
-        // ── Playlist delete cancel ───────────────────────────────────────────
+        // Playlist delete cancel
         if (buttonId.startsWith("playlist_cancel:")) {
             String ownerId = buttonId.split(":", 2)[1];
             if (!event.getUser().getId().equals(ownerId)) {
@@ -58,7 +58,7 @@ public class DismissButtonListener extends ListenerAdapter {
             return;
         }
 
-        // ── Dismiss button ───────────────────────────────────────────────────
+        // Dismiss button
         if (!DismissibleMessage.isDismissButton(buttonId)) {
             return;
         }

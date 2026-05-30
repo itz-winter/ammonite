@@ -182,7 +182,7 @@ public class GlobalChatCommand implements SlashCommand {
         }
     }
 
-    // ── create ───────────────────────────────────────────────────────
+    // create
 
     private void handleCreate(SlashCommandInteractionEvent event, GlobalChatService service) {
         String name = event.getOption("name", OptionMapping::getAsString);
@@ -265,7 +265,7 @@ public class GlobalChatCommand implements SlashCommand {
         event.replyEmbeds(eb.build()).setEphemeral(true).queue();
     }
 
-    // ── edit ─────────────────────────────────────────────────────────
+    // edit
 
     private void handleEdit(SlashCommandInteractionEvent event, GlobalChatService service) {
         String channelId = event.getOption("channelid", OptionMapping::getAsString);
@@ -340,7 +340,7 @@ public class GlobalChatCommand implements SlashCommand {
                 "\n**Webhook mode:** " + (gc.isWebhookEnabled() ? "webhook" : "text"))).setEphemeral(true).queue();
     }
 
-    // ── delete ───────────────────────────────────────────────────────
+    // delete
 
     private void handleDelete(SlashCommandInteractionEvent event, GlobalChatService service) {
         String channelId = event.getOption("channelid", OptionMapping::getAsString);
@@ -383,7 +383,7 @@ public class GlobalChatCommand implements SlashCommand {
                 "Global chat channel **" + gc.getName() + "** has been deleted.")).setEphemeral(true).queue();
     }
 
-    // ── link ─────────────────────────────────────────────────────────
+    // link
 
     private void handleLink(SlashCommandInteractionEvent event, GlobalChatService service) {
         if (!event.isFromGuild()) {
@@ -425,7 +425,7 @@ public class GlobalChatCommand implements SlashCommand {
                 target.getAsMention() + " is now linked to global chat **" + gc.getName() + "**.")).setEphemeral(true).queue();
     }
 
-    // ── unlink ───────────────────────────────────────────────────────
+    // unlink
 
     private void handleUnlink(SlashCommandInteractionEvent event, GlobalChatService service) {
         if (!event.isFromGuild()) {
@@ -472,7 +472,7 @@ public class GlobalChatCommand implements SlashCommand {
                         (gc != null ? " **" + gc.getName() + "**" : "") + ".")).setEphemeral(true).queue();
     }
 
-    // ── info ─────────────────────────────────────────────────────────
+    // info
 
     private void handleInfo(SlashCommandInteractionEvent event, GlobalChatService service) {
         String channelId = event.getOption("channelid", OptionMapping::getAsString);
@@ -516,7 +516,7 @@ public class GlobalChatCommand implements SlashCommand {
         event.replyEmbeds(eb.build()).setEphemeral(true).queue();
     }
 
-    // ── list ─────────────────────────────────────────────────────────
+    // list
 
     private void handleList(SlashCommandInteractionEvent event, GlobalChatService service) {
         List<GlobalChatChannel> owned = service.getChannelsByOwner(event.getUser().getId());
@@ -543,7 +543,7 @@ public class GlobalChatCommand implements SlashCommand {
         event.replyEmbeds(eb.build()).setEphemeral(true).queue();
     }
 
-    // ── setrules ─────────────────────────────────────────────────────
+    // setrules
 
     private void handleSetRules(SlashCommandInteractionEvent event, GlobalChatService service) {
         String channelId = event.getOption("channelid", OptionMapping::getAsString);
@@ -562,7 +562,7 @@ public class GlobalChatCommand implements SlashCommand {
                 "Rules for **" + gc.getName() + "** have been updated.\n" + service.formatRules(gc))).setEphemeral(true).queue();
     }
 
-    // ── manage (DM panel) ────────────────────────────────────────────
+    // manage (DM panel)
 
     private void handleManage(SlashCommandInteractionEvent event, GlobalChatService service) {
         String channelId = event.getOption("channelid", OptionMapping::getAsString);
@@ -574,10 +574,12 @@ public class GlobalChatCommand implements SlashCommand {
 
         EmbedBuilder eb = new EmbedBuilder()
                 .setTitle(CustomEmojis.SETTING + " Manage: " + gc.getName())
-                .setDescription("Use the buttons below to manage this global chat channel.\n" +
+                .setDescription(
+                        "Use the buttons below to manage this global chat channel.\n" +
                         "**ID:** `" + gc.getChannelId() + "`\n" +
                         "**Linked Servers:** " + gc.getLinkedChannels().size() + "\n" +
-                        "**Visibility:** " + gc.getVisibility())
+                        "**Visibility:** " + gc.getVisibility() + "\n\n" +
+                        "*All actions open a form — no need to type in chat.*")
                 .setColor(EmbedUtils.INFO_COLOR)
                 .setTimestamp(Instant.now());
 
@@ -586,20 +588,21 @@ public class GlobalChatCommand implements SlashCommand {
         List<Button> row3 = new ArrayList<>();
 
         if (isOwnerOrCoOwner) {
-            row1.add(Button.primary("gc_edit:" + channelId, "Edit Channel").withEmoji(Emoji.fromFormatted(CustomEmojis.NOTE)));
-            row1.add(Button.danger("gc_delete:" + channelId, "Delete Channel").withEmoji(Emoji.fromFormatted(CustomEmojis.TRASH)));
-            row1.add(Button.primary("gc_setrules:" + channelId, "Set Rules").withEmoji(Emoji.fromFormatted(CustomEmojis.SAVE)));
-            row1.add(Button.primary("gc_addmod:" + channelId, "Add Mod").withEmoji(Emoji.fromUnicode("🛡️")));
+            row1.add(Button.primary("gc_edit:" + channelId,    "Edit Channel").withEmoji(Emoji.fromFormatted(CustomEmojis.NOTE)));
+            row1.add(Button.primary("gc_display:" + channelId, "Display Format").withEmoji(Emoji.fromUnicode("🎨")));
+            row1.add(Button.primary("gc_setrules:" + channelId,"Set Rules").withEmoji(Emoji.fromFormatted(CustomEmojis.SAVE)));
+            row1.add(Button.primary("gc_addmod:" + channelId,  "Add Mod").withEmoji(Emoji.fromUnicode("🛡️")));
+            row1.add(Button.danger ("gc_delete:" + channelId,  "Delete").withEmoji(Emoji.fromFormatted(CustomEmojis.TRASH)));
         }
 
-        row2.add(Button.danger("gc_kick:" + channelId, "Kick Server").withEmoji(Emoji.fromFormatted(CustomEmojis.MOD_BAN)));
-        row2.add(Button.danger("gc_ban:" + channelId, "Ban Server").withEmoji(Emoji.fromFormatted(CustomEmojis.ERROR)));
-        row2.add(Button.secondary("gc_warn:" + channelId, "Warn Server").withEmoji(Emoji.fromFormatted(CustomEmojis.WARN)));
-        row2.add(Button.secondary("gc_mute:" + channelId, "Mute Server").withEmoji(Emoji.fromUnicode("🔇")));
+        row2.add(Button.danger    ("gc_kick:" + channelId,  "Kick Server").withEmoji(Emoji.fromFormatted(CustomEmojis.MOD_BAN)));
+        row2.add(Button.danger    ("gc_ban:" + channelId,   "Ban Server").withEmoji(Emoji.fromFormatted(CustomEmojis.ERROR)));
+        row2.add(Button.secondary ("gc_warn:" + channelId,  "Warn Server").withEmoji(Emoji.fromFormatted(CustomEmojis.WARN)));
+        row2.add(Button.secondary ("gc_mute:" + channelId,  "Mute Server").withEmoji(Emoji.fromUnicode("🔇")));
 
-        row3.add(Button.secondary("gc_unmute:" + channelId, "Unmute Server").withEmoji(Emoji.fromUnicode("🔊")));
-        row3.add(Button.secondary("gc_unwarn:" + channelId, "Unwarn Server").withEmoji(Emoji.fromFormatted(CustomEmojis.SUCCESS)));
-        row3.add(Button.primary("gc_linked:" + channelId, "View Linked").withEmoji(Emoji.fromFormatted(CustomEmojis.TAG)));
+        row3.add(Button.secondary ("gc_unmute:" + channelId,  "Unmute Server").withEmoji(Emoji.fromUnicode("🔊")));
+        row3.add(Button.secondary ("gc_unwarn:" + channelId,  "Unwarn Server").withEmoji(Emoji.fromFormatted(CustomEmojis.SUCCESS)));
+        row3.add(Button.primary   ("gc_linked:" + channelId,  "View Linked").withEmoji(Emoji.fromFormatted(CustomEmojis.TAG)));
 
         // Send to DMs
         event.getUser().openPrivateChannel().queue(dm -> {
@@ -613,7 +616,7 @@ public class GlobalChatCommand implements SlashCommand {
                 "The management panel has been sent to your DMs.")).setEphemeral(true).queue();
     }
 
-    // ── Moderation subcommands ───────────────────────────────────────
+    // Moderation subcommands
 
     private void handleKick(SlashCommandInteractionEvent event, GlobalChatService service) {
         String channelId = event.getOption("channelid", OptionMapping::getAsString);
@@ -746,7 +749,7 @@ public class GlobalChatCommand implements SlashCommand {
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Co-Owner Added", "<@" + userId + "> has been added as a co-owner.")).setEphemeral(true).queue();
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────
+    // Helpers
 
     private void replyNotFound(SlashCommandInteractionEvent event) {
         event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Found",

@@ -82,7 +82,7 @@ public class GlobalChatService {
         loadChannels();
     }
 
-    // ── Persistence ──────────────────────────────────────────────────
+    // Persistence
 
     private void loadChannels() {
         File file = new File(DATA_DIR, CHANNELS_FILE);
@@ -117,7 +117,7 @@ public class GlobalChatService {
         }
     }
 
-    // ── ID / Key generation ──────────────────────────────────────────
+    // ID / Key generation
 
     public String generateChannelId() {
         String id;
@@ -135,7 +135,7 @@ public class GlobalChatService {
         return sb.toString();
     }
 
-    // ── CRUD ─────────────────────────────────────────────────────────
+    // CRUD
 
     public GlobalChatChannel createChannel(String name, String description, String visibility,
                                            boolean keyRequired, String key, String ownerId) {
@@ -196,7 +196,7 @@ public class GlobalChatService {
                 .collect(Collectors.toList());
     }
 
-    // ── Linking ──────────────────────────────────────────────────────
+    // Linking
 
     /**
      * Link a guild's text channel to a global chat channel.
@@ -261,7 +261,7 @@ public class GlobalChatService {
         return null;
     }
 
-    // ── Reverse lookup ───────────────────────────────────────────────
+    // Reverse lookup
 
     public String getGlobalChannelIdByTextChannel(String textChannelId) {
         return textChannelToGlobal.get(textChannelId);
@@ -272,7 +272,7 @@ public class GlobalChatService {
         return id == null ? null : channels.get(id);
     }
 
-    // ── Webhook management ───────────────────────────────────────────
+    // Webhook management
 
     public CompletableFuture<Webhook> getOrCreateWebhook(TextChannel channel) {
         if (webhookCache.containsKey(channel.getId())) {
@@ -338,7 +338,7 @@ public class GlobalChatService {
         }
     }
 
-    // ── Message relay ────────────────────────────────────────────────
+    // Message relay
 
     /**
      * Relay a message from one linked channel to all other linked channels of the same global chat.
@@ -759,7 +759,7 @@ public class GlobalChatService {
         }
     }
 
-    // ── Moderation actions (with notifications) ──────────────────────
+    // Moderation actions (with notifications)
 
     public String kickServer(String globalChannelId, String guildId, String reason, JDA jda) {
         GlobalChatChannel gc = channels.get(globalChannelId);
@@ -879,7 +879,7 @@ public class GlobalChatService {
         return null;
     }
 
-    // ── Rules ────────────────────────────────────────────────────────
+    // Rules
 
     public void setRules(String globalChannelId, List<String> rules, JDA jda) {
         GlobalChatChannel gc = channels.get(globalChannelId);
@@ -913,7 +913,7 @@ public class GlobalChatService {
         return sb.toString();
     }
 
-    // ── Manage panel state ───────────────────────────────────────────
+    // Manage panel state
 
     public void setManagePanelState(String userId, ManagePanelState state) {
         managePanelStates.put(userId, state);
@@ -927,7 +927,7 @@ public class GlobalChatService {
         managePanelStates.remove(userId);
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────
+    // Helpers
 
     private void notifyLinkedChannel(JDA jda, String guildId, String textChannelId, String message) {
         if (textChannelId == null) return;
@@ -952,7 +952,7 @@ public class GlobalChatService {
         return days + "d";
     }
 
-    // ── Placeholder resolution ─────────────────────────────────────
+    // Placeholder resolution
 
     /**
      * Resolve all supported placeholders in a format string.
@@ -968,7 +968,7 @@ public class GlobalChatService {
                 .replace("{pronouns}", pronouns);
     }
 
-    // ── Manage panel state model ─────────────────────────────────────
+    // Manage panel state model
 
     public static class ManagePanelState {
         private final String globalChannelId;

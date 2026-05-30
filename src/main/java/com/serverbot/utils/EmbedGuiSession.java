@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class EmbedGuiSession {
 
-    // ── Session store ─────────────────────────────────────────────────────────
+    // Session store
 
     private static final Map<String, EmbedGuiSession> SESSIONS = new ConcurrentHashMap<>();
     private static final long TIMEOUT_MS = 30 * 60 * 1000L;
@@ -42,7 +42,7 @@ public class EmbedGuiSession {
         SESSIONS.entrySet().removeIf(e -> now - e.getValue().lastActivity > TIMEOUT_MS);
     }
 
-    // ── Session state ─────────────────────────────────────────────────────────
+    // Session state
 
     public String userId;
     public String targetChannelId;
@@ -98,7 +98,7 @@ public class EmbedGuiSession {
         buttons.clear();
     }
 
-    // ── Nested types ──────────────────────────────────────────────────────────
+    // Nested types
 
     public static class FieldEntry {
         public final String name;

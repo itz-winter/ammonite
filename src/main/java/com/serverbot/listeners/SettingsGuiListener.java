@@ -154,7 +154,7 @@ public class SettingsGuiListener extends ListenerAdapter {
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Helpers
 
     private void toggle(String guildId, String key, Map<String, Object> settings) {
         boolean next = !Boolean.TRUE.equals(settings.get(key));

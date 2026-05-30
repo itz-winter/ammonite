@@ -80,7 +80,7 @@ public class PlayCommand implements SlashCommand {
         MusicManager musicManager = MusicManager.getInstance();
         boolean isUrl = query.startsWith("http://") || query.startsWith("https://");
 
-        // ── Multi-URL mode ────────────────────────────────────────────────────
+        // Multi-URL mode
         // If the query contains multiple space-separated URLs, queue them all.
         String[] tokens = query.trim().split("\\s+");
         boolean isMultiUrl = tokens.length > 1 &&

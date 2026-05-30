@@ -77,7 +77,7 @@ public class PlaylistCommand implements SlashCommand {
         }
     }
 
-    // ─── create ──────────────────────────────────────────────────────────────
+    // create
 
     private void handleCreate(SlashCommandInteractionEvent event) {
         String userId = event.getUser().getId();
@@ -101,7 +101,7 @@ public class PlaylistCommand implements SlashCommand {
             .setEphemeral(true).queue();
     }
 
-    // ─── delete ──────────────────────────────────────────────────────────────
+    // delete
 
     private void handleDelete(SlashCommandInteractionEvent event) {
         String userId = event.getUser().getId();
@@ -130,7 +130,7 @@ public class PlaylistCommand implements SlashCommand {
             .setEphemeral(true).queue();
     }
 
-    // ─── rename ──────────────────────────────────────────────────────────────
+    // rename
 
     private void handleRename(SlashCommandInteractionEvent event) {
         String userId  = event.getUser().getId();
@@ -167,7 +167,7 @@ public class PlaylistCommand implements SlashCommand {
             "**" + name + "** has been renamed to **" + newName + "**.")).setEphemeral(true).queue();
     }
 
-    // ─── add ─────────────────────────────────────────────────────────────────
+    // add
 
     private void handleAdd(SlashCommandInteractionEvent event) {
         String userId   = event.getUser().getId();
@@ -258,7 +258,7 @@ public class PlaylistCommand implements SlashCommand {
         }
     }
 
-    // ─── remove ──────────────────────────────────────────────────────────────
+    // remove
 
     private void handleRemove(SlashCommandInteractionEvent event) {
         String userId = event.getUser().getId();
@@ -285,7 +285,7 @@ public class PlaylistCommand implements SlashCommand {
             "Removed **" + removed + "** from **" + name + "**.")).setEphemeral(true).queue();
     }
 
-    // ─── reorder ─────────────────────────────────────────────────────────────
+    // reorder
 
     private void handleReorder(SlashCommandInteractionEvent event) {
         String userId = event.getUser().getId();
@@ -326,7 +326,7 @@ public class PlaylistCommand implements SlashCommand {
             .setEphemeral(true).queue();
     }
 
-    // ─── list ────────────────────────────────────────────────────────────────
+    // list
 
     private void handleList(SlashCommandInteractionEvent event) {
         String userId = event.getUser().getId();
@@ -352,7 +352,7 @@ public class PlaylistCommand implements SlashCommand {
             .build()).setEphemeral(true).queue();
     }
 
-    // ─── show ────────────────────────────────────────────────────────────────
+    // show
 
     private void handleShow(SlashCommandInteractionEvent event) {
         String userId = event.getUser().getId();
@@ -388,7 +388,7 @@ public class PlaylistCommand implements SlashCommand {
         event.replyEmbeds(embed.build()).setEphemeral(true).queue();
     }
 
-    // ─── play ────────────────────────────────────────────────────────────────
+    // play
 
     private void handlePlay(SlashCommandInteractionEvent event) {
         String userId = event.getUser().getId();
@@ -472,7 +472,7 @@ public class PlaylistCommand implements SlashCommand {
         }
     }
 
-    // ─── autocomplete ─────────────────────────────────────────────────────────
+    // autocomplete
 
     @Override
     public void handleAutoComplete(CommandAutoCompleteInteractionEvent event) {
@@ -491,7 +491,7 @@ public class PlaylistCommand implements SlashCommand {
         event.replyChoices(choices).queue();
     }
 
-    // ─── command data ─────────────────────────────────────────────────────────
+    // command data
 
     public static CommandData getCommandData() {
         OptionData nameAutocomplete = new OptionData(OptionType.STRING, "name", "Playlist name", true)

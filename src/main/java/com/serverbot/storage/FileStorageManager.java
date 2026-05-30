@@ -384,7 +384,7 @@ public class FileStorageManager {
         }
     }
     
-    // ─── Custom guild messages (configurable per-server) ─────────────────────
+    // Custom guild messages (configurable per-server)
 
     private String messageKey(String type) { return "customMessages." + type; }
 
@@ -960,15 +960,17 @@ public class FileStorageManager {
 
     /**
      * Remove a prefix from the guild's active prefix list.
-     * @return false if the prefix wasn't present or it's the only one remaining
+     * If removing the last prefix, the list becomes empty (caller should disable prefix commands).
+     * @return false if the prefix wasn't present
      */
     public boolean removePrefix(String guildId, String prefix) {
         List<String> prefixes = getPrefixes(guildId);
         if (!prefixes.contains(prefix)) return false;
-        if (prefixes.size() == 1) return false; // must keep at least one
         prefixes.remove(prefix);
         updateGuildSettings(guildId, "commandPrefixes", prefixes);
-        updateGuildSettings(guildId, "commandPrefix", prefixes.get(0));
+        if (!prefixes.isEmpty()) {
+            updateGuildSettings(guildId, "commandPrefix", prefixes.get(0));
+        }
         return true;
     }
     
@@ -1048,7 +1050,7 @@ public class FileStorageManager {
         setPrefixCommandsEnabled(guildId, false);
     }
 
-    // ─── User Playlist methods ────────────────────────────────────────────────
+    // User Playlist methods
 
     private void loadUserPlaylists() {
         try {

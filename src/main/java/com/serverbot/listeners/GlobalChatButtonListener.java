@@ -7,27 +7,30 @@ import com.serverbot.utils.CustomEmojis;
 import com.serverbot.utils.EmbedUtils;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.dv8tion.jda.api.components.label.Label;
+import net.dv8tion.jda.api.components.textinput.TextInput;
+import net.dv8tion.jda.api.components.textinput.TextInputStyle;
+import net.dv8tion.jda.api.modals.Modal;
 
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Handles button interactions and conversational follow-ups
- * for the /globalchat manage panel (DMs).
+ * Handles button and modal interactions for the /globalchat manage panel (DMs).
+ * All management actions use modal forms — no conversational follow-up messages.
+ *
+ * Button IDs: gc_{action}:{channelId}
+ * Modal IDs:  gcm:{action}:{channelId}
  */
 public class GlobalChatButtonListener extends ListenerAdapter {
 
-    private static final Logger logger = LoggerFactory.getLogger(GlobalChatButtonListener.class);
-
-    // ── Button clicks ────────────────────────────────────────────────
+    // ── Buttons ───────────────────────────────────────────────────────────────
 
     @Override
     public void onButtonInteraction(ButtonInteractionEvent event) {
@@ -39,7 +42,7 @@ public class GlobalChatButtonListener extends ListenerAdapter {
 
         String[] parts = componentId.split(":", 2);
         if (parts.length < 2) return;
-        String action = parts[0]; // e.g. "gc_edit"
+        String action    = parts[0];
         String channelId = parts[1];
 
         GlobalChatChannel gc = service.getChannel(channelId);
@@ -51,297 +54,263 @@ public class GlobalChatButtonListener extends ListenerAdapter {
         String userId = event.getUser().getId();
 
         switch (action) {
+
             case "gc_edit" -> {
                 if (!gc.hasManageAccess(userId)) { noAccess(event); return; }
-                service.setManagePanelState(userId, new GlobalChatService.ManagePanelState(channelId));
-                service.getManagePanelState(userId).setPendingAction("edit_name");
-                event.reply("Please enter the new channel name:\n> Original name: **" + gc.getName() + "**\n\n*Type `skip` to keep the current value.*").queue();
+                event.replyModal(buildEditModal(gc)).queue();
             }
+
+            case "gc_display" -> {
+                if (!gc.hasManageAccess(userId)) { noAccess(event); return; }
+                event.replyModal(buildDisplayModal(gc)).queue();
+            }
+
+            case "gc_setrules" -> {
+                if (!gc.hasManageAccess(userId)) { noAccess(event); return; }
+                event.replyModal(buildSetRulesModal(gc)).queue();
+            }
+
+            case "gc_addmod" -> {
+                if (!gc.hasManageAccess(userId)) { noAccess(event); return; }
+                event.replyModal(buildOneFieldModal(
+                    "gcm:addmod:" + channelId, "Add Moderator",
+                    "userid", "User ID", "Enter the User ID to add as moderator",
+                    null, true)).queue();
+            }
+
+            case "gc_kick" -> {
+                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
+                event.replyModal(buildServerActionModal("gcm:kick:" + channelId, "Kick Server")).queue();
+            }
+
+            case "gc_ban" -> {
+                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
+                event.replyModal(buildServerActionModal("gcm:ban:" + channelId, "Ban Server")).queue();
+            }
+
+            case "gc_warn" -> {
+                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
+                event.replyModal(buildServerActionModal("gcm:warn:" + channelId, "Warn Server")).queue();
+            }
+
+            case "gc_mute" -> {
+                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
+                event.replyModal(buildMuteModal(channelId)).queue();
+            }
+
+            case "gc_unmute" -> {
+                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
+                event.replyModal(buildOneFieldModal(
+                    "gcm:unmute:" + channelId, "Unmute Server",
+                    "serverid", "Server ID", "Server ID to unmute",
+                    null, true)).queue();
+            }
+
+            case "gc_unwarn" -> {
+                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
+                event.replyModal(buildOneFieldModal(
+                    "gcm:unwarn:" + channelId, "Clear Warnings",
+                    "serverid", "Server ID", "Server ID to clear warnings for",
+                    null, true)).queue();
+            }
+
             case "gc_delete" -> {
                 if (!gc.hasManageAccess(userId)) { noAccess(event); return; }
                 if (gc.isCoOwner(userId) && !gc.isOwner(userId)) {
-                    // Co-owner: notify owner
-                    event.getJDA().retrieveUserById(gc.getOwnerId()).queue(owner -> {
-                        owner.openPrivateChannel().queue(dm -> {
+                    event.getJDA().retrieveUserById(gc.getOwnerId()).queue(owner ->
+                        owner.openPrivateChannel().queue(dm ->
                             dm.sendMessageEmbeds(new EmbedBuilder()
-                                    .setTitle(CustomEmojis.WARN + " Channel Deletion Request")
-                                    .setDescription("Co-owner <@" + userId + "> wants to delete **" + gc.getName() + "** (`" + channelId + "`).\nDo you approve?")
-                                    .setColor(EmbedUtils.WARNING_COLOR).setTimestamp(Instant.now()).build())
-                                    .addComponents(ActionRow.of(
-                                            net.dv8tion.jda.api.components.buttons.Button.danger("gc_confirm_delete:" + channelId, "Confirm Delete"),
-                                            net.dv8tion.jda.api.components.buttons.Button.secondary("gc_cancel_delete:" + channelId, "Cancel")))
-                                    .queue(s -> {}, err -> {});
-                        }, err -> {});
-                    }, err -> {});
-                    event.reply("The channel owner has been notified to confirm the deletion.").setEphemeral(true).queue();
+                                .setTitle(CustomEmojis.WARN + " Channel Deletion Request")
+                                .setDescription("Co-owner <@" + userId + "> wants to delete **"
+                                    + gc.getName() + "** (`" + channelId + "`).\nDo you approve?")
+                                .setColor(EmbedUtils.WARNING_COLOR).setTimestamp(Instant.now()).build())
+                            .addComponents(ActionRow.of(
+                                Button.danger("gc_confirm_delete:" + channelId, "Confirm Delete"),
+                                Button.secondary("gc_cancel_delete:" + channelId, "Cancel")))
+                            .queue(s -> {}, err -> {}), err -> {}), err -> {});
+                    event.reply("The channel owner has been notified to confirm the deletion.")
+                         .setEphemeral(true).queue();
                 } else {
                     service.deleteChannel(channelId);
                     event.reply(CustomEmojis.SUCCESS + " Global chat channel **" + gc.getName() + "** has been deleted.").queue();
                 }
             }
+
             case "gc_confirm_delete" -> {
                 if (!gc.isOwner(userId)) { noAccess(event); return; }
                 service.deleteChannel(channelId);
                 event.reply(CustomEmojis.SUCCESS + " Global chat channel **" + gc.getName() + "** has been deleted.").queue();
             }
-            case "gc_cancel_delete" -> {
+
+            case "gc_cancel_delete" ->
                 event.reply("Deletion cancelled.").setEphemeral(true).queue();
-            }
-            case "gc_setrules" -> {
-                if (!gc.hasManageAccess(userId)) { noAccess(event); return; }
-                service.setManagePanelState(userId, new GlobalChatService.ManagePanelState(channelId));
-                service.getManagePanelState(userId).setPendingAction("set_rules");
-                event.reply("Please enter the new rules (separate each rule with `|`):\n" +
-                        (gc.getRules().isEmpty() ? "> No rules currently set." : "> Current rules:\n" + service.formatRules(gc))).queue();
-            }
-            case "gc_kick" -> {
-                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
-                service.setManagePanelState(userId, new GlobalChatService.ManagePanelState(channelId));
-                service.getManagePanelState(userId).setPendingAction("kick_server");
-                event.reply("Please enter the **Server ID** to kick:").queue();
-            }
-            case "gc_ban" -> {
-                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
-                service.setManagePanelState(userId, new GlobalChatService.ManagePanelState(channelId));
-                service.getManagePanelState(userId).setPendingAction("ban_server");
-                event.reply("Please enter the **Server ID** to ban:").queue();
-            }
-            case "gc_warn" -> {
-                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
-                service.setManagePanelState(userId, new GlobalChatService.ManagePanelState(channelId));
-                service.getManagePanelState(userId).setPendingAction("warn_server");
-                event.reply("Please enter the **Server ID** to warn:").queue();
-            }
-            case "gc_mute" -> {
-                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
-                service.setManagePanelState(userId, new GlobalChatService.ManagePanelState(channelId));
-                service.getManagePanelState(userId).setPendingAction("mute_server");
-                event.reply("Please enter the **Server ID** to mute:").queue();
-            }
-            case "gc_unmute" -> {
-                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
-                service.setManagePanelState(userId, new GlobalChatService.ManagePanelState(channelId));
-                service.getManagePanelState(userId).setPendingAction("unmute_server_id");
-                event.reply("Please enter the **Server ID** to unmute:").queue();
-            }
-            case "gc_unwarn" -> {
-                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
-                service.setManagePanelState(userId, new GlobalChatService.ManagePanelState(channelId));
-                service.getManagePanelState(userId).setPendingAction("unwarn_server_id");
-                event.reply("Please enter the **Server ID** to clear warnings for:").queue();
-            }
-            case "gc_addmod" -> {
-                if (!gc.hasManageAccess(userId)) { noAccess(event); return; }
-                service.setManagePanelState(userId, new GlobalChatService.ManagePanelState(channelId));
-                service.getManagePanelState(userId).setPendingAction("addmod_user_id");
-                event.reply("Please enter the **User ID** to add as a moderator:").queue();
-            }
-            case "gc_linked" -> {
-                handleViewLinked(event, gc, service);
-            }
-            default -> event.reply("Unknown action.").setEphemeral(true).queue();
+
+            case "gc_linked" ->
+                handleViewLinked(event, gc);
+
+            default ->
+                event.reply("Unknown action.").setEphemeral(true).queue();
         }
     }
 
-    // ── DM message follow-ups (conversational input) ─────────────────
+    // ── Modals ────────────────────────────────────────────────────────────────
 
     @Override
-    public void onMessageReceived(MessageReceivedEvent event) {
-        if (event.getAuthor().isBot()) return;
-        if (event.isFromGuild()) return; // DMs only for manage panel
+    public void onModalInteraction(ModalInteractionEvent event) {
+        String id = event.getModalId();
+        if (!id.startsWith("gcm:")) return;
+
+        String[] parts = id.split(":", 3);
+        if (parts.length < 3) return;
+        String action    = parts[1];
+        String channelId = parts[2];
 
         GlobalChatService service = ServerBot.getGlobalChatService();
         if (service == null) return;
 
-        String userId = event.getAuthor().getId();
-        GlobalChatService.ManagePanelState state = service.getManagePanelState(userId);
-        if (state == null) return;
-
-        String input = event.getMessage().getContentRaw().trim();
-        String channelId = state.getGlobalChannelId();
         GlobalChatChannel gc = service.getChannel(channelId);
         if (gc == null) {
-            event.getChannel().sendMessage(CustomEmojis.ERROR + " Channel no longer exists.").queue();
-            service.clearManagePanelState(userId);
+            event.reply(CustomEmojis.ERROR + " Channel no longer exists.").queue();
             return;
         }
 
-        String action = state.getPendingAction();
-        if (action == null) return;
+        String userId = event.getUser().getId();
 
         switch (action) {
-            // ── Edit flow (multi-step) ──
-            case "edit_name" -> {
-                if (!"skip".equalsIgnoreCase(input)) gc.setName(input);
-                state.setPendingAction("edit_description");
-                event.getChannel().sendMessage("Please enter the new channel description:\n> Current: **" + gc.getDescription() + "**\n\n*Type `skip` to keep the current value.*").queue();
-            }
-            case "edit_description" -> {
-                if (!"skip".equalsIgnoreCase(input)) gc.setDescription(input);
-                state.setPendingAction("edit_visibility");
-                event.getChannel().sendMessage("Please enter the new visibility (`public` or `private`):\n> Current: **" + gc.getVisibility() + "**\n\n*Type `skip` to keep the current value.*").queue();
-            }
-            case "edit_visibility" -> {
-                if (!"skip".equalsIgnoreCase(input)) {
-                    if (!input.equalsIgnoreCase("public") && !input.equalsIgnoreCase("private")) {
-                        event.getChannel().sendMessage("Invalid value. Please enter `public` or `private`, or `skip`.").queue();
-                        return;
-                    }
-                    gc.setVisibility(input.toLowerCase());
-                }
-                state.setPendingAction("edit_key");
-                event.getChannel().sendMessage("Please enter a new join key:\n> Current: **" + (gc.getKey() != null ? gc.getKey() : "none") + "**\n\n*Type `skip` to keep the current value, or `none` to remove the key.*").queue();
-            }
-            case "edit_key" -> {
-                if (!"skip".equalsIgnoreCase(input)) {
-                    if ("none".equalsIgnoreCase(input)) {
-                        gc.setKey(null);
-                        gc.setKeyRequired(false);
+
+            case "edit" -> {
+                if (!gc.hasManageAccess(userId)) { noAccess(event); return; }
+                String name        = event.getValue("name").getAsString().trim();
+                String description = event.getValue("description").getAsString().trim();
+                String visibility  = event.getValue("visibility").getAsString().trim().toLowerCase();
+                String key         = event.getValue("key").getAsString().trim();
+                String webhookmode = event.getValue("webhookmode").getAsString().trim().toLowerCase();
+
+                if (!name.isEmpty())        gc.setName(name);
+                if (!description.isEmpty()) gc.setDescription(description);
+                if (visibility.equals("public") || visibility.equals("private"))
+                    gc.setVisibility(visibility);
+                if (!key.isEmpty()) {
+                    if (key.equalsIgnoreCase("none") || key.equalsIgnoreCase("clear")) {
+                        gc.setKey(null); gc.setKeyRequired(false);
                     } else {
-                        gc.setKey(input);
-                        gc.setKeyRequired(true);
+                        gc.setKey(key); gc.setKeyRequired(true);
                     }
                 }
-                state.setPendingAction("edit_nameformat");
-                event.getChannel().sendMessage(
-                        "Enter the full display name template (e.g. `{user} @ {server}`) to override prefix/suffix:\n" +
-                        "> Current: **" + (gc.getNameFormat() != null ? gc.getNameFormat() : "*(not set — uses prefix/suffix)*") + "**\n\n" +
-                        "*Type `skip` to keep, `reset` to clear (back to prefix/suffix mode), or a new template.*").queue();
-            }
-            case "edit_nameformat" -> {
-                if (!"skip".equalsIgnoreCase(input)) {
-                    if (input.equalsIgnoreCase("reset") || input.equalsIgnoreCase("none") || input.equalsIgnoreCase("default")) {
-                        gc.setNameFormat(null);
-                    } else if ("{}".equals(input)) {
-                        gc.setNameFormat("");
-                    } else {
-                        gc.setNameFormat(input);
-                    }
-                }
-                state.setPendingAction("edit_webhookmode");
-                event.getChannel().sendMessage(
-                        "Enable webhook mode?\n> Current: **" + (gc.isWebhookEnabled() ? "webhook" : "text") + "**\n\n" +
-                        "*Type `webhook` (messages sent via webhook) or `text` (messages sent as the bot), or `skip` to keep.*").queue();
-            }
-            case "edit_webhookmode" -> {
-                if (!input.equalsIgnoreCase("skip")) {
-                    if (input.equalsIgnoreCase("webhook")) {
-                        gc.setWebhookEnabled(true);
-                    } else if (input.equalsIgnoreCase("text")) {
-                        gc.setWebhookEnabled(false);
-                    } else {
-                        event.getChannel().sendMessage("Invalid value. Please enter `webhook`, `text`, or `skip`.").queue();
-                        return;
-                    }
-                }
+                if (webhookmode.equals("webhook"))   gc.setWebhookEnabled(true);
+                else if (webhookmode.equals("text")) gc.setWebhookEnabled(false);
+
                 service.saveChannels();
-                event.getChannel().sendMessage(CustomEmojis.SUCCESS + " Channel **" + gc.getName() + "** has been updated.").queue();
-                service.clearManagePanelState(userId);
+                event.reply(CustomEmojis.SUCCESS + " Channel **" + gc.getName() + "** has been updated.").queue();
             }
 
-            // ── Set rules ──
-            case "set_rules" -> {
+            case "display" -> {
+                if (!gc.hasManageAccess(userId)) { noAccess(event); return; }
+                String nameformat = event.getValue("nameformat").getAsString().trim();
+                String prefix     = event.getValue("prefix").getAsString().trim();
+                String suffix     = event.getValue("suffix").getAsString().trim();
+
+                if (!nameformat.isEmpty()) {
+                    if (nameformat.equalsIgnoreCase("reset") || nameformat.equalsIgnoreCase("clear"))
+                        gc.setNameFormat(null);
+                    else
+                        gc.setNameFormat("{}".equals(nameformat) ? "" : nameformat);
+                }
+                if (!prefix.isEmpty()) {
+                    if ("reset".equalsIgnoreCase(prefix)) gc.setMsgPrefix(null);
+                    else gc.setMsgPrefix("{}".equals(prefix) ? "" : prefix);
+                }
+                if (!suffix.isEmpty()) {
+                    if ("reset".equalsIgnoreCase(suffix)) gc.setMsgSuffix(null);
+                    else gc.setMsgSuffix("{}".equals(suffix) ? "" : suffix);
+                }
+
+                service.saveChannels();
+                event.reply(CustomEmojis.SUCCESS + " Display format for **" + gc.getName() + "** updated.").queue();
+            }
+
+            case "setrules" -> {
+                if (!gc.hasManageAccess(userId)) { noAccess(event); return; }
+                String rawRules = event.getValue("rules").getAsString();
                 List<String> rules = new ArrayList<>();
-                for (String r : input.split("\\|")) {
-                    String trimmed = r.trim();
-                    if (!trimmed.isEmpty()) rules.add(trimmed);
+                for (String r : rawRules.split("\\|")) {
+                    String t = r.trim();
+                    if (!t.isEmpty()) rules.add(t);
                 }
                 service.setRules(channelId, rules, event.getJDA());
-                event.getChannel().sendMessage(CustomEmojis.SUCCESS + " Rules updated:\n" + service.formatRules(gc)).queue();
-                service.clearManagePanelState(userId);
+                event.reply(CustomEmojis.SUCCESS + " Rules updated:\n" + service.formatRules(gc)).queue();
             }
 
-            // ── Kick ──
-            case "kick_server" -> {
-                state.setPendingData(input);
-                state.setPendingAction("kick_reason");
-                event.getChannel().sendMessage("Please enter the reason for kicking (or `none`):").queue();
-            }
-            case "kick_reason" -> {
-                String reason = "none".equalsIgnoreCase(input) ? null : input;
-                String error = service.kickServer(channelId, state.getPendingData(), reason, event.getJDA());
-                event.getChannel().sendMessage(error != null ? CustomEmojis.ERROR + " " + error : CustomEmojis.SUCCESS + " Server kicked.").queue();
-                service.clearManagePanelState(userId);
+            case "addmod" -> {
+                if (!gc.hasManageAccess(userId)) { noAccess(event); return; }
+                String modUserId = event.getValue("userid").getAsString().trim();
+                String error = service.addModerator(channelId, modUserId);
+                if (error != null) { event.reply(CustomEmojis.ERROR + " " + error).queue(); return; }
+                event.reply(CustomEmojis.SUCCESS + " <@" + modUserId + "> added as a moderator.").queue();
             }
 
-            // ── Ban ──
-            case "ban_server" -> {
-                state.setPendingData(input);
-                state.setPendingAction("ban_reason");
-                event.getChannel().sendMessage("Please enter the reason for banning (or `none`):").queue();
-            }
-            case "ban_reason" -> {
-                String reason = "none".equalsIgnoreCase(input) ? null : input;
-                String error = service.banServer(channelId, state.getPendingData(), reason, event.getJDA());
-                event.getChannel().sendMessage(error != null ? CustomEmojis.ERROR + " " + error : CustomEmojis.SUCCESS + " Server banned.").queue();
-                service.clearManagePanelState(userId);
+            case "kick" -> {
+                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
+                String serverId = event.getValue("serverid").getAsString().trim();
+                String reason   = nb(event.getValue("reason").getAsString());
+                String error = service.kickServer(channelId, serverId, reason, event.getJDA());
+                event.reply(error != null ? CustomEmojis.ERROR + " " + error
+                    : CustomEmojis.SUCCESS + " Server `" + serverId + "` has been kicked.").queue();
             }
 
-            // ── Warn ──
-            case "warn_server" -> {
-                state.setPendingData(input);
-                state.setPendingAction("warn_reason");
-                event.getChannel().sendMessage("Please enter the reason for warning (or `none`):").queue();
-            }
-            case "warn_reason" -> {
-                String reason = "none".equalsIgnoreCase(input) ? null : input;
-                String error = service.warnServer(channelId, state.getPendingData(), reason, event.getJDA());
-                event.getChannel().sendMessage(error != null ? CustomEmojis.ERROR + " " + error : CustomEmojis.SUCCESS + " Server warned.").queue();
-                service.clearManagePanelState(userId);
+            case "ban" -> {
+                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
+                String serverId = event.getValue("serverid").getAsString().trim();
+                String reason   = nb(event.getValue("reason").getAsString());
+                String error = service.banServer(channelId, serverId, reason, event.getJDA());
+                event.reply(error != null ? CustomEmojis.ERROR + " " + error
+                    : CustomEmojis.SUCCESS + " Server `" + serverId + "` has been banned.").queue();
             }
 
-            // ── Mute ──
-            case "mute_server" -> {
-                state.setPendingData(input);
-                state.setPendingAction("mute_duration");
-                event.getChannel().sendMessage("Please enter the mute duration (e.g. `1h`, `30m`, `7d`, `0` for permanent):").queue();
+            case "warn" -> {
+                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
+                String serverId = event.getValue("serverid").getAsString().trim();
+                String reason   = nb(event.getValue("reason").getAsString());
+                String error = service.warnServer(channelId, serverId, reason, event.getJDA());
+                event.reply(error != null ? CustomEmojis.ERROR + " " + error
+                    : CustomEmojis.SUCCESS + " Server `" + serverId + "` has been warned.").queue();
             }
-            case "mute_duration" -> {
-                long durationMs = parseDuration(input);
-                state.setPendingAction("mute_reason");
-                state.setPendingData(state.getPendingData() + "|" + durationMs);
-                event.getChannel().sendMessage("Please enter the reason for muting (or `none`):").queue();
-            }
-            case "mute_reason" -> {
-                String[] dataParts = state.getPendingData().split("\\|", 2);
-                String serverId = dataParts[0];
-                long durationMs = Long.parseLong(dataParts[1]);
-                String reason = "none".equalsIgnoreCase(input) ? null : input;
+
+            case "mute" -> {
+                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
+                String serverId    = event.getValue("serverid").getAsString().trim();
+                String durationStr = event.getValue("duration").getAsString().trim();
+                String reason      = nb(event.getValue("reason").getAsString());
+                long durationMs    = parseDuration(durationStr.isEmpty() ? "0" : durationStr);
                 String error = service.muteServer(channelId, serverId, durationMs, reason, event.getJDA());
-                event.getChannel().sendMessage(error != null ? CustomEmojis.ERROR + " " + error : CustomEmojis.SUCCESS + " Server muted.").queue();
-                service.clearManagePanelState(userId);
+                event.reply(error != null ? CustomEmojis.ERROR + " " + error
+                    : CustomEmojis.SUCCESS + " Server `" + serverId + "` muted"
+                        + (durationMs <= 0 ? " permanently." : " for " + durationStr + ".")).queue();
             }
 
-            // ── Unmute ──
-            case "unmute_server_id" -> {
-                String error = service.unmuteServer(channelId, input, event.getJDA());
-                event.getChannel().sendMessage(error != null ? CustomEmojis.ERROR + " " + error : CustomEmojis.SUCCESS + " Server unmuted.").queue();
-                service.clearManagePanelState(userId);
+            case "unmute" -> {
+                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
+                String serverId = event.getValue("serverid").getAsString().trim();
+                String error = service.unmuteServer(channelId, serverId, event.getJDA());
+                event.reply(error != null ? CustomEmojis.ERROR + " " + error
+                    : CustomEmojis.SUCCESS + " Server `" + serverId + "` has been unmuted.").queue();
             }
 
-            // ── Unwarn ──
-            case "unwarn_server_id" -> {
-                String error = service.unwarnServer(channelId, input);
-                event.getChannel().sendMessage(error != null ? CustomEmojis.ERROR + " " + error : CustomEmojis.SUCCESS + " Warnings cleared.").queue();
-                service.clearManagePanelState(userId);
+            case "unwarn" -> {
+                if (!gc.hasModerateAccess(userId)) { noAccess(event); return; }
+                String serverId = event.getValue("serverid").getAsString().trim();
+                String error = service.unwarnServer(channelId, serverId);
+                event.reply(error != null ? CustomEmojis.ERROR + " " + error
+                    : CustomEmojis.SUCCESS + " Warnings for `" + serverId + "` cleared.").queue();
             }
 
-            // ── Add mod ──
-            case "addmod_user_id" -> {
-                String error = service.addModerator(channelId, input);
-                event.getChannel().sendMessage(error != null ? CustomEmojis.ERROR + " " + error : CustomEmojis.SUCCESS + " Moderator added.").queue();
-                service.clearManagePanelState(userId);
-            }
-
-            default -> {
-                service.clearManagePanelState(userId);
-            }
+            default -> event.reply("Unknown action.").queue();
         }
     }
 
-    // ── View linked servers ──────────────────────────────────────────
+    // ── View linked ───────────────────────────────────────────────────────────
 
-    private void handleViewLinked(ButtonInteractionEvent event, GlobalChatChannel gc, GlobalChatService service) {
+    private void handleViewLinked(ButtonInteractionEvent event, GlobalChatChannel gc) {
         Map<String, String> linked = gc.getLinkedChannels();
         if (linked.isEmpty()) {
             event.reply("No servers are currently linked to this channel.").setEphemeral(true).queue();
@@ -354,25 +323,147 @@ public class GlobalChatButtonListener extends ListenerAdapter {
                 .setTimestamp(Instant.now());
 
         for (Map.Entry<String, String> entry : linked.entrySet()) {
-            String guildId = entry.getKey();
-            String channelIdStr = entry.getValue();
-            Guild guild = event.getJDA().getGuildById(guildId);
-            String guildName = guild != null ? guild.getName() : "Unknown Server";
-            String status = "";
-            if (gc.isServerMuted(guildId)) status = " " + CustomEmojis.OFF + " Muted";
-            if (!gc.getServerWarnings(guildId).isEmpty()) status += " " + CustomEmojis.WARN + " " + gc.getServerWarnings(guildId).size() + " warnings";
+            String guildId    = entry.getKey();
+            String textChanId = entry.getValue();
+            Guild  guild      = event.getJDA().getGuildById(guildId);
+            String guildName  = guild != null ? guild.getName() : "Unknown Server";
+            String status     = "";
+            if (gc.isServerMuted(guildId))
+                status = " " + CustomEmojis.OFF + " Muted";
+            if (!gc.getServerWarnings(guildId).isEmpty())
+                status += " " + CustomEmojis.WARN + " " + gc.getServerWarnings(guildId).size() + " warnings";
             eb.addField(guildName + " (`" + guildId + "`)",
-                    "Channel: <#" + channelIdStr + ">" + status, false);
+                        "Channel: <#" + textChanId + ">" + status, false);
         }
 
         event.replyEmbeds(eb.build()).setEphemeral(true).queue();
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────
+    // ── Modal builders ────────────────────────────────────────────────────────
+
+    private Modal buildEditModal(GlobalChatChannel gc) {
+        String cid = gc.getChannelId();
+
+        TextInput.Builder name = TextInput.create("name", TextInputStyle.SHORT)
+                .setPlaceholder("Leave blank to keep current").setMaxLength(64).setRequired(false);
+        if (gc.getName() != null) name.setValue(gc.getName());
+
+        TextInput.Builder desc = TextInput.create("description", TextInputStyle.SHORT)
+                .setPlaceholder("Channel description").setMaxLength(200).setRequired(false);
+        if (gc.getDescription() != null) desc.setValue(gc.getDescription());
+
+        TextInput.Builder vis = TextInput.create("visibility", TextInputStyle.SHORT)
+                .setPlaceholder("public or private").setMaxLength(7).setRequired(false);
+        vis.setValue(gc.getVisibility() != null ? gc.getVisibility() : "public");
+
+        TextInput.Builder key = TextInput.create("key", TextInputStyle.SHORT)
+                .setPlaceholder("Join key — 'none' to remove, blank to keep").setMaxLength(64).setRequired(false);
+        if (gc.getKey() != null) key.setValue(gc.getKey());
+
+        TextInput.Builder wm = TextInput.create("webhookmode", TextInputStyle.SHORT)
+                .setPlaceholder("webhook or text").setMaxLength(7).setRequired(false);
+        wm.setValue(gc.isWebhookEnabled() ? "webhook" : "text");
+
+        return Modal.create("gcm:edit:" + cid, "Edit Channel — " + gc.getName())
+                .addComponents(
+                    Label.of("Channel Name", name.build()),
+                    Label.of("Description", desc.build()),
+                    Label.of("Visibility (public / private)", vis.build()),
+                    Label.of("Join Key ('none' to remove)", key.build()),
+                    Label.of("Webhook Mode (webhook / text)", wm.build()))
+                .build();
+    }
+
+    private Modal buildDisplayModal(GlobalChatChannel gc) {
+        String cid = gc.getChannelId();
+
+        TextInput.Builder nameformat = TextInput.create("nameformat", TextInputStyle.SHORT)
+                .setPlaceholder("{user} @ {server} — 'reset' to clear, {} for empty, blank to keep")
+                .setMaxLength(100).setRequired(false);
+        String nf = gc.getNameFormat();
+        if (nf != null) nameformat.setValue(nf.isEmpty() ? "{}" : nf);
+
+        TextInput.Builder prefix = TextInput.create("prefix", TextInputStyle.SHORT)
+                .setPlaceholder("'reset' for [GC], {} for none, blank to keep")
+                .setMaxLength(50).setRequired(false);
+        String mp = gc.getMsgPrefix();
+        if (mp != null) prefix.setValue(mp.isEmpty() ? "{}" : mp);
+
+        TextInput.Builder suffix = TextInput.create("suffix", TextInputStyle.SHORT)
+                .setPlaceholder("'reset' for • {server}, {} for none, blank to keep")
+                .setMaxLength(50).setRequired(false);
+        String ms = gc.getMsgSuffix();
+        if (ms != null) suffix.setValue(ms.isEmpty() ? "{}" : ms);
+
+        return Modal.create("gcm:display:" + cid, "Display Format — " + gc.getName())
+                .addComponents(
+                    Label.of("Name Format (overrides prefix/suffix)", nameformat.build()),
+                    Label.of("Message Prefix", prefix.build()),
+                    Label.of("Message Suffix", suffix.build()))
+                .build();
+    }
+
+    private Modal buildSetRulesModal(GlobalChatChannel gc) {
+        TextInput.Builder rules = TextInput.create("rules", TextInputStyle.PARAGRAPH)
+                .setPlaceholder("Rule 1 | Rule 2 | Rule 3 ...")
+                .setMaxLength(2000).setRequired(false);
+        if (!gc.getRules().isEmpty()) rules.setValue(String.join(" | ", gc.getRules()));
+        return Modal.create("gcm:setrules:" + gc.getChannelId(), "Set Rules — " + gc.getName())
+                .addComponents(Label.of("Rules (separated by |)", rules.build()))
+                .build();
+    }
+
+    private Modal buildServerActionModal(String modalId, String title) {
+        TextInput.Builder serverid = TextInput.create("serverid", TextInputStyle.SHORT)
+                .setPlaceholder("Server ID (18-digit number)").setMaxLength(20).setRequired(true);
+        TextInput.Builder reason = TextInput.create("reason", TextInputStyle.SHORT)
+                .setPlaceholder("Optional reason").setMaxLength(200).setRequired(false);
+        return Modal.create(modalId, title)
+                .addComponents(
+                    Label.of("Server ID", serverid.build()),
+                    Label.of("Reason (optional)", reason.build()))
+                .build();
+    }
+
+    private Modal buildMuteModal(String channelId) {
+        TextInput.Builder serverid = TextInput.create("serverid", TextInputStyle.SHORT)
+                .setPlaceholder("Server ID (18-digit number)").setMaxLength(20).setRequired(true);
+        TextInput.Builder duration = TextInput.create("duration", TextInputStyle.SHORT)
+                .setPlaceholder("1h, 30m, 7d — blank or 0 for permanent").setMaxLength(10).setRequired(false);
+        TextInput.Builder reason = TextInput.create("reason", TextInputStyle.SHORT)
+                .setPlaceholder("Optional reason").setMaxLength(200).setRequired(false);
+        return Modal.create("gcm:mute:" + channelId, "Mute Server")
+                .addComponents(
+                    Label.of("Server ID", serverid.build()),
+                    Label.of("Duration (blank = permanent)", duration.build()),
+                    Label.of("Reason (optional)", reason.build()))
+                .build();
+    }
+
+    private Modal buildOneFieldModal(String modalId, String title, String inputId,
+                                     String labelText, String placeholder,
+                                     String currentValue, boolean required) {
+        TextInput.Builder input = TextInput.create(inputId, TextInputStyle.SHORT)
+                .setPlaceholder(placeholder).setMaxLength(64).setRequired(required);
+        if (currentValue != null) input.setValue(currentValue);
+        return Modal.create(modalId, title)
+                .addComponents(Label.of(labelText, input.build()))
+                .build();
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private void noAccess(ButtonInteractionEvent event) {
         event.replyEmbeds(EmbedUtils.createErrorEmbed("No Access",
                 "You don't have permission to perform this action.")).setEphemeral(true).queue();
+    }
+
+    private void noAccess(ModalInteractionEvent event) {
+        event.reply(CustomEmojis.ERROR + " You don't have permission to perform this action.").queue();
+    }
+
+    private static String nb(String s) {
+        return (s == null || s.isBlank()) ? null : s.trim();
     }
 
     private long parseDuration(String input) {
@@ -380,13 +471,13 @@ public class GlobalChatButtonListener extends ListenerAdapter {
         try {
             input = input.trim().toLowerCase();
             long value = Long.parseLong(input.substring(0, input.length() - 1));
-            char unit = input.charAt(input.length() - 1);
+            char unit  = input.charAt(input.length() - 1);
             return switch (unit) {
                 case 's' -> TimeUnit.SECONDS.toMillis(value);
                 case 'm' -> TimeUnit.MINUTES.toMillis(value);
                 case 'h' -> TimeUnit.HOURS.toMillis(value);
                 case 'd' -> TimeUnit.DAYS.toMillis(value);
-                default -> 0;
+                default  -> 0;
             };
         } catch (Exception e) {
             return 0;

@@ -64,7 +64,7 @@ public class WelcomeCommand implements SlashCommand {
         }
     }
 
-    // ── Panel ─────────────────────────────────────────────────────────────────
+    // Panel
 
     private void openPanel(SlashCommandInteractionEvent event) {
         Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
@@ -159,7 +159,7 @@ public class WelcomeCommand implements SlashCommand {
         );
     }
 
-    // ── Quick actions ─────────────────────────────────────────────────────────
+    // Quick actions
 
     public void handleEnable(SlashCommandInteractionEvent event) {
         try {
@@ -349,7 +349,7 @@ public class WelcomeCommand implements SlashCommand {
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Helpers
 
     public static String applyPlaceholders(String template, SlashCommandInteractionEvent event) {
         return template
@@ -359,7 +359,7 @@ public class WelcomeCommand implements SlashCommand {
                 .replace("{membercount}", String.valueOf(event.getGuild().getMemberCount()));
     }
 
-    // ── Metadata ──────────────────────────────────────────────────────────────
+    // Metadata
 
     @Override public String getName()              { return "welcome"; }
     @Override public String getDescription()       { return "Configure welcome messages \u2014 run with no args for the GUI panel"; }

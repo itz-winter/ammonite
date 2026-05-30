@@ -6,7 +6,7 @@
   <title>Embed Builder — Ammonite</title>
   <link rel="stylesheet" href="common.css">
   <style>
-    /* ── Layout ───────────────────────────────────────────────── */
+    /* Layout */
     .eb-root {
       display: flex;
       gap: 2rem;
@@ -29,7 +29,7 @@
       top: 1rem;
     }
 
-    /* ── Cards / sections ─────────────────────────────────────── */
+    /* Cards / sections */
     .eb-card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -44,7 +44,7 @@
       color: var(--muted);
     }
 
-    /* ── Form controls ───────────────────────────────────────── */
+    /* Form controls */
     .eb-field {
       display: flex;
       flex-direction: column;
@@ -96,7 +96,7 @@
       flex: 1;
     }
 
-    /* ── Embed fields list ───────────────────────────────────── */
+    /* Embed fields list */
     .eb-fields-list {
       display: flex;
       flex-direction: column;
@@ -156,7 +156,7 @@
       line-height: 1;
     }
 
-    /* ── Action buttons ──────────────────────────────────────── */
+    /* Action buttons */
     .eb-actions {
       display: flex;
       gap: .6rem;
@@ -176,7 +176,7 @@
     .eb-btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
     .eb-btn-danger { background: var(--danger, #f04747); color: #fff; }
 
-    /* ── JSON output ─────────────────────────────────────────── */
+    /* JSON output */
     .eb-json-output {
       background: #111;
       border: 1px solid var(--border);
@@ -193,7 +193,7 @@
       resize: vertical;
     }
 
-    /* ── Discord embed preview ───────────────────────────────── */
+    /* Discord embed preview */
     .eb-preview-label {
       font-size: .75rem;
       text-transform: uppercase;
@@ -314,7 +314,7 @@
       padding: 1.5rem 0;
     }
 
-    /* ── Discord markdown rendering ─────────────────────────── */
+    /* Discord markdown rendering */
     .dc-description, .dc-field-value { white-space: normal; }
     .dc-md-h1 { font-size: 1.5rem; font-weight: 700; color: #e0e1e5; margin: .4rem 0 .2rem; line-height: 1.2; }
     .dc-md-h2 { font-size: 1.25rem; font-weight: 700; color: #e0e1e5; margin: .35rem 0 .15rem; line-height: 1.2; }
@@ -365,7 +365,7 @@
     .color-swatch:hover { transform: scale(1.2); }
     .color-swatch.active { border-color: var(--text); }
 
-    /* ── Button rows (components builder) ───────────────────── */
+    /* Button rows (components builder) */
     .eb-btns-list {
       display: flex;
       flex-direction: column;
@@ -430,7 +430,7 @@
       flex-shrink: 0;
     }
 
-    /* ── Discord button preview ──────────────────────────────── */
+    /* Discord button preview */
     .dc-components {
       margin-top: .6rem;
       display: flex;
@@ -481,7 +481,7 @@
       opacity: 1;
     }
 
-    /* ── Responsive ──────────────────────────────────────────── */
+    /* Responsive */
     @media (max-width: 860px) {
       .eb-root { flex-direction: column; }
       .eb-preview-col { position: static; }
@@ -624,15 +624,15 @@
 (function () {
   "use strict";
 
-  /* ── State ───────────────────────────────────────────────────── */
+  /* State */
   let fieldCount = 0;
   let btnCount   = 0;
 
-  /* ── Shorthand helpers ────────────────────────────────────────── */
+  /* Shorthand helpers */
   function $i(id) { return document.getElementById(id); }
   function val(id) { return $i(id) ? $i(id).value.trim() : ""; }
 
-  /* ── Toast ────────────────────────────────────────────────────── */
+  /* Toast */
   function showToast(msg) {
     const t = $i("eb-toast");
     t.textContent = msg;
@@ -640,7 +640,7 @@
     setTimeout(function () { t.classList.remove("show"); }, 2200);
   }
 
-  /* ── Color picker ↔ hex sync ──────────────────────────────────── */
+  /* Color picker ↔ hex sync */
   const colorPicker = $i("f-color");
   const colorHexIn  = $i("f-color-hex");
 
@@ -682,7 +682,7 @@
   // Init hex display
   colorHexIn.value = colorPicker.value;
 
-  /* ── Build embed object from form ─────────────────────────────── */
+  /* Build embed object from form */
   function buildEmbed() {
     let colorHex = colorPicker.value.replace("#", "");
     if (!/^[0-9a-fA-F]{6}$/.test(colorHex)) colorHex = "5865F2";
@@ -740,7 +740,7 @@
     return embed;
   }
 
-  /* ── Build components (buttons) array ─────────────────────────── */
+  /* Build components (buttons) array */
   function buildComponents() {
     const btnRows = document.querySelectorAll(".eb-btn-row-item");
     if (!btnRows.length) return [];
@@ -792,7 +792,7 @@
     return { name: raw };
   }
 
-  /* ── Build full message payload ───────────────────────────────── */
+  /* Build full message payload */
   function buildPayload() {
     const embed      = buildEmbed();
     const components = buildComponents();
@@ -801,7 +801,7 @@
     return payload;
   }
 
-  /* ── Render embed preview ─────────────────────────────────────── */
+  /* Render embed preview */
   function renderPreview(embed) {
     const wrap = $i("dc-preview");
     const isEmpty = !embed.title && !embed.description &&
@@ -879,7 +879,7 @@
     wrap.innerHTML = html;
   }
 
-  /* ── Render button components preview ─────────────────────────── */
+  /* Render button components preview */
   function renderButtonPreview(components) {
     const wrap = $i("dc-preview");
     // Remove existing buttons preview if any
@@ -924,7 +924,7 @@
       .replace(/"/g, "&quot;");
   }
 
-  /* ── Discord markdown renderer ───────────────────────────────── */
+  /* Discord markdown renderer */
   function escHtml(s) {
     return String(s)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -1011,7 +1011,7 @@
     $i("json-output").textContent = JSON.stringify(payload, null, 2);
   }
 
-  /* ── Full update ─────────────────────────────────────────────── */
+  /* Full update */
   function update() {
     const payload    = buildPayload();
     const embed      = payload.embeds[0];
@@ -1021,7 +1021,7 @@
     renderJson(payload);
   }
 
-  /* ── Add embed field row ─────────────────────────────────────── */
+  /* Add embed field row */
   function addField(name, value, inline) {
     const list = $i("fields-list");
     if (list.querySelectorAll(".eb-embed-field-row").length >= 25) {
@@ -1047,7 +1047,7 @@
     update();
   }
 
-  /* ── Add button row ──────────────────────────────────────────── */
+  /* Add button row */
   function addButton(opts) {
     opts = opts || {};
     const list = $i("btns-list");
@@ -1111,7 +1111,7 @@
     update();
   }
 
-  /* ── Import JSON ─────────────────────────────────────────────── */
+  /* Import JSON */
   function importJson() {
     const raw = prompt("Paste embed JSON (full message payload or bare embed object):");
     if (!raw) return;
@@ -1180,7 +1180,7 @@
     showToast("JSON imported!");
   }
 
-  /* ── Wire up static listeners ─────────────────────────────────── */
+  /* Wire up static listeners */
   document.querySelectorAll(
     "#f-author-name,#f-author-icon,#f-author-url," +
     "#f-title,#f-title-url,#f-description,#f-thumbnail,#f-image," +
