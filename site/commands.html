@@ -1069,12 +1069,29 @@
         <div class="cmd-row" data-cmd="suspiciousnotify">
             <div class="cmd-summary" onclick="toggleCmd(this)">
                 <span class="cmd-name">/suspiciousnotify<span class="cmd-expand-icon">&#9654;</span></span>
-                <span class="cmd-desc">Manage suspicious account notification settings</span>
+                <span class="cmd-desc">Manage who gets notified when a suspicious account joins your server</span>
                 <span class="cmd-perm">admin.settings</span>
             </div>
             <div class="cmd-detail">
                 <h4>Syntax</h4>
-                <div class="syntax-block">/suspiciousnotify <span class="required">&lt;action&gt;</span></div>
+                <div class="syntax-block">/suspiciousnotify <span class="required">&lt;action&gt;</span> <span class="optional">[user] [role] [page]</span></div>
+                <h4>Subcommands</h4>
+                <table class="param-table">
+                    <tr><th>Subcommand</th><th>Description</th></tr>
+                    <tr><td><code>add &lt;user&gt;</code></td><td>Add a user to receive suspicious-join DM alerts</td></tr>
+                    <tr><td><code>remove &lt;user&gt;</code></td><td>Remove a user from the alert list</td></tr>
+                    <tr><td><code>addrole &lt;role&gt;</code></td><td>Add a role — all members with this role will be alerted</td></tr>
+                    <tr><td><code>removerole &lt;role&gt;</code></td><td>Remove a role from the alert list</td></tr>
+                    <tr><td><code>list [page]</code></td><td>View the current notify list, paginated (10 per page). The server owner is always pinned at the top.</td></tr>
+                    <tr><td><code>clear</code></td><td>Remove all users and roles from the notify list</td></tr>
+                    <tr><td><code>test</code></td><td>Send a test alert to the full notify list (including role members)</td></tr>
+                </table>
+                <h4>Details</h4>
+                <ul>
+                    <li>The server owner always receives alerts regardless of the notify list.</li>
+                    <li>Roles are resolved to members at alert time, so newly-added members are automatically included.</li>
+                    <li>The <code>list</code> subcommand shows paginated navigation buttons when there are more than 10 entries.</li>
+                </ul>
             </div>
         </div>
 
@@ -1516,16 +1533,36 @@
             <div class="cmd-summary" onclick="toggleCmd(this)">
                 <span class="cmd-name">/suspiciouslist<span class="cmd-expand-icon">&#9654;</span></span>
                 <span class="cmd-desc">Manage the global suspicious users masterlist</span>
-                <span class="cmd-perm">Owner only</span>
+                <span class="cmd-perm">Owner only · <code>ban</code> subcommand: Ban Members</span>
             </div>
             <div class="cmd-detail">
                 <h4>Syntax</h4>
-                <div class="syntax-block">/suspiciouslist <span class="required">&lt;action&gt;</span></div>
-                <h4>Details</h4>
+                <div class="syntax-block">/suspiciouslist <span class="required">&lt;action&gt;</span> <span class="optional">[userid] [reason] [filter]</span></div>
+                <h4>Subcommands</h4>
+                <table class="param-table">
+                    <tr><th>Subcommand</th><th>Who can use</th><th>Description</th></tr>
+                    <tr><td><code>view</code></td><td>Bot owner</td><td>View all users on the masterlist. ✅ = validated threat, ⚠️ = pending review. Includes a <strong>📤 Share</strong> button to post the result publicly.</td></tr>
+                    <tr><td><code>add &lt;userid&gt; &lt;reason&gt;</code></td><td>Bot owner</td><td>Manually add and auto-validate a user. Notifies all servers where the user is a member.</td></tr>
+                    <tr><td><code>remove &lt;userid&gt;</code></td><td>Bot owner</td><td>Remove a user from the masterlist. Automatically unbans them from any server that used <code>ban</code> on this entry.</td></tr>
+                    <tr><td><code>check &lt;userid&gt;</code></td><td>Bot owner</td><td>Look up a specific user's masterlist entry with action buttons to validate, invalidate, or remove.</td></tr>
+                    <tr><td><code>validate &lt;userid&gt;</code></td><td>Bot owner</td><td>Mark an unverified report as a confirmed threat. Triggers cross-server notifications.</td></tr>
+                    <tr><td><code>clear</code></td><td>Bot owner</td><td>Wipe the entire masterlist.</td></tr>
+                    <tr><td><code>stats</code></td><td>Bot owner</td><td>View masterlist statistics (total, validated, pending, sources). Includes a <strong>📤 Share</strong> button.</td></tr>
+                    <tr><td><code>scan</code></td><td>Bot owner</td><td>Immediately scan the masterlist for deleted or suspended Discord accounts and remove them. Also runs automatically every 20 minutes. Includes a <strong>📤 Share</strong> button.</td></tr>
+                    <tr><td><code>ban &lt;filter&gt;</code></td><td>Server admins (Ban Members)</td><td>Mass-ban masterlist users from <em>this server</em>. Filter choices: <code>validated</code>, <code>pending</code>, <code>all</code>. Bans are tracked — revoking a classification auto-unbans.</td></tr>
+                </table>
+                <h4>Status indicators</h4>
                 <ul>
-                    <li>Subcommands: <code>add</code>, <code>remove</code>, <code>check</code>, <code>list</code>, <code>validate</code></li>
-                    <li>Cross-server suspicious user tracking managed by the bot owner.</li>
+                    <li>✅ <strong>Validated</strong> — confirmed threat, reviewed by a bot owner</li>
+                    <li>⚠️ <strong>Pending</strong> — reported but not yet verified</li>
                 </ul>
+                <h4>Share button</h4>
+                <p>Certain ephemeral replies include a <strong>📤 Share</strong> button. Clicking it shows a confirmation prompt; confirming posts the embed publicly in the current channel with a 🗑️ Dismiss button visible only to the command user.</p>
+                <h4>Auto-cleanup</h4>
+                <p>The bot automatically removes masterlist entries for accounts that no longer exist on Discord (deleted/suspended) every <strong>20 minutes</strong>. The <code>scan</code> subcommand triggers this immediately on demand.</p>
+                <h4>Auto-unban</h4>
+                <p>When a user is removed from the masterlist (via <code>remove</code>, <code>clear</code>, or report invalidation), any server that previously used <code>/suspiciouslist ban</code> to ban them will automatically have that ban lifted.</p>
+                <div class="note-box">⚠️ The <code>ban</code> subcommand requires the <strong>Ban Members</strong> permission for both the user and the bot. It is available to server administrators, not just bot owners.</div>
             </div>
         </div>
     </div>
