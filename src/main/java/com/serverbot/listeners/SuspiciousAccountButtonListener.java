@@ -39,6 +39,12 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
     public void onButtonInteraction(ButtonInteractionEvent event) {
         String componentId = event.getComponentId();
 
+        // ── Notify-list pagination (snl:page:<guildId>:<page>) ──────────────────
+        if (componentId.startsWith("snl:page:")) {
+            handleListPage(event, componentId);
+            return;
+        }
+
         // Check if this is a suspicious account button
         if (!componentId.startsWith("suspicious_")) {
             return;
@@ -197,8 +203,17 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
         } catch (Exception ignored) {
         }
 
+        // Collect guilds that auto-banned this user before removing the entry
+        List<String> autoBannedGuilds = storage.getAutoBannedGuilds(userId);
+
         // Remove from masterlist
         storage.removeSuspiciousUser(userId);
+
+        // Unban from all guilds that had used /suspiciouslist ban on this user
+        if (!autoBannedGuilds.isEmpty()) {
+            com.serverbot.commands.utility.SuspiciousListCommand.unbanFromGuilds(
+                    event.getJDA(), userId, autoBannedGuilds);
+        }
 
         // Build the updated embed
         EmbedBuilder updatedEmbed = new EmbedBuilder()
@@ -878,5 +893,33 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
                         });
             }
         }
+    }
+
+    // ── Notify-list pagination ────────────────────────────────────────────────
+
+    private void handleListPage(ButtonInteractionEvent event, String componentId) {
+        // Format: snl:page:<guildId>:<pageNumber>
+        String[] parts = componentId.split(":");
+        if (parts.length != 4) { event.deferEdit().queue(); return; }
+        String guildId = parts[2];
+        int page;
+        try { page = Integer.parseInt(parts[3]); } catch (NumberFormatException e) { event.deferEdit().queue(); return; }
+        if (page <= 0) { event.deferEdit().queue(); return; } // disabled button
+
+        Guild guild = event.getJDA().getGuildById(guildId);
+        if (guild == null) {
+            event.reply("Could not find the server.").setEphemeral(true).queue();
+            return;
+        }
+
+        Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
+        com.serverbot.commands.config.SuspiciousNotifyCommand.PagedListResult result =
+                com.serverbot.commands.config.SuspiciousNotifyCommand.buildPage(guild, settings, page);
+
+        event.editMessageEmbeds(result.embed())
+                .setComponents(result.navRow() != null
+                        ? java.util.List.of(result.navRow())
+                        : java.util.Collections.emptyList())
+                .queue();
     }
 }

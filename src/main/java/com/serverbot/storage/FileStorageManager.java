@@ -830,6 +830,37 @@ public class FileStorageManager {
     }
 
     /**
+     * Record that a guild has auto-banned this user via /suspiciouslist ban.
+     * Used to automatically unban when the user's classification is revoked.
+     */
+    @SuppressWarnings("unchecked")
+    public void addAutoBanGuild(String userId, String guildId) {
+        Map<String, Object> data = suspiciousUsersCache.get(userId);
+        if (data == null) return;
+        List<String> guilds = (List<String>) data.computeIfAbsent(
+                "autoBannedGuilds", k -> new ArrayList<>());
+        if (!guilds.contains(guildId)) {
+            guilds.add(guildId);
+            saveSuspiciousUsers();
+        }
+    }
+
+    /**
+     * Returns the list of guild IDs that auto-banned this user via
+     * /suspiciouslist ban, so they can be unbanned if the classification is revoked.
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> getAutoBannedGuilds(String userId) {
+        Map<String, Object> data = suspiciousUsersCache.get(userId);
+        if (data == null) return Collections.emptyList();
+        Object val = data.get("autoBannedGuilds");
+        if (val instanceof List<?>) {
+            return new ArrayList<>((List<String>) val);
+        }
+        return Collections.emptyList();
+    }
+
+    /**
      * Get count of suspicious users
      */
     public int getSuspiciousUserCount() {

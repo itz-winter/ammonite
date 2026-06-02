@@ -5,15 +5,20 @@ import com.serverbot.commands.CommandCategory;
 import com.serverbot.commands.SlashCommand;
 import com.serverbot.storage.FileStorageManager;
 import com.serverbot.utils.BotConfig;
-import com.serverbot.utils.CustomEmojis;
 import com.serverbot.utils.DmUtils;
 import com.serverbot.utils.EmbedUtils;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.UserSnowflake;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
@@ -22,9 +27,11 @@ import org.slf4j.LoggerFactory;
 
 import java.awt.Color;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Bot owner command for managing the global suspicious users masterlist
@@ -72,12 +79,33 @@ public class SuspiciousListCommand implements SlashCommand {
                         new SubcommandData("clear", "Clear ALL users from the suspicious masterlist"),
                         new SubcommandData("validate", "Validate/verify a reported suspicious user")
                                 .addOption(OptionType.STRING, "userid", "The user ID to validate", true),
-                        new SubcommandData("stats", "View suspicious list statistics"));
+                        new SubcommandData("stats", "View suspicious list statistics"),
+                        new SubcommandData("ban", "Mass-ban suspicious users from this server (requires Ban Members)")
+                                .addOptions(new OptionData(OptionType.STRING, "filter",
+                                        "Which users to ban by classification", true)
+                                        .addChoices(
+                                                new Command.Choice("Validated – confirmed threats", "validated"),
+                                                new Command.Choice("Pending – unverified reports", "pending"),
+                                                new Command.Choice("All – validated + pending", "all"))),
+                        new SubcommandData("scan",
+                                "Scan the masterlist for deleted/suspended Discord accounts and remove them"));
     }
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
-        // Check if user is a bot owner
+        String subcommand = event.getSubcommandName();
+        if (subcommand == null) {
+            event.reply("Please specify a subcommand.").setEphemeral(true).queue();
+            return;
+        }
+
+        // /suspiciouslist ban is for server admins, not bot owners
+        if ("ban".equals(subcommand)) {
+            handleBan(event);
+            return;
+        }
+
+        // All other subcommands require bot owner
         BotConfig config = ServerBot.getConfigManager().getConfig();
         List<String> botOwners = config.getAllOwnerIds();
 
@@ -85,12 +113,6 @@ public class SuspiciousListCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Access Denied",
                     "This command is only available to bot owners.")).setEphemeral(true).queue();
-            return;
-        }
-
-        String subcommand = event.getSubcommandName();
-        if (subcommand == null) {
-            event.reply("Please specify a subcommand.").setEphemeral(true).queue();
             return;
         }
 
@@ -102,6 +124,7 @@ public class SuspiciousListCommand implements SlashCommand {
             case "clear" -> handleClear(event);
             case "validate" -> handleValidate(event);
             case "stats" -> handleStats(event);
+            case "scan" -> handleScan(event);
             default -> event.reply("Unknown subcommand.").setEphemeral(true).queue();
         }
     }
@@ -130,7 +153,7 @@ public class SuspiciousListCommand implements SlashCommand {
 
             String reason = (String) data.getOrDefault("reason", "No reason provided");
             Boolean isValidated = (Boolean) data.get("validated");
-            String status = (isValidated != null && isValidated) ? CustomEmojis.SUCCESS : CustomEmojis.ERROR;
+            String status = (isValidated != null && isValidated) ? "✅" : "⚠️";
             if (isValidated != null && isValidated)
                 validated++;
 
@@ -159,10 +182,13 @@ public class SuspiciousListCommand implements SlashCommand {
                 .addField("Total", String.valueOf(suspiciousUsers.size()), true)
                 .addField("Validated", String.valueOf(validated), true)
                 .addField("Pending", String.valueOf(suspiciousUsers.size() - validated), true)
-                .setFooter("✅ = Validated | ⏳ = Pending validation")
+                .setFooter("✅ = Validated | ⚠️ = Pending validation")
                 .setTimestamp(Instant.now());
 
-        event.getHook().sendMessageEmbeds(embed.build()).queue();
+        Button shareBtn = Button.secondary("share_req:" + event.getUser().getId(), "📤 Share");
+        event.getHook().sendMessageEmbeds(embed.build())
+                .setComponents(ActionRow.of(shareBtn))
+                .queue();
     }
 
     private void handleAdd(SlashCommandInteractionEvent event) {
@@ -239,11 +265,20 @@ public class SuspiciousListCommand implements SlashCommand {
             return;
         }
 
+        // Collect guilds that auto-banned this user before we remove the entry
+        List<String> autoBannedGuilds = storage.getAutoBannedGuilds(userId);
+
         storage.removeUserFromSuspiciousList(userId);
+
+        int unbanned = unbanFromGuilds(event.getJDA(), userId, autoBannedGuilds);
+        String extra = unbanned > 0
+                ? "\n\nAutomatically unbanned from **" + unbanned + "** server(s) that had used auto-ban."
+                : "";
 
         event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                 "User Removed",
-                "User `" + userId + "` has been removed from the suspicious masterlist.")).setEphemeral(true).queue();
+                "User `" + userId + "` has been removed from the suspicious masterlist." + extra))
+                .setEphemeral(true).queue();
 
         logger.info("Bot owner {} removed user {} from suspicious masterlist",
                 event.getUser().getId(), userId);
@@ -294,8 +329,8 @@ public class SuspiciousListCommand implements SlashCommand {
                 .addField("User", userInfo, false)
                 .addField("Reason", reason, false)
                 .addField("Status",
-                        validated != null && validated ? CustomEmojis.SUCCESS + " Validated"
-                                : CustomEmojis.ERROR + " Pending Validation",
+                        validated != null && validated ? "✅ Validated"
+                                : "⚠️ Pending Validation",
                         true)
                 .addField("Marked At", "<t:" + (markedAt / 1000) + ":F>", true);
 
@@ -420,7 +455,190 @@ public class SuspiciousListCommand implements SlashCommand {
                 .setFooter("Suspicious Users Masterlist")
                 .setTimestamp(Instant.now());
 
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+        Button shareBtn = Button.secondary("share_req:" + event.getUser().getId(), "📤 Share");
+        event.replyEmbeds(embed.build())
+                .setComponents(ActionRow.of(shareBtn))
+                .setEphemeral(true).queue();
+    }
+
+    //  /suspiciouslist scan 
+
+    private void handleScan(SlashCommandInteractionEvent event) {
+        com.serverbot.services.SuspiciousCleanupService svc =
+                com.serverbot.ServerBot.getSuspiciousCleanupService();
+
+        if (svc == null) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                    "Service Unavailable",
+                    "The suspicious cleanup service is not running. Check bot logs."))
+                    .setEphemeral(true).queue();
+            return;
+        }
+
+        int listed = ServerBot.getStorageManager().getSuspiciousUserCount();
+        if (listed == 0) {
+            event.replyEmbeds(EmbedUtils.createInfoEmbed(
+                    "Nothing to Scan",
+                    "The suspicious masterlist is currently empty."))
+                    .setEphemeral(true).queue();
+            return;
+        }
+
+        event.deferReply(true).queue();
+
+        svc.runScan().whenComplete((result, ex) -> {
+            if (ex != null) {
+                logger.error("On-demand suspicious-list scan failed", ex);
+                event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                        "Scan Failed",
+                        "An unexpected error occurred during the scan. Check the bot logs.")).queue();
+                return;
+            }
+
+            EmbedBuilder embed = new EmbedBuilder()
+                    .setTitle("🔍 Suspicious List Scan Complete")
+                    .setColor(result.removed() > 0 ? Color.ORANGE : Color.GREEN)
+                    .setDescription(result.summary())
+                    .addField("Entries Checked", String.valueOf(result.checked()), true)
+                    .addField("Deleted Accounts Removed", String.valueOf(result.removed()), true)
+                    .addField("Remaining on List",
+                            String.valueOf(ServerBot.getStorageManager().getSuspiciousUserCount()), true)
+                    .setFooter("Auto-scan runs every 20 minutes")
+                    .setTimestamp(Instant.now());
+
+            Button shareBtn = Button.secondary("share_req:" + event.getUser().getId(), "📤 Share");
+            event.getHook().sendMessageEmbeds(embed.build())
+                    .setComponents(ActionRow.of(shareBtn))
+                    .queue();
+
+            logger.info("Bot owner {} triggered on-demand scan: {}", event.getUser().getId(), result.summary());
+        });
+    }
+
+    //  /suspiciouslist ban 
+
+    private void handleBan(SlashCommandInteractionEvent event) {
+        if (!event.isFromGuild()) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                    "Guild Only", "This subcommand can only be used inside a server."))
+                    .setEphemeral(true).queue();
+            return;
+        }
+
+        if (event.getMember() == null || !event.getMember().hasPermission(Permission.BAN_MEMBERS)) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                    "Missing Permission",
+                    "You need the **Ban Members** permission to use this subcommand."))
+                    .setEphemeral(true).queue();
+            return;
+        }
+
+        Guild guild = event.getGuild();
+        if (!guild.getSelfMember().hasPermission(Permission.BAN_MEMBERS)) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                    "Missing Bot Permission",
+                    "I need the **Ban Members** permission to execute bans in this server."))
+                    .setEphemeral(true).queue();
+            return;
+        }
+
+        String filter = event.getOption("filter").getAsString();
+        event.deferReply(true).queue();
+
+        FileStorageManager storage = ServerBot.getStorageManager();
+        Map<String, Map<String, Object>> allUsers = storage.getAllSuspiciousUsers();
+
+        if (allUsers.isEmpty()) {
+            event.getHook().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                    "No Users", "The suspicious masterlist is currently empty.")).queue();
+            return;
+        }
+
+        // Build list of matching user IDs
+        List<String> targets = new ArrayList<>();
+        for (Map.Entry<String, Map<String, Object>> entry : allUsers.entrySet()) {
+            Boolean validated = (Boolean) entry.getValue().get("validated");
+            boolean isValidated = validated != null && validated;
+            boolean match = switch (filter) {
+                case "validated" -> isValidated;
+                case "pending"   -> !isValidated;
+                default          -> true; // "all"
+            };
+            if (match) targets.add(entry.getKey());
+        }
+
+        if (targets.isEmpty()) {
+            event.getHook().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                    "No Matches",
+                    "No users on the masterlist match the `" + filter + "` filter.")).queue();
+            return;
+        }
+
+        String guildId = guild.getId();
+        List<String> ownerIds = ServerBot.getConfigManager().getConfig().getAllOwnerIds();
+
+        int banned = 0, alreadyBanned = 0, failed = 0;
+
+        for (String userId : targets) {
+            if (ownerIds.contains(userId)) continue; // never ban bot owners
+            try {
+                guild.ban(UserSnowflake.fromId(userId), 0, TimeUnit.SECONDS)
+                        .reason("Suspicious Masterlist Auto-Ban [" + filter + "] by "
+                                + event.getUser().getName())
+                        .complete();
+                storage.addAutoBanGuild(userId, guildId);
+                banned++;
+            } catch (net.dv8tion.jda.api.exceptions.ErrorResponseException e) {
+                if (e.getErrorCode() == 10026) { // Unknown Ban — treat as already banned
+                    storage.addAutoBanGuild(userId, guildId);
+                    alreadyBanned++;
+                } else {
+                    failed++;
+                    logger.warn("Failed to ban {} in guild {}: {}", userId, guildId, e.getMessage());
+                }
+            } catch (Exception e) {
+                failed++;
+                logger.warn("Failed to ban {} in guild {}: {}", userId, guildId, e.getMessage());
+            }
+        }
+
+        StringBuilder desc = new StringBuilder()
+                .append("**Filter:** `").append(filter).append("`\n")
+                .append("**Targeted:** ").append(targets.size()).append(" user(s)\n\n")
+                .append("✅ **Newly banned:** ").append(banned).append("\n")
+                .append("⚠️ **Already banned:** ").append(alreadyBanned).append("\n");
+        if (failed > 0) desc.append("❌ **Failed:** ").append(failed).append("\n");
+        desc.append("\n*These users will be automatically unbanned if their")
+            .append(" classification is revoked from the masterlist.*");
+
+        event.getHook().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                "Mass-Ban Complete", desc.toString())).queue();
+
+        logger.info("Server admin {} in guild {} mass-banned {} suspicious users (filter={}, failed={})",
+                event.getUser().getId(), guildId, banned, filter, failed);
+    }
+
+    /**
+     * Unbans {@code userId} from every guild in {@code guildIds} where the bot has
+     * permission, returning the number of guilds where the unban succeeded.
+     * Called when a user's suspicious classification is revoked (remove / invalidate).
+     */
+    public static int unbanFromGuilds(JDA jda, String userId, List<String> guildIds) {
+        int count = 0;
+        for (String guildId : guildIds) {
+            Guild guild = jda.getGuildById(guildId);
+            if (guild != null && guild.getSelfMember().hasPermission(Permission.BAN_MEMBERS)) {
+                try {
+                    guild.unban(UserSnowflake.fromId(userId))
+                            .reason("Suspicious classification revoked from masterlist")
+                            .complete();
+                    count++;
+                } catch (Exception ignored) {
+                    // User may not actually be banned there — safe to ignore
+                }
+            }
+        }
+        return count;
     }
 
     private void notifyServersAboutSuspiciousUser(SlashCommandInteractionEvent event, String userId, String reason) {

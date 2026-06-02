@@ -3,12 +3,13 @@ package com.serverbot.listeners;
 import com.serverbot.ServerBot;
 import com.serverbot.models.SuspicionLevel;
 import com.serverbot.utils.BotConfig;
-import com.serverbot.utils.CustomEmojis;
 import com.serverbot.utils.DmUtils;
 import com.serverbot.utils.SafeRestAction;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -17,13 +18,14 @@ import net.dv8tion.jda.api.components.buttons.Button;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.*;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Detects and reports suspicious Discord accounts joining servers
@@ -63,6 +65,7 @@ public class SuspiciousAccountListener extends ListenerAdapter {
             // Send alerts
             sendGuildOwnerAlert(guild, user, report);
             sendBotOwnerAlert(guild, user, report);
+            sendNotifyListAlerts(guild, user, report);
         }
     }
 
@@ -129,6 +132,36 @@ public class SuspiciousAccountListener extends ListenerAdapter {
     }
 
     /**
+     * Builds the alert embed sent to guild owners and notify-list members.
+     */
+    private MessageEmbed buildGuildAlertEmbed(Guild guild, User suspiciousUser,
+            SuspiciousAccountReport report, SuspicionLevel level) {
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(level.getColor())
+                .setTitle(level.getEmoji() + " " + level.getDisplayName() + " Account Detected")
+                .setDescription("A potentially suspicious account has joined your server.")
+                .addField("User", suspiciousUser.getAsMention() + " (`" + suspiciousUser.getName() + "`)", false)
+                .addField("User ID", suspiciousUser.getId(), true)
+                .addField("User Link",
+                        "[Click here](https://discord.com/users/" + suspiciousUser.getId() + ")", true)
+                .addField("Server", guild.getName() + " (`" + guild.getId() + "`)", false)
+                .addField("Suspicion Level", level.toString(), true)
+                .addField("Flags Detected", String.valueOf(report.getFlagCount()), true)
+                .addField("Account Created", String.format("<t:%d:F> (<t:%d:R>)",
+                        suspiciousUser.getTimeCreated().toEpochSecond(),
+                        suspiciousUser.getTimeCreated().toEpochSecond()), false)
+                .addField("Suspicious Indicators", report.getReasonsFormatted(), false)
+                .setThumbnail(suspiciousUser.getEffectiveAvatarUrl())
+                .setFooter("Suspicious Account Detection", guild.getIconUrl())
+                .setTimestamp(OffsetDateTime.now());
+        String action = report.getEffectiveAction();
+        if (action != null && level.hasRecommendedAction()) {
+            embed.addField("📋 Recommended Action", action, false);
+        }
+        return embed.build();
+    }
+
+    /**
      * Sends an alert to the guild owner
      */
     private void sendGuildOwnerAlert(Guild guild, User suspiciousUser, SuspiciousAccountReport report) {
@@ -136,42 +169,70 @@ public class SuspiciousAccountListener extends ListenerAdapter {
         if (level == null)
             return;
 
+        MessageEmbed embed = buildGuildAlertEmbed(guild, suspiciousUser, report, level);
+
         SafeRestAction.queue(
                 guild.retrieveOwner(),
                 "retrieve guild owner for suspicious account alert",
-                owner -> {
-                    EmbedBuilder embed = new EmbedBuilder()
-                            .setColor(level.getColor())
-                            .setTitle(level.getEmoji() + " " + level.getDisplayName() + " Account Detected")
-                            .setDescription("A potentially suspicious account has joined your server.")
-                            .addField("User", suspiciousUser.getAsMention() + " (`" + suspiciousUser.getName() + "`)",
-                                    false)
-                            .addField("User ID", suspiciousUser.getId(), true)
-                            .addField("User Link",
-                                    "[Click here](https://discord.com/users/" + suspiciousUser.getId() + ")", true)
-                            .addField("Server", guild.getName() + " (`" + guild.getId() + "`)", false)
-                            .addField("Suspicion Level", level.toString(), true)
-                            .addField("Flags Detected", String.valueOf(report.getFlagCount()), true)
-                            .addField("Account Created", String.format("<t:%d:F> (<t:%d:R>)",
-                                    suspiciousUser.getTimeCreated().toEpochSecond(),
-                                    suspiciousUser.getTimeCreated().toEpochSecond()), false)
-                            .addField("Suspicious Indicators", report.getReasonsFormatted(), false)
-                            .setThumbnail(suspiciousUser.getEffectiveAvatarUrl())
-                            .setFooter("Suspicious Account Detection", guild.getIconUrl())
-                            .setTimestamp(OffsetDateTime.now());
+                owner -> DmUtils.sendDm(guild, owner.getUser(), embed,
+                        v -> logger.debug("Sent suspicious account alert to guild owner {} for user {}",
+                                owner.getUser().getName(), suspiciousUser.getName()),
+                        error -> logger.warn("Failed to send suspicious account alert to guild owner: {}",
+                                error.getMessage())));
+    }
 
-                    // Add recommended action only for levels that have one (not LOW_SUSPICION)
-                    String action = report.getEffectiveAction();
-                    if (action != null && level.hasRecommendedAction()) {
-                        embed.addField("📋 Recommended Action", action, false);
+    /**
+     * Sends alerts to all explicit notify-list users and members with notify roles,
+     * excluding the guild owner (already notified by sendGuildOwnerAlert).
+     */
+    private void sendNotifyListAlerts(Guild guild, User suspiciousUser, SuspiciousAccountReport report) {
+        SuspicionLevel level = report.getSuspicionLevel();
+        if (level == null) return;
+
+        Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guild.getId());
+
+        Set<String> recipientIds = new LinkedHashSet<>();
+
+        // Explicit notify users
+        Object usersObj = settings.get("suspiciousAccountNotifyUsers");
+        if (usersObj instanceof List<?>) {
+            for (Object obj : (List<?>) usersObj) {
+                if (obj instanceof String s) recipientIds.add(s);
+            }
+        }
+
+        // Role-based notify users — resolved at alert time
+        Object rolesObj = settings.get("suspiciousAccountNotifyRoles");
+        if (rolesObj instanceof List<?>) {
+            for (Object obj : (List<?>) rolesObj) {
+                if (obj instanceof String roleId) {
+                    Role role = guild.getRoleById(roleId);
+                    if (role != null) {
+                        for (Member m : guild.getMembersWithRoles(role)) {
+                            recipientIds.add(m.getId());
+                        }
                     }
+                }
+            }
+        }
 
-                    DmUtils.sendDm(guild, owner.getUser(), embed.build(),
-                            v -> logger.debug("Sent suspicious account alert to guild owner {} for user {}",
-                                    owner.getUser().getName(), suspiciousUser.getName()),
-                            error -> logger.warn("Failed to send suspicious account alert to guild owner: {}",
-                                    error.getMessage()));
-                });
+        // Guild owner already gets their own dedicated DM
+        recipientIds.remove(guild.getOwnerId());
+
+        if (recipientIds.isEmpty()) return;
+
+        MessageEmbed embed = buildGuildAlertEmbed(guild, suspiciousUser, report, level);
+
+        for (String userId : recipientIds) {
+            SafeRestAction.queue(
+                    guild.retrieveMemberById(userId),
+                    "retrieve notify-list member for suspicious account alert",
+                    member -> DmUtils.sendDm(guild, member.getUser(), embed,
+                            v -> logger.debug("Sent suspicious account alert to notify user {} for user {}",
+                                    member.getUser().getName(), suspiciousUser.getName()),
+                            error -> logger.warn("Failed to send suspicious account alert to notify user {}: {}",
+                                    error.getMessage())));
+        }
     }
 
     /**

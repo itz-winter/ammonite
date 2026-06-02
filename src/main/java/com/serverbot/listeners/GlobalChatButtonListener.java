@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class GlobalChatButtonListener extends ListenerAdapter {
 
-    // ── Buttons ───────────────────────────────────────────────────────────────
+    //  Buttons 
 
     @Override
     public void onButtonInteraction(ButtonInteractionEvent event) {
@@ -201,7 +201,7 @@ public class GlobalChatButtonListener extends ListenerAdapter {
         }
     }
 
-    // ── Modals ────────────────────────────────────────────────────────────────
+    //  Modals 
 
     @Override
     public void onModalInteraction(ModalInteractionEvent event) {
@@ -404,7 +404,7 @@ public class GlobalChatButtonListener extends ListenerAdapter {
         }
     }
 
-    // ── View linked ───────────────────────────────────────────────────────────
+    //  View linked 
 
     private void handleViewLinked(ButtonInteractionEvent event, GlobalChatChannel gc) {
         Map<String, String> linked = gc.getLinkedChannels();
@@ -435,7 +435,7 @@ public class GlobalChatButtonListener extends ListenerAdapter {
         event.replyEmbeds(eb.build()).setEphemeral(true).queue();
     }
 
-    // ── Modal builders ────────────────────────────────────────────────────────
+    //  Modal builders 
 
     private Modal buildEditModal(GlobalChatChannel gc) {
         String cid = gc.getChannelId();
@@ -555,7 +555,7 @@ public class GlobalChatButtonListener extends ListenerAdapter {
                 .build();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    //  Helpers 
 
     private void noAccess(ButtonInteractionEvent event) {
         event.replyEmbeds(EmbedUtils.createErrorEmbed("No Access",
