@@ -41,6 +41,8 @@ public class SuspiciousNotifyCommand implements SlashCommand {
     private static final Logger logger = LoggerFactory.getLogger(SuspiciousNotifyCommand.class);
     private static final String NOTIFY_USERS_KEY = "suspiciousAccountNotifyUsers";
     private static final String NOTIFY_ROLES_KEY = "suspiciousAccountNotifyRoles";
+    private static final String DENY_USERS_KEY   = "suspiciousAccountDenyUsers";
+    private static final String DENY_ROLES_KEY   = "suspiciousAccountDenyRoles";
     public  static final int PAGE_SIZE = 10;
     /** Button ID prefix used by the pagination buttons: {@code snl:page:<guildId>:<page>} */
     public  static final String PAGE_BTN = "snl:page";
@@ -73,14 +75,18 @@ public class SuspiciousNotifyCommand implements SlashCommand {
     public static CommandData getCommandData() {
         return Commands.slash("suspiciousnotify", "Manage suspicious account notification settings and submit reports")
                 .addSubcommands(
-                        new SubcommandData("add", "Add a user to receive suspicious account notifications")
-                                .addOption(OptionType.USER, "user", "The user to add to notifications", true),
-                        new SubcommandData("remove", "Remove a user from suspicious account notifications")
-                                .addOption(OptionType.USER, "user", "The user to remove from notifications", true),
-                        new SubcommandData("addrole", "Add a role — all members with this role receive notifications")
-                                .addOption(OptionType.ROLE, "role", "The role to add", true),
-                        new SubcommandData("removerole", "Remove a role from the notification list")
-                                .addOption(OptionType.ROLE, "role", "The role to remove", true),
+                        new SubcommandData("add", "Add a user and/or role to receive suspicious account notifications")
+                                .addOption(OptionType.USER, "user", "The user to add", false)
+                                .addOption(OptionType.ROLE, "role", "The role to add", false),
+                        new SubcommandData("remove", "Remove a user and/or role from suspicious account notifications")
+                                .addOption(OptionType.USER, "user", "The user to remove", false)
+                                .addOption(OptionType.ROLE, "role", "The role to remove", false),
+                        new SubcommandData("deny", "Explicitly deny a user and/or role from receiving notifications (overrides role grants)")
+                                .addOption(OptionType.USER, "user", "The user to deny", false)
+                                .addOption(OptionType.ROLE, "role", "The role to deny", false),
+                        new SubcommandData("undeny", "Remove an explicit deny from a user and/or role")
+                                .addOption(OptionType.USER, "user", "The user to undeny", false)
+                                .addOption(OptionType.ROLE, "role", "The role to undeny", false),
                         new SubcommandData("list", "List all users and roles who receive suspicious account notifications")
                                 .addOption(OptionType.INTEGER, "page", "Page number to view (default: 1)", false),
                         new SubcommandData("clear", "Clear all users and roles from the notification list"),
@@ -103,77 +109,244 @@ public class SuspiciousNotifyCommand implements SlashCommand {
             return;
         }
         switch (subcommand) {
-            case "add" -> handleAdd(event);
+            case "add"    -> handleAdd(event);
             case "remove" -> handleRemove(event);
-            case "addrole" -> handleAddRole(event);
-            case "removerole" -> handleRemoveRole(event);
-            case "list" -> handleList(event);
-            case "clear" -> handleClear(event);
-            case "test" -> handleTest(event);
+            case "deny"   -> handleDeny(event);
+            case "undeny" -> handleUndeny(event);
+            case "list"   -> handleList(event);
+            case "clear"  -> handleClear(event);
+            case "test"   -> handleTest(event);
             case "report" -> handleReport(event);
             default -> event.reply("Unknown subcommand.").setEphemeral(true).queue();
         }
     }
 
+    // ── Shared helper ────────────────────────────────────────────────────────
+
+    private static List<String> getStringList(Map<String, Object> settings, String key) {
+        List<String> list = new ArrayList<>();
+        Object obj = settings.get(key);
+        if (obj instanceof List<?>) {
+            for (Object item : (List<?>) obj) {
+                if (item instanceof String s) list.add(s);
+            }
+        }
+        return list;
+    }
+
+    // ── /suspiciousnotify add ─────────────────────────────────────────────────
+
     private void handleAdd(SlashCommandInteractionEvent event) {
         Guild guild = event.getGuild();
-        Member targetMember = event.getOption("user").getAsMember();
-        if (targetMember == null) {
-            event.reply("Could not find that member in this server.").setEphemeral(true).queue();
+        OptionMapping userOpt = event.getOption("user");
+        OptionMapping roleOpt = event.getOption("role");
+
+        if (userOpt == null && roleOpt == null) {
+            event.reply("Please specify at least one `user` or `role` to add.").setEphemeral(true).queue();
             return;
         }
+
         String guildId = guild.getId();
         Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
-        List<String> notifyUsers = new ArrayList<>();
-        Object existing = settings.get(NOTIFY_USERS_KEY);
-        if (existing instanceof List<?>) {
-            for (Object obj : (List<?>) existing) {
-                if (obj instanceof String) {
-                    notifyUsers.add((String) obj);
+        StringBuilder response = new StringBuilder();
+
+        if (userOpt != null) {
+            Member targetMember = userOpt.getAsMember();
+            if (targetMember == null) {
+                response.append(CustomEmojis.ERROR + " Could not find that user in this server.\n");
+            } else {
+                List<String> notifyUsers = getStringList(settings, NOTIFY_USERS_KEY);
+                if (notifyUsers.contains(targetMember.getId())) {
+                    response.append(targetMember.getAsMention() + " is already on the notification list.\n");
+                } else {
+                    notifyUsers.add(targetMember.getId());
+                    ServerBot.getStorageManager().updateGuildSettings(guildId, NOTIFY_USERS_KEY, notifyUsers);
+                    logger.info("Added {} to suspicious account notifications in guild {}",
+                            targetMember.getUser().getName(), guild.getName());
+                    response.append(CustomEmojis.SUCCESS + " Added " + targetMember.getAsMention()
+                            + " to suspicious account notifications.\n");
                 }
             }
         }
-        if (notifyUsers.contains(targetMember.getId())) {
-            event.reply(targetMember.getAsMention() + " is already on the notification list.").setEphemeral(true)
-                    .queue();
-            return;
+
+        if (roleOpt != null) {
+            Role role = roleOpt.getAsRole();
+            // Re-fetch settings in case user addition already changed them
+            settings = ServerBot.getStorageManager().getGuildSettings(guildId);
+            List<String> notifyRoles = getStringList(settings, NOTIFY_ROLES_KEY);
+            if (notifyRoles.contains(role.getId())) {
+                response.append(role.getAsMention() + " is already in the notify role list.\n");
+            } else {
+                notifyRoles.add(role.getId());
+                ServerBot.getStorageManager().updateGuildSettings(guildId, NOTIFY_ROLES_KEY, notifyRoles);
+                int memberCount = guild.getMembersWithRoles(role).size();
+                logger.info("Added role {} to suspicious account notifications in guild {}",
+                        role.getName(), guild.getName());
+                response.append(CustomEmojis.SUCCESS + " Added " + role.getAsMention()
+                        + " to notifications — " + memberCount + " current member(s).\n");
+            }
         }
-        notifyUsers.add(targetMember.getId());
-        ServerBot.getStorageManager().updateGuildSettings(guildId, NOTIFY_USERS_KEY, notifyUsers);
-        logger.info("Added {} to suspicious account notifications in guild {}", targetMember.getUser().getName(),
-                guild.getName());
-        event.reply("Added " + targetMember.getAsMention() + " to suspicious account notifications.").setEphemeral(true)
-                .queue();
+
+        event.reply(response.toString().trim()).setEphemeral(true).queue();
     }
+
+    // ── /suspiciousnotify remove ──────────────────────────────────────────────
 
     private void handleRemove(SlashCommandInteractionEvent event) {
         Guild guild = event.getGuild();
-        Member targetMember = event.getOption("user").getAsMember();
-        if (targetMember == null) {
-            event.reply("Could not find that member in this server.").setEphemeral(true).queue();
+        OptionMapping userOpt = event.getOption("user");
+        OptionMapping roleOpt = event.getOption("role");
+
+        if (userOpt == null && roleOpt == null) {
+            event.reply("Please specify at least one `user` or `role` to remove.").setEphemeral(true).queue();
             return;
         }
+
         String guildId = guild.getId();
         Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
-        List<String> notifyUsers = new ArrayList<>();
-        Object existing = settings.get(NOTIFY_USERS_KEY);
-        if (existing instanceof List<?>) {
-            for (Object obj : (List<?>) existing) {
-                if (obj instanceof String) {
-                    notifyUsers.add((String) obj);
+        StringBuilder response = new StringBuilder();
+
+        if (userOpt != null) {
+            Member targetMember = userOpt.getAsMember();
+            if (targetMember == null) {
+                response.append(CustomEmojis.ERROR + " Could not find that user in this server.\n");
+            } else {
+                List<String> notifyUsers = getStringList(settings, NOTIFY_USERS_KEY);
+                if (!notifyUsers.contains(targetMember.getId())) {
+                    response.append(targetMember.getAsMention() + " is not on the notification list.\n");
+                } else {
+                    notifyUsers.remove(targetMember.getId());
+                    ServerBot.getStorageManager().updateGuildSettings(guildId, NOTIFY_USERS_KEY, notifyUsers);
+                    logger.info("Removed {} from suspicious account notifications in guild {}",
+                            targetMember.getUser().getName(), guild.getName());
+                    response.append(CustomEmojis.SUCCESS + " Removed " + targetMember.getAsMention()
+                            + " from suspicious account notifications.\n");
                 }
             }
         }
-        if (!notifyUsers.contains(targetMember.getId())) {
-            event.reply(targetMember.getAsMention() + " is not on the notification list.").setEphemeral(true).queue();
+
+        if (roleOpt != null) {
+            Role role = roleOpt.getAsRole();
+            settings = ServerBot.getStorageManager().getGuildSettings(guildId);
+            List<String> notifyRoles = getStringList(settings, NOTIFY_ROLES_KEY);
+            if (!notifyRoles.contains(role.getId())) {
+                response.append(role.getAsMention() + " is not in the notify role list.\n");
+            } else {
+                notifyRoles.remove(role.getId());
+                ServerBot.getStorageManager().updateGuildSettings(guildId, NOTIFY_ROLES_KEY, notifyRoles);
+                logger.info("Removed role {} from suspicious account notifications in guild {}",
+                        role.getName(), guild.getName());
+                response.append(CustomEmojis.SUCCESS + " Removed " + role.getAsMention()
+                        + " from suspicious account notifications. Members only notified via this role will no longer receive alerts.\n");
+            }
+        }
+
+        event.reply(response.toString().trim()).setEphemeral(true).queue();
+    }
+
+    // ── /suspiciousnotify deny ────────────────────────────────────────────────
+
+    private void handleDeny(SlashCommandInteractionEvent event) {
+        Guild guild = event.getGuild();
+        OptionMapping userOpt = event.getOption("user");
+        OptionMapping roleOpt = event.getOption("role");
+
+        if (userOpt == null && roleOpt == null) {
+            event.reply("Please specify at least one `user` or `role` to deny.").setEphemeral(true).queue();
             return;
         }
-        notifyUsers.remove(targetMember.getId());
-        ServerBot.getStorageManager().updateGuildSettings(guildId, NOTIFY_USERS_KEY, notifyUsers);
-        logger.info("Removed {} from suspicious account notifications in guild {}", targetMember.getUser().getName(),
-                guild.getName());
-        event.reply("Removed " + targetMember.getAsMention() + " from suspicious account notifications.")
-                .setEphemeral(true).queue();
+
+        String guildId = guild.getId();
+        Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
+        StringBuilder response = new StringBuilder();
+
+        if (userOpt != null) {
+            Member targetMember = userOpt.getAsMember();
+            if (targetMember == null) {
+                response.append(CustomEmojis.ERROR + " Could not find that user in this server.\n");
+            } else {
+                List<String> denyUsers = getStringList(settings, DENY_USERS_KEY);
+                if (denyUsers.contains(targetMember.getId())) {
+                    response.append(targetMember.getAsMention() + " is already explicitly denied.\n");
+                } else {
+                    denyUsers.add(targetMember.getId());
+                    ServerBot.getStorageManager().updateGuildSettings(guildId, DENY_USERS_KEY, denyUsers);
+                    logger.info("Denied {} from suspicious account notifications in guild {}",
+                            targetMember.getUser().getName(), guild.getName());
+                    response.append(CustomEmojis.SUCCESS + " Explicitly denied " + targetMember.getAsMention()
+                            + " — they will not receive notifications even if granted via a role.\n");
+                }
+            }
+        }
+
+        if (roleOpt != null) {
+            Role role = roleOpt.getAsRole();
+            settings = ServerBot.getStorageManager().getGuildSettings(guildId);
+            List<String> denyRoles = getStringList(settings, DENY_ROLES_KEY);
+            if (denyRoles.contains(role.getId())) {
+                response.append(role.getAsMention() + " is already explicitly denied.\n");
+            } else {
+                denyRoles.add(role.getId());
+                ServerBot.getStorageManager().updateGuildSettings(guildId, DENY_ROLES_KEY, denyRoles);
+                int memberCount = guild.getMembersWithRoles(role).size();
+                logger.info("Denied role {} from suspicious account notifications in guild {}",
+                        role.getName(), guild.getName());
+                response.append(CustomEmojis.SUCCESS + " Explicitly denied " + role.getAsMention()
+                        + " — all " + memberCount + " current member(s) with this role will be excluded.\n");
+            }
+        }
+
+        event.reply(response.toString().trim()).setEphemeral(true).queue();
+    }
+
+    // ── /suspiciousnotify undeny ──────────────────────────────────────────────
+
+    private void handleUndeny(SlashCommandInteractionEvent event) {
+        Guild guild = event.getGuild();
+        OptionMapping userOpt = event.getOption("user");
+        OptionMapping roleOpt = event.getOption("role");
+
+        if (userOpt == null && roleOpt == null) {
+            event.reply("Please specify at least one `user` or `role` to undeny.").setEphemeral(true).queue();
+            return;
+        }
+
+        String guildId = guild.getId();
+        Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
+        StringBuilder response = new StringBuilder();
+
+        if (userOpt != null) {
+            Member targetMember = userOpt.getAsMember();
+            if (targetMember == null) {
+                response.append(CustomEmojis.ERROR + " Could not find that user in this server.\n");
+            } else {
+                List<String> denyUsers = getStringList(settings, DENY_USERS_KEY);
+                if (!denyUsers.contains(targetMember.getId())) {
+                    response.append(targetMember.getAsMention() + " is not in the deny list.\n");
+                } else {
+                    denyUsers.remove(targetMember.getId());
+                    ServerBot.getStorageManager().updateGuildSettings(guildId, DENY_USERS_KEY, denyUsers);
+                    response.append(CustomEmojis.SUCCESS + " Removed explicit deny from "
+                            + targetMember.getAsMention() + ".\n");
+                }
+            }
+        }
+
+        if (roleOpt != null) {
+            Role role = roleOpt.getAsRole();
+            settings = ServerBot.getStorageManager().getGuildSettings(guildId);
+            List<String> denyRoles = getStringList(settings, DENY_ROLES_KEY);
+            if (!denyRoles.contains(role.getId())) {
+                response.append(role.getAsMention() + " is not in the deny list.\n");
+            } else {
+                denyRoles.remove(role.getId());
+                ServerBot.getStorageManager().updateGuildSettings(guildId, DENY_ROLES_KEY, denyRoles);
+                response.append(CustomEmojis.SUCCESS + " Removed explicit deny from "
+                        + role.getAsMention() + ".\n");
+            }
+        }
+
+        event.reply(response.toString().trim()).setEphemeral(true).queue();
     }
 
     private void handleList(SlashCommandInteractionEvent event) {
@@ -207,43 +380,58 @@ public class SuspiciousNotifyCommand implements SlashCommand {
 
         // Section 1: notify roles
         List<String> roleLines = new ArrayList<>();
-        Object rolesObj = settings.get(NOTIFY_ROLES_KEY);
-        if (rolesObj instanceof List<?>) {
-            for (Object obj : (List<?>) rolesObj) {
-                if (obj instanceof String roleId) {
-                    Role role = guild.getRoleById(roleId);
-                    if (role != null) {
-                        int mc = guild.getMembersWithRoles(role).size();
-                        roleLines.add("🎭 " + role.getAsMention() + " — " + mc + " member(s)");
-                    } else {
-                        roleLines.add("🎭 ~~Unknown Role~~ (`" + roleId + "`)");
-                    }
-                }
+        for (String roleId : getStringList(settings, NOTIFY_ROLES_KEY)) {
+            Role role = guild.getRoleById(roleId);
+            if (role != null) {
+                int mc = guild.getMembersWithRoles(role).size();
+                roleLines.add("🎭 " + role.getAsMention() + " — " + mc + " member(s)");
+            } else {
+                roleLines.add("🎭 ~~Unknown Role~~ (`" + roleId + "`)");
             }
         }
 
-        // Section 2: explicit users
+        // Section 2: explicit notify users
         List<String> userLines = new ArrayList<>();
-        Object usersObj = settings.get(NOTIFY_USERS_KEY);
-        if (usersObj instanceof List<?>) {
-            for (Object obj : (List<?>) usersObj) {
-                if (obj instanceof String userId) {
-                    Member m = guild.getMemberById(userId);
-                    if (m != null) {
-                        userLines.add("👤 " + m.getAsMention() + " (" + m.getUser().getName() + ")");
-                    } else {
-                        userLines.add("👤 Unknown User (ID: `" + userId + "`)");
-                    }
-                }
+        for (String userId : getStringList(settings, NOTIFY_USERS_KEY)) {
+            Member m = guild.getMemberById(userId);
+            if (m != null) {
+                userLines.add("👤 " + m.getAsMention() + " (" + m.getUser().getName() + ")");
+            } else {
+                userLines.add("👤 Unknown User (ID: `" + userId + "`)");
             }
         }
 
-        //  Build flat ordered list: owner first, then roles, then explicit users 
+        // Section 3: deny roles
+        List<String> denyRoleLines = new ArrayList<>();
+        for (String roleId : getStringList(settings, DENY_ROLES_KEY)) {
+            Role role = guild.getRoleById(roleId);
+            if (role != null) {
+                int mc = guild.getMembersWithRoles(role).size();
+                denyRoleLines.add("🚫🎭 " + role.getAsMention() + " — " + mc + " member(s) excluded");
+            } else {
+                denyRoleLines.add("🚫🎭 ~~Unknown Role~~ (`" + roleId + "`)");
+            }
+        }
+
+        // Section 4: deny users
+        List<String> denyUserLines = new ArrayList<>();
+        for (String userId : getStringList(settings, DENY_USERS_KEY)) {
+            Member m = guild.getMemberById(userId);
+            if (m != null) {
+                denyUserLines.add("🚫👤 " + m.getAsMention() + " (" + m.getUser().getName() + ")");
+            } else {
+                denyUserLines.add("🚫👤 Unknown User (ID: `" + userId + "`)");
+            }
+        }
+
+        //  Build flat ordered list: owner first, then notify roles/users, then deny roles/users 
         // Owner is always entry 0 — it appears on page 1 only, consuming 1 slot.
         // The owner entry is special: it's always included in the total count but
         // always displayed on page 1 ahead of the paginated rows.
         List<String> paginatedRows = new ArrayList<>(roleLines);
         paginatedRows.addAll(userLines);
+        paginatedRows.addAll(denyRoleLines);
+        paginatedRows.addAll(denyUserLines);
 
         int totalPaginatedRows = paginatedRows.size();
         // Page 1 has PAGE_SIZE-1 paginated rows (one slot taken by owner); rest have PAGE_SIZE.
@@ -283,11 +471,12 @@ public class SuspiciousNotifyCommand implements SlashCommand {
             eb.setDescription("Notification list for **" + guild.getName() + "** — continued.");
         }
 
-        // Body rows — group into sections for readability
+        // Body rows
         if (pageRows.isEmpty() && page == 1) {
-            eb.addField("� Roles & Explicit Users",
+            eb.addField("📋 Roles & Users",
                     "*None configured.*\n"
-                    + "Use `/suspiciousnotify addrole @role` or `/suspiciousnotify add @user` to add entries.",
+                    + "Use `/suspiciousnotify add` with a `user` and/or `role` to add entries.\n"
+                    + "Use `/suspiciousnotify deny` to explicitly block someone from receiving alerts.",
                     false);
         } else if (!pageRows.isEmpty()) {
             StringBuilder body = new StringBuilder();
@@ -296,16 +485,23 @@ public class SuspiciousNotifyCommand implements SlashCommand {
                 body.append("`").append(String.format("%2d", globalNum)).append(".` ").append(line).append("\n");
                 globalNum++;
             }
-            eb.addField("📋 Roles & Explicit Users", body.toString().trim(), false);
+            eb.addField("📋 Roles & Users", body.toString().trim(), false);
+        }
+
+        // Legend note on page 1 when deny entries exist
+        if (page == 1 && (!denyRoleLines.isEmpty() || !denyUserLines.isEmpty())) {
+            eb.addField("ℹ️ Legend",
+                    "🎭/👤 = notify grant  •  🚫🎭/🚫👤 = explicit deny (overrides role grants)", false);
         }
 
         // Stats footer
-        int totalEntries = 1 + totalPaginatedRows; // owner + paginated
+        int notifyCount = roleLines.size() + userLines.size();
+        int denyCount   = denyRoleLines.size() + denyUserLines.size();
         eb.setFooter("Page " + page + " of " + totalPages
-                + "  •  " + totalEntries + " total recipient source(s)"
+                + "  •  " + notifyCount + " grant(s)  •  " + denyCount + " deny(s)"
                 + "  •  Role members resolved at alert time");
 
-        //  Navigation buttons 
+                //  Navigation buttons 
         ActionRow navRow = null;
         if (totalPages > 1) {
             Button prev = page > 1
@@ -327,23 +523,33 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         String guildId = guild.getId();
         Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
 
-        int userCount = 0;
+        int userCount  = 0;
+        int roleCount  = 0;
+        int denyUsers  = 0;
+        int denyRoles  = 0;
         Object usersObj = settings.get(NOTIFY_USERS_KEY);
         if (usersObj instanceof List<?>) userCount = ((List<?>) usersObj).size();
-
-        int roleCount = 0;
         Object rolesObj = settings.get(NOTIFY_ROLES_KEY);
         if (rolesObj instanceof List<?>) roleCount = ((List<?>) rolesObj).size();
+        Object denyUsersObj = settings.get(DENY_USERS_KEY);
+        if (denyUsersObj instanceof List<?>) denyUsers = ((List<?>) denyUsersObj).size();
+        Object denyRolesObj = settings.get(DENY_ROLES_KEY);
+        if (denyRolesObj instanceof List<?>) denyRoles = ((List<?>) denyRolesObj).size();
 
-        if (userCount == 0 && roleCount == 0) {
+        if (userCount == 0 && roleCount == 0 && denyUsers == 0 && denyRoles == 0) {
             event.reply("The notification list is already empty.").setEphemeral(true).queue();
             return;
         }
         ServerBot.getStorageManager().updateGuildSettings(guildId, NOTIFY_USERS_KEY, new ArrayList<String>());
         ServerBot.getStorageManager().updateGuildSettings(guildId, NOTIFY_ROLES_KEY, new ArrayList<String>());
-        logger.info("Cleared suspicious account notification list in guild {} ({} users, {} roles removed)",
-                guild.getName(), userCount, roleCount);
-        event.reply("Cleared the notification list. Removed " + userCount + " user(s) and " + roleCount + " role(s).\n"
+        ServerBot.getStorageManager().updateGuildSettings(guildId, DENY_USERS_KEY,   new ArrayList<String>());
+        ServerBot.getStorageManager().updateGuildSettings(guildId, DENY_ROLES_KEY,   new ArrayList<String>());
+        logger.info("Cleared suspicious account notification/deny lists in guild {} "
+                + "({} notify users, {} notify roles, {} deny users, {} deny roles removed)",
+                guild.getName(), userCount, roleCount, denyUsers, denyRoles);
+        event.reply("Cleared the notification and deny lists.\n"
+                + "Removed **" + userCount + "** notify user(s), **" + roleCount + "** notify role(s), "
+                + "**" + denyUsers + "** deny user(s), and **" + denyRoles + "** deny role(s).\n"
                 + "*(The server owner always receives alerts regardless.)*")
                 .setEphemeral(true).queue();
     }
@@ -360,27 +566,26 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         recipientIds.add(guild.getOwnerId());
 
         // Explicit notify users
-        Object usersObj = settings.get(NOTIFY_USERS_KEY);
-        if (usersObj instanceof List<?>) {
-            for (Object obj : (List<?>) usersObj) {
-                if (obj instanceof String s) recipientIds.add(s);
+        for (String s : getStringList(settings, NOTIFY_USERS_KEY)) recipientIds.add(s);
+
+        // Role-based notify users
+        for (String roleId : getStringList(settings, NOTIFY_ROLES_KEY)) {
+            Role role = guild.getRoleById(roleId);
+            if (role != null) {
+                for (Member m : guild.getMembersWithRoles(role)) recipientIds.add(m.getId());
             }
         }
 
-        // Role members
-        Object rolesObj = settings.get(NOTIFY_ROLES_KEY);
-        if (rolesObj instanceof List<?>) {
-            for (Object obj : (List<?>) rolesObj) {
-                if (obj instanceof String roleId) {
-                    Role role = guild.getRoleById(roleId);
-                    if (role != null) {
-                        for (Member m : guild.getMembersWithRoles(role)) {
-                            recipientIds.add(m.getId());
-                        }
-                    }
-                }
+        // Apply explicit deny list (owner is immune)
+        Set<String> deniedIds = new LinkedHashSet<>(getStringList(settings, DENY_USERS_KEY));
+        for (String roleId : getStringList(settings, DENY_ROLES_KEY)) {
+            Role role = guild.getRoleById(roleId);
+            if (role != null) {
+                for (Member m : guild.getMembersWithRoles(role)) deniedIds.add(m.getId());
             }
         }
+        deniedIds.remove(guild.getOwnerId()); // owner can never be denied
+        recipientIds.removeAll(deniedIds);
 
         event.deferReply(true).queue();
         EmbedBuilder testEmbed = new EmbedBuilder()
@@ -408,60 +613,12 @@ public class SuspiciousNotifyCommand implements SlashCommand {
             }
         }
         String result = String.format(
-                "Test notifications sent to **%d** effective recipient(s) (server owner + explicit users + role members)!\n\n"
+                "Test notifications sent to **%d** effective recipient(s) "
+                        + "(server owner + notify users/roles, minus deny list)!\n\n"
                         + "✅ Successful: %d\n❌ Failed: %d\n\n"
                         + "If you didn't receive a DM, make sure your DMs are open for this server.",
                 recipientIds.size(), successCount, failCount);
         event.getHook().sendMessage(result).queue();
-    }
-
-    private void handleAddRole(SlashCommandInteractionEvent event) {
-        Guild guild = event.getGuild();
-        Role role = event.getOption("role").getAsRole();
-        String guildId = guild.getId();
-        Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
-        List<String> notifyRoles = new ArrayList<>();
-        Object existing = settings.get(NOTIFY_ROLES_KEY);
-        if (existing instanceof List<?>) {
-            for (Object obj : (List<?>) existing) {
-                if (obj instanceof String s) notifyRoles.add(s);
-            }
-        }
-        if (notifyRoles.contains(role.getId())) {
-            event.reply(role.getAsMention() + " is already in the notify role list.").setEphemeral(true).queue();
-            return;
-        }
-        notifyRoles.add(role.getId());
-        ServerBot.getStorageManager().updateGuildSettings(guildId, NOTIFY_ROLES_KEY, notifyRoles);
-        int memberCount = guild.getMembersWithRoles(role).size();
-        logger.info("Added role {} to suspicious account notifications in guild {}", role.getName(), guild.getName());
-        event.reply(CustomEmojis.SUCCESS + " Added " + role.getAsMention() + " to suspicious account notifications. "
-                + memberCount + " current member(s) with this role will be alerted.")
-                .setEphemeral(true).queue();
-    }
-
-    private void handleRemoveRole(SlashCommandInteractionEvent event) {
-        Guild guild = event.getGuild();
-        Role role = event.getOption("role").getAsRole();
-        String guildId = guild.getId();
-        Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
-        List<String> notifyRoles = new ArrayList<>();
-        Object existing = settings.get(NOTIFY_ROLES_KEY);
-        if (existing instanceof List<?>) {
-            for (Object obj : (List<?>) existing) {
-                if (obj instanceof String s) notifyRoles.add(s);
-            }
-        }
-        if (!notifyRoles.contains(role.getId())) {
-            event.reply(role.getAsMention() + " is not in the notify role list.").setEphemeral(true).queue();
-            return;
-        }
-        notifyRoles.remove(role.getId());
-        ServerBot.getStorageManager().updateGuildSettings(guildId, NOTIFY_ROLES_KEY, notifyRoles);
-        logger.info("Removed role {} from suspicious account notifications in guild {}", role.getName(), guild.getName());
-        event.reply(CustomEmojis.SUCCESS + " Removed " + role.getAsMention()
-                + " from suspicious account notifications. Members who were only notified via this role will no longer receive alerts.")
-                .setEphemeral(true).queue();
     }
 
     private void handleReport(SlashCommandInteractionEvent event) {
