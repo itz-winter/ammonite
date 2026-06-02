@@ -11,10 +11,12 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.UserSnowflake;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.Command;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
@@ -39,6 +41,9 @@ import java.util.concurrent.TimeUnit;
 public class SuspiciousListCommand implements SlashCommand {
 
     private static final Logger logger = LoggerFactory.getLogger(SuspiciousListCommand.class);
+    private static final int PAGE_SIZE = 10;
+    /** Button ID prefix for masterlist view pagination: {@code slv:page:<page>} */
+    public  static final String SLV_PAGE_BTN = "slv:page";
 
     @Override
     public String getName() {
@@ -68,7 +73,8 @@ public class SuspiciousListCommand implements SlashCommand {
     public static CommandData getCommandData() {
         return Commands.slash("suspiciouslist", "Manage the global suspicious users masterlist (Bot Owner Only)")
                 .addSubcommands(
-                        new SubcommandData("view", "View all users on the suspicious masterlist"),
+                        new SubcommandData("view", "View all users on the suspicious masterlist")
+                                .addOption(OptionType.INTEGER, "page", "Page number (default: 1)", false),
                         new SubcommandData("add", "Add a user to the suspicious masterlist")
                                 .addOption(OptionType.STRING, "userid", "The user ID to add", true)
                                 .addOption(OptionType.STRING, "reason", "Reason for adding", true),
@@ -142,53 +148,86 @@ public class SuspiciousListCommand implements SlashCommand {
             return;
         }
 
-        StringBuilder sb = new StringBuilder();
-        int count = 0;
-        int validated = 0;
+        OptionMapping pageOpt = event.getOption("page");
+        int requestedPage = pageOpt != null ? Math.max(1, (int) pageOpt.getAsLong()) : 1;
 
-        for (Map.Entry<String, Map<String, Object>> entry : suspiciousUsers.entrySet()) {
-            count++;
-            String userId = entry.getKey();
+        PagedViewResult result = buildViewPage(event.getJDA(), suspiciousUsers, requestedPage);
+        Button shareBtn = Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share");
+
+        if (result.navRow() != null) {
+            event.getHook().sendMessageEmbeds(result.embed())
+                    .setComponents(result.navRow(), ActionRow.of(shareBtn))
+                    .queue();
+        } else {
+            event.getHook().sendMessageEmbeds(result.embed())
+                    .setComponents(ActionRow.of(shareBtn))
+                    .queue();
+        }
+    }
+
+    // ── Record + static page builder (called from button listener too) ─────────
+
+    public record PagedViewResult(MessageEmbed embed, ActionRow navRow) {}
+
+    public static PagedViewResult buildViewPage(net.dv8tion.jda.api.JDA jda,
+            Map<String, Map<String, Object>> suspiciousUsers, int requestedPage) {
+
+        List<Map.Entry<String, Map<String, Object>>> entries = new ArrayList<>(suspiciousUsers.entrySet());
+        int total     = entries.size();
+        int validated = 0;
+        for (Map.Entry<String, Map<String, Object>> e : entries) {
+            if (Boolean.TRUE.equals(e.getValue().get("validated"))) validated++;
+        }
+
+        int totalPages = Math.max(1, (int) Math.ceil(total / (double) PAGE_SIZE));
+        int page       = Math.min(Math.max(1, requestedPage), totalPages);
+        int startIdx   = (page - 1) * PAGE_SIZE;
+        int endIdx     = Math.min(startIdx + PAGE_SIZE, total);
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = startIdx; i < endIdx; i++) {
+            Map.Entry<String, Map<String, Object>> entry = entries.get(i);
+            String userId  = entry.getKey();
             Map<String, Object> data = entry.getValue();
 
-            String reason = (String) data.getOrDefault("reason", "No reason provided");
-            Boolean isValidated = (Boolean) data.get("validated");
-            String status = (isValidated != null && isValidated) ? "✅" : "⚠️";
-            if (isValidated != null && isValidated)
-                validated++;
+            String reason      = (String) data.getOrDefault("reason", "No reason provided");
+            boolean isValidated = Boolean.TRUE.equals(data.get("validated"));
+            String status      = isValidated ? "\u2705" : "\u26A0\uFE0F";
 
-            // Try to get username
-            String userDisplay = userId;
+            String userDisplay = "`" + userId + "`";
             try {
-                User user = event.getJDA().retrieveUserById(userId).complete();
-                if (user != null) {
-                    userDisplay = user.getName() + " (`" + userId + "`)";
-                }
-            } catch (Exception ignored) {
-            }
+                net.dv8tion.jda.api.entities.User u = jda.retrieveUserById(userId).complete();
+                if (u != null) userDisplay = u.getName() + " (" + userDisplay + ")";
+            } catch (Exception ignored) {}
 
-            sb.append(String.format("%d. %s %s\n   └ %s\n", count, status, userDisplay, truncate(reason, 50)));
-
-            if (sb.length() > 3500) {
-                sb.append("\n*... and more (list truncated)*");
-                break;
-            }
+            // Truncate reason
+            String shortReason = reason.length() > 50 ? reason.substring(0, 47) + "..." : reason;
+            sb.append(String.format("%d. %s %s%n   \u2514 %s%n", i + 1, status, userDisplay, shortReason));
         }
 
         EmbedBuilder embed = new EmbedBuilder()
                 .setColor(Color.ORANGE)
-                .setTitle("🚨 Suspicious Users Masterlist")
-                .setDescription(sb.toString())
-                .addField("Total", String.valueOf(suspiciousUsers.size()), true)
+                .setTitle("\uD83D\uDEA8 Suspicious Users Masterlist")
+                .setDescription(sb.toString().trim())
+                .addField("Total", String.valueOf(total), true)
                 .addField("Validated", String.valueOf(validated), true)
-                .addField("Pending", String.valueOf(suspiciousUsers.size() - validated), true)
-                .setFooter("✅ = Validated | ⚠️ = Pending validation")
-                .setTimestamp(Instant.now());
+                .addField("Pending", String.valueOf(total - validated), true)
+                .setFooter("\u2705 = Validated | \u26A0\uFE0F = Pending  \u2022  Page " + page + " of " + totalPages)
+                .setTimestamp(java.time.Instant.now());
 
-        Button shareBtn = Button.secondary("share_req:" + event.getUser().getId(), "📤 Share");
-        event.getHook().sendMessageEmbeds(embed.build())
-                .setComponents(ActionRow.of(shareBtn))
-                .queue();
+        ActionRow navRow = null;
+        if (totalPages > 1) {
+            Button prev = page > 1
+                    ? Button.secondary(SLV_PAGE_BTN + ":" + (page - 1), "\u25C0 Previous")
+                    : Button.secondary(SLV_PAGE_BTN + ":0", "\u25C0 Previous").asDisabled();
+            Button next = page < totalPages
+                    ? Button.secondary(SLV_PAGE_BTN + ":" + (page + 1), "Next \u25B6")
+                    : Button.secondary(SLV_PAGE_BTN + ":0", "Next \u25B6").asDisabled();
+            Button counter = Button.secondary(SLV_PAGE_BTN + ":0", page + " / " + totalPages).asDisabled();
+            navRow = ActionRow.of(prev, counter, next);
+        }
+
+        return new PagedViewResult(embed.build(), navRow);
     }
 
     private void handleAdd(SlashCommandInteractionEvent event) {
@@ -689,13 +728,5 @@ public class SuspiciousListCommand implements SlashCommand {
                             owner.getUser().getName(), guild.getName()),
                     error -> logger.debug("Failed to DM guild owner {}", owner.getUser().getName()));
         });
-    }
-
-    private String truncate(String str, int maxLength) {
-        if (str == null)
-            return "";
-        if (str.length() <= maxLength)
-            return str;
-        return str.substring(0, maxLength - 3) + "...";
     }
 }

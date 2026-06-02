@@ -219,6 +219,30 @@ public class SuspiciousAccountListener extends ListenerAdapter {
         // Guild owner already gets their own dedicated DM
         recipientIds.remove(guild.getOwnerId());
 
+        // Apply explicit deny list — denied users/roles cannot receive alerts
+        Set<String> deniedIds = new LinkedHashSet<>();
+        Object denyUsersObj = settings.get("suspiciousAccountDenyUsers");
+        if (denyUsersObj instanceof List<?>) {
+            for (Object obj : (List<?>) denyUsersObj) {
+                if (obj instanceof String s) deniedIds.add(s);
+            }
+        }
+        Object denyRolesObj = settings.get("suspiciousAccountDenyRoles");
+        if (denyRolesObj instanceof List<?>) {
+            for (Object obj : (List<?>) denyRolesObj) {
+                if (obj instanceof String roleId) {
+                    Role role = guild.getRoleById(roleId);
+                    if (role != null) {
+                        for (Member m : guild.getMembersWithRoles(role)) {
+                            deniedIds.add(m.getId());
+                        }
+                    }
+                }
+            }
+        }
+        deniedIds.remove(guild.getOwnerId()); // owner is always immune to deny
+        recipientIds.removeAll(deniedIds);
+
         if (recipientIds.isEmpty()) return;
 
         MessageEmbed embed = buildGuildAlertEmbed(guild, suspiciousUser, report, level);

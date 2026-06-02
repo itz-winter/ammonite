@@ -1,6 +1,7 @@
 package com.serverbot.listeners;
 
 import com.serverbot.ServerBot;
+import com.serverbot.commands.utility.SuspiciousListCommand;
 import com.serverbot.storage.FileStorageManager;
 import com.serverbot.utils.BotConfig;
 import com.serverbot.utils.CustomEmojis;
@@ -42,6 +43,12 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
         //  Notify-list pagination (snl:page:<guildId>:<page>) 
         if (componentId.startsWith("snl:page:")) {
             handleListPage(event, componentId);
+            return;
+        }
+
+        // Masterlist view pagination (slv:page:<page>)
+        if (componentId.startsWith("slv:page:")) {
+            handleMasterlistPage(event, componentId);
             return;
         }
 
@@ -921,5 +928,44 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
                         ? java.util.List.of(result.navRow())
                         : java.util.Collections.emptyList())
                 .queue();
+    }
+
+    // ── Masterlist view pagination ──────────────────────────────────────────────
+
+    private void handleMasterlistPage(ButtonInteractionEvent event, String componentId) {
+        // Format: slv:page:<pageNumber>
+        String[] parts = componentId.split(":");
+        if (parts.length != 3) { event.deferEdit().queue(); return; }
+        int page;
+        try { page = Integer.parseInt(parts[2]); } catch (NumberFormatException e) { event.deferEdit().queue(); return; }
+        if (page <= 0) { event.deferEdit().queue(); return; } // disabled button
+
+        // Only bot owners may page through the masterlist
+        BotConfig config = ServerBot.getConfigManager().getConfig();
+        if (!config.getAllOwnerIds().contains(event.getUser().getId())) {
+            event.reply("Only bot owners can navigate this list.").setEphemeral(true).queue();
+            return;
+        }
+
+        FileStorageManager storage = ServerBot.getStorageManager();
+        java.util.Map<String, java.util.Map<String, Object>> suspiciousUsers = storage.getAllSuspiciousUsers();
+
+        SuspiciousListCommand.PagedViewResult result =
+                SuspiciousListCommand.buildViewPage(event.getJDA(), suspiciousUsers, page);
+
+        net.dv8tion.jda.api.components.buttons.Button shareBtn =
+                net.dv8tion.jda.api.components.buttons.Button
+                        .secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share");
+
+        if (result.navRow() != null) {
+            event.editMessageEmbeds(result.embed())
+                    .setComponents(result.navRow(),
+                            net.dv8tion.jda.api.components.actionrow.ActionRow.of(shareBtn))
+                    .queue();
+        } else {
+            event.editMessageEmbeds(result.embed())
+                    .setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(shareBtn))
+                    .queue();
+        }
     }
 }
