@@ -53,6 +53,7 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.utility.ErrorCommand());
         registerCommand(new com.serverbot.commands.utility.RulesCommand());
         registerCommand(new com.serverbot.commands.utility.TalkAsCommand());
+        registerCommand(new com.serverbot.commands.utility.SupportCommand());
 
         // Game commands
         registerCommand(new com.serverbot.commands.games.PokerCommand());

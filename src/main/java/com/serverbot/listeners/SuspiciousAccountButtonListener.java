@@ -39,7 +39,7 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
     public void onButtonInteraction(ButtonInteractionEvent event) {
         String componentId = event.getComponentId();
 
-        // ── Notify-list pagination (snl:page:<guildId>:<page>) ──────────────────
+        //  Notify-list pagination (snl:page:<guildId>:<page>) 
         if (componentId.startsWith("snl:page:")) {
             handleListPage(event, componentId);
             return;
@@ -895,7 +895,7 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
         }
     }
 
-    // ── Notify-list pagination ────────────────────────────────────────────────
+    //  Notify-list pagination 
 
     private void handleListPage(ButtonInteractionEvent event, String componentId) {
         // Format: snl:page:<guildId>:<pageNumber>

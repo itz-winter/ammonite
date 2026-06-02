@@ -27,6 +27,7 @@ import com.serverbot.services.SchedulerService;
 import com.serverbot.services.TicketService;
 import com.serverbot.services.ProxyService;
 import com.serverbot.services.GlobalChatService;
+import com.serverbot.services.SuspiciousCleanupService;
 import com.serverbot.utils.BotConfig;
 import com.serverbot.utils.WarnExpiryManager;
 import net.dv8tion.jda.api.JDA;
@@ -59,6 +60,7 @@ public class ServerBot {
     private static TicketService ticketService;
     private static ProxyService proxyService;
     private static GlobalChatService globalChatService;
+    private static SuspiciousCleanupService suspiciousCleanupService;
 
     public static void main(String[] args) {
         BotConfig config = null;
@@ -221,6 +223,17 @@ public class ServerBot {
                 // Non-fatal, continue
             }
 
+            // Start suspicious-user cleanup service (auto-prunes deleted accounts every 20 min)
+            try {
+                logger.info("Starting suspicious cleanup service...");
+                suspiciousCleanupService = new SuspiciousCleanupService(jda, storageManager);
+                suspiciousCleanupService.start();
+                logger.info("✓ Suspicious cleanup service started (interval: 20 minutes)");
+            } catch (Exception e) {
+                logger.error("Failed to start suspicious cleanup service", e);
+                // Non-fatal, continue
+            }
+
             // Add shutdown hook for graceful cleanup
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 logger.info("Shutdown signal received, cleaning up...");
@@ -296,6 +309,10 @@ public class ServerBot {
 
     public static GlobalChatService getGlobalChatService() {
         return globalChatService;
+    }
+
+    public static SuspiciousCleanupService getSuspiciousCleanupService() {
+        return suspiciousCleanupService;
     }
 
     public static Logger getLogger() {
@@ -423,6 +440,11 @@ public class ServerBot {
 
         // Stop warning expiry manager
         WarnExpiryManager.stop();
+
+        // Stop suspicious cleanup service
+        if (suspiciousCleanupService != null) {
+            suspiciousCleanupService.stop();
+        }
 
         // Stop scheduler service
         if (SchedulerService.getInstance() != null) {
