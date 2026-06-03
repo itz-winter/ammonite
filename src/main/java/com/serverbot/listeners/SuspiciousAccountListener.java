@@ -81,6 +81,10 @@ public class SuspiciousAccountListener extends ListenerAdapter {
         // Calculate account age
         long accountAgeDays = ChronoUnit.DAYS.between(accountCreated, now);
         long accountAgeHours = ChronoUnit.HOURS.between(accountCreated, now);
+        long accountAgeMins = ChronoUnit.MINUTES.between(accountCreated, now);
+        long accountAgeSecs = ChronoUnit.SECONDS.between(accountCreated, now);
+        long remainderMins = accountAgeMins % 60;
+        long remainderSecs = accountAgeSecs % 60;
 
         // Track blatant bot indicators
         boolean veryNewAccount = false;
@@ -89,7 +93,8 @@ public class SuspiciousAccountListener extends ListenerAdapter {
 
         // Check 1: Very new account (created within 1 day)
         if (accountAgeDays < VERY_NEW_ACCOUNT_DAYS) {
-            report.addReason(String.format("Account created %d hours ago (very new account)", accountAgeHours));
+            report.addReason(String.format("Account created %dh %dm %ds ago (very new account)",
+                    accountAgeHours, remainderMins, remainderSecs));
             veryNewAccount = true;
         }
         // Check 2: New account (created within 7 days)
@@ -99,7 +104,8 @@ public class SuspiciousAccountListener extends ListenerAdapter {
 
         // Check 3: Joined server same day as account creation
         if (accountAgeHours < SAME_DAY_HOURS) {
-            report.addReason(String.format("Joined server within %d hours of account creation", accountAgeHours));
+            report.addReason(String.format("Joined server %dh %dm %ds after account creation",
+                    accountAgeHours, remainderMins, remainderSecs));
         }
 
         // Check 4: No profile picture (default avatar)
@@ -112,10 +118,6 @@ public class SuspiciousAccountListener extends ListenerAdapter {
         String username = user.getName().toLowerCase();
         if (username.matches(".*discord.*")) {
             report.addReason("Username contains 'discord' (potential impersonation)");
-            suspiciousName = true;
-        }
-        if (username.matches(".*\\d{4,}.*")) {
-            report.addReason("Username contains 4+ consecutive digits");
             suspiciousName = true;
         }
         if (username.length() < 3) {
