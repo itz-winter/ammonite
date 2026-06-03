@@ -28,21 +28,21 @@ public class EmbedCommand implements SlashCommand {
         /*
          * if (!event.isFromGuild()) {
          * event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only"
-         * ,"This command can only be used in servers.")).setEphemeral(true).queue();
+         * ,"This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
          * return;
          * }
          */
         Member member = event.getMember();
         if (!PermissionUtils.hasModeratorPermissions(member)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Insufficient Permissions",
-                    "You need moderation permissions to send embeds.")).setEphemeral(true).queue();
+                    "You need moderation permissions to send embeds.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         String jsonRaw = event.getOption("json", OptionMapping::getAsString);
         if (jsonRaw == null || jsonRaw.isBlank()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing JSON",
                     "Please provide embed JSON.\n\n💡 Use /embedgui for an interactive builder with live preview and JSON export."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         EmbedBuilder embed;
@@ -51,12 +51,12 @@ public class EmbedCommand implements SlashCommand {
         } catch (IllegalArgumentException e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Embed JSON",
                     e.getMessage() + "\n\n💡 Use /embedgui to build embeds visually and export JSON."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (!hasContent(embed)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Empty Embed",
-                    "The embed must have at least a title, description, or one field.")).setEphemeral(true).queue();
+                    "The embed must have at least a title, description, or one field.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         List<Button> buttons = new ArrayList<>();
@@ -75,7 +75,7 @@ public class EmbedCommand implements SlashCommand {
             } catch (Exception e) {
                 event.replyEmbeds(
                         EmbedUtils.createErrorEmbed("Invalid Channel", "That channel cannot receive messages."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
         }

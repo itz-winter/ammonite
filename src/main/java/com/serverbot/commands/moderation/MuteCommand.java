@@ -35,7 +35,7 @@ public class MuteCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage(
-                    "Guild Only", "This command can only be used in servers.", USAGE)).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.", USAGE)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -45,7 +45,7 @@ public class MuteCommand implements SlashCommand {
                     "Insufficient Permissions",
                     "You need the `mod.mute` permission to use this command.\n\n" +
                             "Ask a server admin to grant you the `mod.mute` permission."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -58,7 +58,7 @@ public class MuteCommand implements SlashCommand {
 
         if (targetMember == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage(
-                    "User Not Found", "This user is not in the server.", USAGE, EXAMPLE)).setEphemeral(true).queue();
+                    "User Not Found", "This user is not in the server.", USAGE, EXAMPLE)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -67,7 +67,7 @@ public class MuteCommand implements SlashCommand {
                     "Cannot Mute User",
                     "You cannot mute this user due to role hierarchy.\n\n" +
                             "Your highest role must be above the target user's highest role."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -76,7 +76,7 @@ public class MuteCommand implements SlashCommand {
                     "Cannot Mute User",
                     "I cannot mute this user due to role hierarchy.\n\n" +
                             "Move my role higher than the target user's highest role."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -88,7 +88,7 @@ public class MuteCommand implements SlashCommand {
                     "Please provide a valid duration format.\n\n" +
                             "**Valid formats:** `1d`, `2h`, `30m`, `1w`, `12h30m`\n" +
                             "**Units:** `s`=seconds, `m`=minutes, `h`=hours, `d`=days, `w`=weeks",
-                    USAGE, EXAMPLE)).setEphemeral(true).queue();
+                    USAGE, EXAMPLE)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -98,7 +98,7 @@ public class MuteCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Mute Role Missing",
                     "Could not find or create a mute role. Please create a role named 'Muted' and configure its permissions."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -132,7 +132,7 @@ public class MuteCommand implements SlashCommand {
 
                 }, error -> {
                     event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                            "Mute Failed", "Failed to mute user: " + error.getMessage())).setEphemeral(true).queue();
+                            "Mute Failed", "Failed to mute user: " + error.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 });
     }
 

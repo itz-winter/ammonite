@@ -65,7 +65,7 @@ public class PlayCommand implements SlashCommand {
         if (voiceState == null || !voiceState.inAudioChannel()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Not in Voice Channel",
-                    "You need to be in a voice channel to use this command.")).setEphemeral(true).queue();
+                    "You need to be in a voice channel to use this command.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

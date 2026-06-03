@@ -42,13 +42,13 @@ public class EmbedGuiListener extends ListenerAdapter {
         String userId = parts[2];
 
         if (!event.getUser().getId().equals(userId)) {
-            event.reply("This embed builder belongs to someone else.").setEphemeral(true).queue();
+            event.reply("This embed builder belongs to someone else.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         EmbedGuiSession session = EmbedGuiSession.get(userId);
         if (session == null) {
-            event.reply("Your embed builder session has expired. Run `/embedgui` again.").setEphemeral(true).queue();
+            event.reply("Your embed builder session has expired. Run `/embedgui` again.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         session.touch();
@@ -83,10 +83,10 @@ public class EmbedGuiListener extends ListenerAdapter {
             }
             case "export" -> {
                 String exportMsg = EmbedJsonUtils.buildExportMessage(session);
-                event.reply(exportMsg).setEphemeral(true).queue();
+                event.reply(exportMsg).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             }
             case "send" -> handleSend(event, session, userId);
-            default -> event.reply("Unknown action.").setEphemeral(true).queue();
+            default -> event.reply("Unknown action.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -107,7 +107,7 @@ public class EmbedGuiListener extends ListenerAdapter {
 
         EmbedGuiSession session = EmbedGuiSession.get(userId);
         if (session == null) {
-            event.reply("Your embed builder session has expired. Run `/embedgui` again.").setEphemeral(true).queue();
+            event.reply("Your embed builder session has expired. Run `/embedgui` again.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         session.touch();
@@ -176,7 +176,7 @@ public class EmbedGuiListener extends ListenerAdapter {
         // perm change)
         if (!session.canSend) {
             event.reply("❌ You don't have permission to send embeds. Use **Export JSON** to copy the embed instead.")
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         EmbedBuilder embed = EmbedJsonUtils.buildEmbed(session);
@@ -185,18 +185,18 @@ public class EmbedGuiListener extends ListenerAdapter {
                 && (built.getDescription() == null || built.getDescription().isBlank())
                 && built.getFields().isEmpty()) {
             event.reply("❌ Your embed is empty — add at least a title, description, or field before sending.")
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         if (!event.isFromGuild()) {
-            event.reply("Can only send to guild channels.").setEphemeral(true).queue();
+            event.reply("Can only send to guild channels.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         TextChannel dest = event.getGuild().getTextChannelById(session.targetChannelId);
         if (dest == null) {
-            event.reply("❌ Target channel not found. It may have been deleted.").setEphemeral(true).queue();
+            event.reply("❌ Target channel not found. It may have been deleted.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -219,7 +219,7 @@ public class EmbedGuiListener extends ListenerAdapter {
                                             "[Jump to message](" + msg.getJumpUrl() + ")"))
                             .setComponents(Collections.emptyList()).queue();
                 },
-                err -> event.reply("❌ Failed to send: " + err.getMessage()).setEphemeral(true).queue());
+                err -> event.reply("❌ Failed to send: " + err.getMessage()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue());
     }
 
     /** Convert blank strings to null (so unset fields stay blank in the embed). */

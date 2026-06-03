@@ -36,12 +36,12 @@ public class AntiSpamGuiListener extends ListenerAdapter {
         String userId = parts[2];
 
         if (!event.getUser().getId().equals(userId)) {
-            event.reply(CustomEmojis.ERROR + " This panel belongs to someone else.").setEphemeral(true).queue();
+            event.reply(CustomEmojis.ERROR + " This panel belongs to someone else.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (!event.isFromGuild() || !PermissionManager.hasPermission(event.getMember(), "admin.antispam")) {
             event.reply(CustomEmojis.ERROR + " You no longer have permission to configure anti-spam.")
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -84,7 +84,7 @@ public class AntiSpamGuiListener extends ListenerAdapter {
                 event.replyModal(intModal(userId, "agm:ban-dur", "Set Ban Duration", "Hours (0=permanent, max 8760)", 0,
                         8760, AntiSpamCommand.getInt(settings, "antiSpamBanDuration", 0))).queue();
             case "refresh" -> refreshPanel(event, guildId, guild, userId);
-            default -> event.reply("Unknown action.").setEphemeral(true).queue();
+            default -> event.reply("Unknown action.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -116,7 +116,7 @@ public class AntiSpamGuiListener extends ListenerAdapter {
                 try {
                     v = Integer.parseInt(raw);
                 } catch (NumberFormatException e) {
-                    event.reply(CustomEmojis.ERROR + " Enter a valid number.").setEphemeral(true).queue();
+                    event.reply(CustomEmojis.ERROR + " Enter a valid number.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     return;
                 }
                 String storageKey = switch (action) {
@@ -137,7 +137,7 @@ public class AntiSpamGuiListener extends ListenerAdapter {
                 String type = raw.toLowerCase();
                 if (!type.matches("warn|mute|timeout|kick|ban")) {
                     event.reply(CustomEmojis.ERROR + " Invalid type. Use: `warn`, `mute`, `timeout`, `kick`, `ban`.")
-                            .setEphemeral(true).queue();
+                            .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "antiSpamPunishment", type);

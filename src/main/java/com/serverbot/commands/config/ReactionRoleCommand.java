@@ -24,7 +24,7 @@ public class ReactionRoleCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Server Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Server Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -40,7 +40,7 @@ public class ReactionRoleCommand implements SlashCommand {
         String subcommand = event.getSubcommandName();
         if (subcommand == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Usage", "Please specify a subcommand.")).setEphemeral(true).queue();
+                    "Invalid Usage", "Please specify a subcommand.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -51,7 +51,7 @@ public class ReactionRoleCommand implements SlashCommand {
             case "list" -> handleList(event);
             case "delete" -> handleDelete(event);
             default -> event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Unknown Subcommand", "Unknown subcommand: `" + subcommand + "`.")).setEphemeral(true).queue();
+                    "Unknown Subcommand", "Unknown subcommand: `" + subcommand + "`.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -90,7 +90,7 @@ public class ReactionRoleCommand implements SlashCommand {
         } catch (Exception e) {
             event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
                     "Creation Failed",
-                    "Failed to create the reaction role message: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to create the reaction role message: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -126,7 +126,7 @@ public class ReactionRoleCommand implements SlashCommand {
                             "I can't assign %s because that role is above my highest role in the hierarchy.\n" +
                                     "Move my role above it and try again.",
                             role.getAsMention())))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -157,7 +157,7 @@ public class ReactionRoleCommand implements SlashCommand {
                             event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
                                     "Failed to Add Reaction Role",
                                     "Something went wrong while registering the reaction role: " + e.getMessage()))
-                                    .setEphemeral(true).queue();
+                                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         }
                     },
                     error -> event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
@@ -166,7 +166,7 @@ public class ReactionRoleCommand implements SlashCommand {
                                     "No message with ID `%s` was found in %s.\n" +
                                             "Double-check the message ID and channel.",
                                     messageId, channel.getAsMention())))
-                            .setEphemeral(true).queue());
+                            .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue());
         } else {
             // Tracked-message path â€” message must exist in storage
             try {
@@ -194,11 +194,11 @@ public class ReactionRoleCommand implements SlashCommand {
                                         +
                                         "  `/reactionrole add channel:#channel message-id:%s emoji:%s role:<role>`",
                                 messageId, messageId, emojiStr)))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             } catch (Exception e) {
                 event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
                         "Failed to Add Reaction Role",
-                        "Something went wrong: " + e.getMessage())).setEphemeral(true).queue();
+                        "Something went wrong: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             }
         }
     }
@@ -237,7 +237,7 @@ public class ReactionRoleCommand implements SlashCommand {
                                 "No reaction role with emoji %s was found on message `%s`.\n" +
                                         "Use `/reactionrole list` to see all active reaction roles.",
                                 emojiStr, messageId)))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             }
 
         } catch (Exception e) {
@@ -254,12 +254,12 @@ public class ReactionRoleCommand implements SlashCommand {
                     .getReactionRolesList(event.getGuild().getId());
 
             event.replyEmbeds(EmbedUtils.createInfoEmbed(
-                    "Reaction Roles", listInfo)).setEphemeral(true).queue();
+                    "Reaction Roles", listInfo)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "List Failed",
-                    "Failed to retrieve the reaction roles list: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to retrieve the reaction roles list: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -269,7 +269,7 @@ public class ReactionRoleCommand implements SlashCommand {
         if (messageIdOption == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Missing Options", "Please provide the **message-id** of the reaction role message to delete."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -295,14 +295,14 @@ public class ReactionRoleCommand implements SlashCommand {
                                 "No tracked reaction role message found with ID `%s`.\n" +
                                         "Use `/reactionrole list` to see all active messages.",
                                 messageId)))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             }
 
         } catch (Exception e) {
             event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
                     "Deletion Failed",
                     "Something went wrong while deleting the reaction role message: " + e.getMessage()))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

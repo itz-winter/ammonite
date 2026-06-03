@@ -22,7 +22,7 @@ public class XpCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -30,7 +30,7 @@ public class XpCommand implements SlashCommand {
         if (!PermissionManager.hasPermission(moderator, "leveling.admin.xp")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need the `leveling.admin.xp` permission to manage XP."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -63,7 +63,7 @@ public class XpCommand implements SlashCommand {
                 }
                 default -> {
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                            "Invalid Action", "Valid actions are: add, subtract, set")).setEphemeral(true).queue();
+                            "Invalid Action", "Valid actions are: add, subtract, set")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     return;
                 }
             }
@@ -83,7 +83,7 @@ public class XpCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "XP Management Failed",
-                    "Failed to manage XP: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to manage XP: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

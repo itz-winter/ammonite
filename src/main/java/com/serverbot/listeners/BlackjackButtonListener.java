@@ -40,14 +40,14 @@ public class BlackjackButtonListener extends ListenerAdapter {
         if (game == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Game Expired", "This blackjack game has expired. Start a new one with `/gamble game:blackjack`."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         // Only the game owner can interact
         if (!event.getUser().getId().equals(game.getUserId())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Not Your Game", "Only the person who started this game can play it.")).setEphemeral(true).queue();
+                    "Not Your Game", "Only the person who started this game can play it.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -119,7 +119,7 @@ public class BlackjackButtonListener extends ListenerAdapter {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Funds",
                     String.format("You need %,d more coins to double down.", betAmount - currentBalance)))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

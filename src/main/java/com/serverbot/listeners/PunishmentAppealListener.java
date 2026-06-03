@@ -35,7 +35,7 @@ public class PunishmentAppealListener extends ListenerAdapter {
         String[] parts = event.getComponentId().split(":");
         if (parts.length != 4) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Appeal", "This appeal button is malformed.")).setEphemeral(true).queue();
+                    "Invalid Appeal", "This appeal button is malformed.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -55,7 +55,7 @@ public class PunishmentAppealListener extends ListenerAdapter {
         Guild guild = event.getJDA().getGuildById(guildId);
         if (guild == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Server Not Found", "The server for this appeal could not be found.")).setEphemeral(true).queue();
+                    "Server Not Found", "The server for this appeal could not be found.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -72,7 +72,7 @@ public class PunishmentAppealListener extends ListenerAdapter {
         if (appealChannel == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Appeal Channel Not Found", "The appeal channel for this server no longer exists."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

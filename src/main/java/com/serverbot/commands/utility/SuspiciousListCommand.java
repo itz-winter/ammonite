@@ -101,7 +101,7 @@ public class SuspiciousListCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         String subcommand = event.getSubcommandName();
         if (subcommand == null) {
-            event.reply("Please specify a subcommand.").setEphemeral(true).queue();
+            event.reply("Please specify a subcommand.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -118,7 +118,7 @@ public class SuspiciousListCommand implements SlashCommand {
         if (!botOwners.contains(event.getUser().getId())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Access Denied",
-                    "This command is only available to bot owners.")).setEphemeral(true).queue();
+                    "This command is only available to bot owners.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -131,7 +131,7 @@ public class SuspiciousListCommand implements SlashCommand {
             case "validate" -> handleValidate(event);
             case "stats" -> handleStats(event);
             case "scan" -> handleScan(event);
-            default -> event.reply("Unknown subcommand.").setEphemeral(true).queue();
+            default -> event.reply("Unknown subcommand.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -237,7 +237,7 @@ public class SuspiciousListCommand implements SlashCommand {
         if (!userId.matches("\\d{17,19}")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Invalid User ID",
-                    "User IDs should be 17-19 digit numbers.")).setEphemeral(true).queue();
+                    "User IDs should be 17-19 digit numbers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -291,7 +291,7 @@ public class SuspiciousListCommand implements SlashCommand {
         if (!userId.matches("\\d{17,19}")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Invalid User ID",
-                    "User IDs should be 17-19 digit numbers.")).setEphemeral(true).queue();
+                    "User IDs should be 17-19 digit numbers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -300,7 +300,7 @@ public class SuspiciousListCommand implements SlashCommand {
         if (!storage.isUserSuspicious(userId)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Not Found",
-                    "User `" + userId + "` is not on the suspicious masterlist.")).setEphemeral(true).queue();
+                    "User `" + userId + "` is not on the suspicious masterlist.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -317,7 +317,7 @@ public class SuspiciousListCommand implements SlashCommand {
         event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                 "User Removed",
                 "User `" + userId + "` has been removed from the suspicious masterlist." + extra))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
 
         logger.info("Bot owner {} removed user {} from suspicious masterlist",
                 event.getUser().getId(), userId);
@@ -329,7 +329,7 @@ public class SuspiciousListCommand implements SlashCommand {
         if (!userId.matches("\\d{17,19}")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Invalid User ID",
-                    "User IDs should be 17-19 digit numbers.")).setEphemeral(true).queue();
+                    "User IDs should be 17-19 digit numbers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -401,7 +401,7 @@ public class SuspiciousListCommand implements SlashCommand {
         if (count == 0) {
             event.replyEmbeds(EmbedUtils.createInfoEmbed(
                     "Masterlist Empty",
-                    "The suspicious users masterlist is already empty.")).setEphemeral(true).queue();
+                    "The suspicious users masterlist is already empty.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -409,7 +409,7 @@ public class SuspiciousListCommand implements SlashCommand {
 
         event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                 "Masterlist Cleared",
-                "Removed **" + count + "** users from the suspicious masterlist.")).setEphemeral(true).queue();
+                "Removed **" + count + "** users from the suspicious masterlist.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
 
         logger.info("Bot owner {} cleared the suspicious masterlist ({} users removed)",
                 event.getUser().getId(), count);
@@ -421,7 +421,7 @@ public class SuspiciousListCommand implements SlashCommand {
         if (!userId.matches("\\d{17,19}")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Invalid User ID",
-                    "User IDs should be 17-19 digit numbers.")).setEphemeral(true).queue();
+                    "User IDs should be 17-19 digit numbers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -430,14 +430,14 @@ public class SuspiciousListCommand implements SlashCommand {
         if (!storage.isUserSuspicious(userId)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Not Found",
-                    "User `" + userId + "` is not on the suspicious masterlist.")).setEphemeral(true).queue();
+                    "User `" + userId + "` is not on the suspicious masterlist.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         if (storage.isSuspiciousUserValidated(userId)) {
             event.replyEmbeds(EmbedUtils.createInfoEmbed(
                     "Already Validated",
-                    "User `" + userId + "` has already been validated.")).setEphemeral(true).queue();
+                    "User `" + userId + "` has already been validated.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -447,7 +447,7 @@ public class SuspiciousListCommand implements SlashCommand {
                 "User Validated",
                 "User `" + userId + "` has been validated as suspicious.\n" +
                         "All servers with this user will now be notified."))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
 
         // Notify servers
         Map<String, Object> data = storage.getSuspiciousUserData(userId);
@@ -497,7 +497,7 @@ public class SuspiciousListCommand implements SlashCommand {
         Button shareBtn = Button.secondary("share_req:" + event.getUser().getId(), "📤 Share");
         event.replyEmbeds(embed.build())
                 .setComponents(ActionRow.of(shareBtn))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     //  /suspiciouslist scan 
@@ -510,7 +510,7 @@ public class SuspiciousListCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Service Unavailable",
                     "The suspicious cleanup service is not running. Check bot logs."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -519,7 +519,7 @@ public class SuspiciousListCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createInfoEmbed(
                     "Nothing to Scan",
                     "The suspicious masterlist is currently empty."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -560,7 +560,7 @@ public class SuspiciousListCommand implements SlashCommand {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Guild Only", "This subcommand can only be used inside a server."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -568,7 +568,7 @@ public class SuspiciousListCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Missing Permission",
                     "You need the **Ban Members** permission to use this subcommand."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -577,7 +577,7 @@ public class SuspiciousListCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Missing Bot Permission",
                     "I need the **Ban Members** permission to execute bans in this server."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

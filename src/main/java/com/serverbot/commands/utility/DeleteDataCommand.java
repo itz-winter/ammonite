@@ -115,7 +115,7 @@ public class DeleteDataCommand extends ListenerAdapter implements SlashCommand {
         // Only the requesting user can confirm
         if (!clickerId.equals(targetUserId)) {
             event.reply(CustomEmojis.ERROR + " You can only delete your own data.")
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -124,7 +124,7 @@ public class DeleteDataCommand extends ListenerAdapter implements SlashCommand {
         if (expiry == null || System.currentTimeMillis() > expiry) {
             pendingConfirmations.remove(clickerId);
             event.reply(CustomEmojis.ERROR + " This confirmation has expired. Please run `/deletedata` again.")
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         pendingConfirmations.remove(clickerId);
@@ -153,7 +153,7 @@ public class DeleteDataCommand extends ListenerAdapter implements SlashCommand {
             event.getHook().sendMessageEmbeds(
                     EmbedUtils.createErrorEmbed("Data Deletion Error",
                             "An error occurred while deleting your data. Please contact the bot owner."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -169,7 +169,7 @@ public class DeleteDataCommand extends ListenerAdapter implements SlashCommand {
                                 "server administrators and is not affected by this command.",
                         false);
 
-        event.getHook().sendMessageEmbeds(result.build()).setEphemeral(true).queue();
+        event.getHook().sendMessageEmbeds(result.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         logger.info("User {} deleted all their personal data ({} categories, {} proxy members)",
                 clickerId, categoriesCleared, proxyMembersDeleted);
     }
@@ -179,7 +179,7 @@ public class DeleteDataCommand extends ListenerAdapter implements SlashCommand {
 
         if (!clickerId.equals(targetUserId)) {
             event.reply(CustomEmojis.ERROR + " You can only cancel your own request.")
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -187,7 +187,7 @@ public class DeleteDataCommand extends ListenerAdapter implements SlashCommand {
         event.editComponents().queue();
         event.getHook().sendMessageEmbeds(
                 EmbedUtils.createInfoEmbed("Cancelled", "Data deletion cancelled. Your data has not been modified."))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     /**

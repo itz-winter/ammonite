@@ -37,7 +37,7 @@ public class ProxyMemberCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                 "Error",
                 "Please specify a subcommand."
-            )).setEphemeral(true).queue();
+            )).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         
@@ -67,7 +67,7 @@ public class ProxyMemberCommand implements SlashCommand {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error",
                     "Unknown subcommand."
-                )).setEphemeral(true).queue();
+                )).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
     
@@ -148,7 +148,7 @@ public class ProxyMemberCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                 "Error 710",
                 "Proxy member not found. Use `/proxy list` to see your members."
-            )).setEphemeral(true).queue();
+            )).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         
@@ -186,7 +186,7 @@ public class ProxyMemberCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                 "Error 710",
                 "Proxy member not found. Use `/proxy list` to see your members."
-            )).setEphemeral(true).queue();
+            )).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         
@@ -224,7 +224,7 @@ public class ProxyMemberCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                 "Error 710",
                 "Proxy member not found. Use `/proxy list` to see your members."
-            )).setEphemeral(true).queue();
+            )).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         
@@ -259,7 +259,7 @@ public class ProxyMemberCommand implements SlashCommand {
         embed.addField("Keep Proxy Tags", member.isKeepProxy() ? "Yes" : "No", true);
         embed.addField("Created", "<t:" + member.getCreatedAt().getEpochSecond() + ":R>", true);
         
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+        event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
     
     private void handleList(SlashCommandInteractionEvent event) {
@@ -322,7 +322,7 @@ public class ProxyMemberCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                 "Error 710",
                 "Proxy member not found. Use `/proxy list` to see your members."
-            )).setEphemeral(true).queue();
+            )).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         
@@ -362,7 +362,7 @@ public class ProxyMemberCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                 "Error 710",
                 "Proxy member not found. Use `/proxy list` to see your members."
-            )).setEphemeral(true).queue();
+            )).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         

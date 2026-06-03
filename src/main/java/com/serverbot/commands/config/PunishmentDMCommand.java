@@ -35,7 +35,7 @@ public class PunishmentDMCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -43,7 +43,7 @@ public class PunishmentDMCommand implements SlashCommand {
         if (!PermissionManager.hasPermission(member, "admin.punishment_dm")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need admin permissions to manage punishment DM settings."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -59,7 +59,7 @@ public class PunishmentDMCommand implements SlashCommand {
             case "set-appeal-channel" -> handleSetAppealChannel(event);
             case "settings" -> showSettings(event);
             default -> event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Unknown Subcommand", "Please use a valid subcommand.")).setEphemeral(true).queue();
+                    "Unknown Subcommand", "Please use a valid subcommand.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

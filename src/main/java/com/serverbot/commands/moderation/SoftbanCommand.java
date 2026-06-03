@@ -25,7 +25,7 @@ public class SoftbanCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -33,7 +33,7 @@ public class SoftbanCommand implements SlashCommand {
         if (!PermissionManager.hasPermission(moderator, "mod.softban")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need the `mod.softban` permission to use this command."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -43,20 +43,20 @@ public class SoftbanCommand implements SlashCommand {
 
         if (targetUser.equals(event.getUser())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Target", "You cannot softban yourself.")).setEphemeral(true).queue();
+                    "Invalid Target", "You cannot softban yourself.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         if (targetUser.equals(event.getJDA().getSelfUser())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Target", "I cannot softban myself.")).setEphemeral(true).queue();
+                    "Invalid Target", "I cannot softban myself.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         Member targetMember = event.getGuild().getMember(targetUser);
         if (targetMember != null && !event.getGuild().getSelfMember().canInteract(targetMember)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Cannot Softban", "I cannot softban this user due to role hierarchy.")).setEphemeral(true).queue();
+                    "Cannot Softban", "I cannot softban this user due to role hierarchy.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -90,7 +90,7 @@ public class SoftbanCommand implements SlashCommand {
                         error -> {
                             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                                     "Softban Failed",
-                                    "Failed to softban user: " + error.getMessage())).setEphemeral(true).queue();
+                                    "Failed to softban user: " + error.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         });
     }
 

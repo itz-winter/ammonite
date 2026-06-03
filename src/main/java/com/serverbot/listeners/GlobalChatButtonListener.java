@@ -171,7 +171,7 @@ public class GlobalChatButtonListener extends ListenerAdapter {
                                     }), err -> {
                                     });
                     event.reply("The channel owner has been notified to confirm the deletion.")
-                            .setEphemeral(true).queue();
+                            .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 } else {
                     service.deleteChannel(channelId);
                     event.reply(
@@ -191,13 +191,13 @@ public class GlobalChatButtonListener extends ListenerAdapter {
             }
 
             case "gc_cancel_delete" ->
-                event.reply("Deletion cancelled.").setEphemeral(true).queue();
+                event.reply("Deletion cancelled.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
 
             case "gc_linked" ->
                 handleViewLinked(event, gc);
 
             default ->
-                event.reply("Unknown action.").setEphemeral(true).queue();
+                event.reply("Unknown action.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -409,7 +409,7 @@ public class GlobalChatButtonListener extends ListenerAdapter {
     private void handleViewLinked(ButtonInteractionEvent event, GlobalChatChannel gc) {
         Map<String, String> linked = gc.getLinkedChannels();
         if (linked.isEmpty()) {
-            event.reply("No servers are currently linked to this channel.").setEphemeral(true).queue();
+            event.reply("No servers are currently linked to this channel.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -432,7 +432,7 @@ public class GlobalChatButtonListener extends ListenerAdapter {
                     "Channel: <#" + textChanId + ">" + status, false);
         }
 
-        event.replyEmbeds(eb.build()).setEphemeral(true).queue();
+        event.replyEmbeds(eb.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     //  Modal builders 
@@ -559,7 +559,7 @@ public class GlobalChatButtonListener extends ListenerAdapter {
 
     private void noAccess(ButtonInteractionEvent event) {
         event.replyEmbeds(EmbedUtils.createErrorEmbed("No Access",
-                "You don't have permission to perform this action.")).setEphemeral(true).queue();
+                "You don't have permission to perform this action.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void noAccess(ModalInteractionEvent event) {

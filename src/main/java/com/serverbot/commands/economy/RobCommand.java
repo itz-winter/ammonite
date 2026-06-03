@@ -28,14 +28,14 @@ public class RobCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         // Check if economy is enabled
         if (!isEconomyEnabled(event.getGuild().getId())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Economy Disabled", "The economy system is disabled in this server.")).setEphemeral(true).queue();
+                    "Economy Disabled", "The economy system is disabled in this server.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -45,13 +45,13 @@ public class RobCommand implements SlashCommand {
         // Validation checks
         if (target.isBot()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Target", "You cannot rob bots.")).setEphemeral(true).queue();
+                    "Invalid Target", "You cannot rob bots.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         if (robber.equals(target)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Target", "You cannot rob yourself.")).setEphemeral(true).queue();
+                    "Invalid Target", "You cannot rob yourself.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -119,7 +119,7 @@ public class RobCommand implements SlashCommand {
         } catch (Exception e) {
             logger.error("Error executing rob command", e);
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Robbery Failed", "An error occurred during the robbery attempt.")).setEphemeral(true).queue();
+                    "Robbery Failed", "An error occurred during the robbery attempt.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

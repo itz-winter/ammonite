@@ -413,7 +413,7 @@ public class PrideCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -435,7 +435,7 @@ public class PrideCommand implements SlashCommand {
                         "Invalid type: `" + actionType + "`\n" +
                                 "Valid types: `avatar`, `url`, `custom`\n\n" +
                                 "Use `/pride` without arguments to see the help guide."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             }
         }
     }
@@ -471,7 +471,7 @@ public class PrideCommand implements SlashCommand {
                         false)
                 .setFooter("Use -!help to dismiss future help messages");
 
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+        event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleAvatar(SlashCommandInteractionEvent event) {
@@ -484,7 +484,7 @@ public class PrideCommand implements SlashCommand {
                     "Unknown Flag",
                     "Unknown flag: `" + flagName + "`\n" +
                             "Use `/flags list` to see available flags."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -531,7 +531,7 @@ public class PrideCommand implements SlashCommand {
                     "Unknown Flag",
                     "Unknown flag: `" + flagName + "`\n" +
                             "Use `/flags list` to see available flags."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -572,7 +572,7 @@ public class PrideCommand implements SlashCommand {
                     "Unknown Flag",
                     "Unknown flag: `" + flagName + "`\n" +
                             "Use `/flags list` to see available flags."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -580,7 +580,7 @@ public class PrideCommand implements SlashCommand {
         if (!attachment.isImage()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Invalid File",
-                    "Please upload an image file (PNG, JPG, GIF, etc.)")).setEphemeral(true).queue();
+                    "Please upload an image file (PNG, JPG, GIF, etc.)")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

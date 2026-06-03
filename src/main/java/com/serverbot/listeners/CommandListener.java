@@ -31,7 +31,7 @@ public class CommandListener extends ListenerAdapter {
             SafeRestAction.queue(
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
                             "Unknown Command",
-                            "The command `" + commandName + "` was not found.")).setEphemeral(true),
+                            "The command `" + commandName + "` was not found.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))),
                     "reply with unknown command error");
             return;
         }
@@ -41,7 +41,7 @@ public class CommandListener extends ListenerAdapter {
             SafeRestAction.queue(
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
                             "Guild Only Command",
-                            "This command can only be used in servers.")).setEphemeral(true),
+                            "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))),
                     "reply with guild only error");
             return;
         }
@@ -95,14 +95,14 @@ public class CommandListener extends ListenerAdapter {
                 SafeRestAction.queue(
                         event.replyEmbeds(EmbedUtils.createErrorEmbed(
                                 errorTitle,
-                                errorDescription)).setEphemeral(true),
+                                errorDescription)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))),
                         "reply with command error");
             } else {
                 // If already acknowledged (deferred), use hook to send follow-up
                 SafeRestAction.queue(
                         event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
                                 errorTitle,
-                                errorDescription)).setEphemeral(true),
+                                errorDescription)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))),
                         "send follow-up command error");
             }
         }

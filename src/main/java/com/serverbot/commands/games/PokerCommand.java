@@ -37,7 +37,7 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -52,7 +52,7 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
                     "Insufficient Funds",
                     "You need at least " + betAmount + " points to play poker.\n" +
                             "Your current balance: " + userBalance + " points"))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -60,7 +60,7 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
         if (activeGames.containsKey(userId)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Game in Progress",
-                    "You're already playing poker! Finish your current game first.")).setEphemeral(true).queue();
+                    "You're already playing poker! Finish your current game first.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -96,13 +96,13 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
 
         if (game == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Game Not Found", "Your poker game has expired or doesn't exist.")).setEphemeral(true).queue();
+                    "Game Not Found", "Your poker game has expired or doesn't exist.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         if (!game.userId.equals(userId)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Not Your Game", "This isn't your poker game!")).setEphemeral(true).queue();
+                    "Not Your Game", "This isn't your poker game!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -136,7 +136,7 @@ public class PokerCommand extends ListenerAdapter implements SlashCommand {
     private void handleDiscard(ButtonInteractionEvent event, PokerGame game) {
         if (game.hasDiscarded) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Already Discarded", "You can only discard once per game!")).setEphemeral(true).queue();
+                    "Already Discarded", "You can only discard once per game!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

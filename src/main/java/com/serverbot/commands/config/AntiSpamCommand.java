@@ -79,7 +79,7 @@ public class AntiSpamCommand implements SlashCommand {
 
         private void openPanel(SlashCommandInteractionEvent event) {
                 Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
-                event.reply(buildPanel(settings, event.getGuild(), event.getUser().getId())).setEphemeral(true).queue();
+                event.reply(buildPanel(settings, event.getGuild(), event.getUser().getId())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
 
         public static MessageCreateData buildPanel(Map<String, Object> settings, Guild guild, String userId) {
@@ -210,13 +210,13 @@ public class AntiSpamCommand implements SlashCommand {
                 OptionMapping opt = event.getOption("value");
                 if (opt == null) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Value", "Provide a number 1\u201350."))
-                                        .setEphemeral(true).queue();
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 int v = opt.getAsInt();
                 if (v < 1 || v > 50) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range", "Must be 1\u201350."))
-                                        .setEphemeral(true).queue();
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamMessageLimit", v);
@@ -228,13 +228,13 @@ public class AntiSpamCommand implements SlashCommand {
                 OptionMapping opt = event.getOption("value");
                 if (opt == null) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Value", "Provide a number 1\u201360."))
-                                        .setEphemeral(true).queue();
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 int v = opt.getAsInt();
                 if (v < 1 || v > 60) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range", "Must be 1\u201360 seconds."))
-                                        .setEphemeral(true).queue();
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamTimeWindow", v);
@@ -246,13 +246,13 @@ public class AntiSpamCommand implements SlashCommand {
                 OptionMapping opt = event.getOption("value");
                 if (opt == null) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Value", "Provide a number 1\u201330."))
-                                        .setEphemeral(true).queue();
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 int v = opt.getAsInt();
                 if (v < 1 || v > 30) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range", "Must be 1\u201330."))
-                                        .setEphemeral(true).queue();
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamMentionLimit", v);
@@ -264,13 +264,13 @@ public class AntiSpamCommand implements SlashCommand {
                 OptionMapping opt = event.getOption("value");
                 if (opt == null) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Value", "Provide a number 2\u201320."))
-                                        .setEphemeral(true).queue();
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 int v = opt.getAsInt();
                 if (v < 2 || v > 20) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range", "Must be 2\u201320."))
-                                        .setEphemeral(true).queue();
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamDupLimit", v);
@@ -282,7 +282,7 @@ public class AntiSpamCommand implements SlashCommand {
                 OptionMapping opt = event.getOption("type");
                 if (opt == null) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Type",
-                                        "Choose warn / mute / timeout / kick / ban.")).setEphemeral(true).queue();
+                                        "Choose warn / mute / timeout / kick / ban.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 String type = opt.getAsString().toLowerCase();
@@ -297,13 +297,13 @@ public class AntiSpamCommand implements SlashCommand {
                 if (opt == null) {
                         event.replyEmbeds(
                                         EmbedUtils.createErrorEmbed("Missing Value", "Provide minutes (1\u20131440)."))
-                                        .setEphemeral(true).queue();
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 int v = opt.getAsInt();
                 if (v < 1 || v > 1440) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range", "1\u20131440 minutes."))
-                                        .setEphemeral(true).queue();
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamMuteDuration", v);
@@ -316,14 +316,14 @@ public class AntiSpamCommand implements SlashCommand {
                 if (opt == null) {
                         event.replyEmbeds(
                                         EmbedUtils.createErrorEmbed("Missing Value", "Provide minutes (1\u201440320)."))
-                                        .setEphemeral(true).queue();
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 int v = opt.getAsInt();
                 if (v < 1 || v > 40320) {
                         event.replyEmbeds(
                                         EmbedUtils.createErrorEmbed("Out of Range", "1\u201440320 minutes (28 days)."))
-                                        .setEphemeral(true).queue();
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamTimeoutDuration",
@@ -336,13 +336,13 @@ public class AntiSpamCommand implements SlashCommand {
                 OptionMapping opt = event.getOption("value");
                 if (opt == null) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Value",
-                                        "Provide hours (0\u20138760, 0 = permanent).")).setEphemeral(true).queue();
+                                        "Provide hours (0\u20138760, 0 = permanent).")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 int v = opt.getAsInt();
                 if (v < 0 || v > 8760) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range",
-                                        "0\u20138760 hours (0 = permanent).")).setEphemeral(true).queue();
+                                        "0\u20138760 hours (0 = permanent).")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "antiSpamBanDuration", v);

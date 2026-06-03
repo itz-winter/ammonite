@@ -21,7 +21,7 @@ public class PresenceCommand implements SlashCommand {
         // Check if user is bot owner
         if (!PermissionUtils.isBotOwner(event.getUser())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Bot Owner Only", "Only the bot owner can change the bot presence.")).setEphemeral(true).queue();
+                    "Bot Owner Only", "Only the bot owner can change the bot presence.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -31,7 +31,7 @@ public class PresenceCommand implements SlashCommand {
             case "set" -> setPresence(event);
             case "remove", "clear" -> removePresence(event);
             default -> event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Action", "Available actions: `set`, `remove`")).setEphemeral(true).queue();
+                    "Invalid Action", "Available actions: `set`, `remove`")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -41,7 +41,7 @@ public class PresenceCommand implements SlashCommand {
 
         if (presenceText == null || presenceText.trim().isEmpty()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Missing Text", "Please provide presence text when using `set`.")).setEphemeral(true).queue();
+                    "Missing Text", "Please provide presence text when using `set`.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -64,7 +64,7 @@ public class PresenceCommand implements SlashCommand {
                     "Presence Updated",
                     "Bot presence has been set to: **" + activityType.substring(0, 1).toUpperCase()
                             + activityType.substring(1) + " " + presenceText + "**"))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Presence Update Failed", "Failed to update bot presence: " + e.getMessage())).setEphemeral(true)
@@ -76,7 +76,7 @@ public class PresenceCommand implements SlashCommand {
         try {
             event.getJDA().getPresence().setActivity(null);
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                    "Presence Cleared", "Bot presence has been cleared.")).setEphemeral(true).queue();
+                    "Presence Cleared", "Bot presence has been cleared.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Presence Clear Failed", "Failed to clear bot presence: " + e.getMessage())).setEphemeral(true)

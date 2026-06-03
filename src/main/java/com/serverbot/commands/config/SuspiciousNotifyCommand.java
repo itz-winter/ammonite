@@ -100,12 +100,12 @@ public class SuspiciousNotifyCommand implements SlashCommand {
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         if (event.getGuild() == null) {
-            event.reply("This command can only be used in a server.").setEphemeral(true).queue();
+            event.reply("This command can only be used in a server.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         String subcommand = event.getSubcommandName();
         if (subcommand == null) {
-            event.reply("Please specify a subcommand.").setEphemeral(true).queue();
+            event.reply("Please specify a subcommand.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         switch (subcommand) {
@@ -117,7 +117,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
             case "clear"  -> handleClear(event);
             case "test"   -> handleTest(event);
             case "report" -> handleReport(event);
-            default -> event.reply("Unknown subcommand.").setEphemeral(true).queue();
+            default -> event.reply("Unknown subcommand.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -142,7 +142,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         OptionMapping roleOpt = event.getOption("role");
 
         if (userOpt == null && roleOpt == null) {
-            event.reply("Please specify at least one `user` or `role` to add.").setEphemeral(true).queue();
+            event.reply("Please specify at least one `user` or `role` to add.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -187,7 +187,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
             }
         }
 
-        event.reply(response.toString().trim()).setEphemeral(true).queue();
+        event.reply(response.toString().trim()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // ── /suspiciousnotify remove ──────────────────────────────────────────────
@@ -198,7 +198,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         OptionMapping roleOpt = event.getOption("role");
 
         if (userOpt == null && roleOpt == null) {
-            event.reply("Please specify at least one `user` or `role` to remove.").setEphemeral(true).queue();
+            event.reply("Please specify at least one `user` or `role` to remove.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -241,7 +241,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
             }
         }
 
-        event.reply(response.toString().trim()).setEphemeral(true).queue();
+        event.reply(response.toString().trim()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // ── /suspiciousnotify deny ────────────────────────────────────────────────
@@ -252,7 +252,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         OptionMapping roleOpt = event.getOption("role");
 
         if (userOpt == null && roleOpt == null) {
-            event.reply("Please specify at least one `user` or `role` to deny.").setEphemeral(true).queue();
+            event.reply("Please specify at least one `user` or `role` to deny.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -296,7 +296,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
             }
         }
 
-        event.reply(response.toString().trim()).setEphemeral(true).queue();
+        event.reply(response.toString().trim()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // ── /suspiciousnotify undeny ──────────────────────────────────────────────
@@ -307,7 +307,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         OptionMapping roleOpt = event.getOption("role");
 
         if (userOpt == null && roleOpt == null) {
-            event.reply("Please specify at least one `user` or `role` to undeny.").setEphemeral(true).queue();
+            event.reply("Please specify at least one `user` or `role` to undeny.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -346,7 +346,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
             }
         }
 
-        event.reply(response.toString().trim()).setEphemeral(true).queue();
+        event.reply(response.toString().trim()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleList(SlashCommandInteractionEvent event) {
@@ -357,7 +357,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         PagedListResult result = buildPage(guild, settings, page);
         event.replyEmbeds(result.embed)
                 .setComponents(result.navRow != null ? List.of(result.navRow) : Collections.emptyList())
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     //  Static page builder (also called from SuspiciousAccountButtonListener) 
@@ -537,7 +537,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         if (denyRolesObj instanceof List<?>) denyRoles = ((List<?>) denyRolesObj).size();
 
         if (userCount == 0 && roleCount == 0 && denyUsers == 0 && denyRoles == 0) {
-            event.reply("The notification list is already empty.").setEphemeral(true).queue();
+            event.reply("The notification list is already empty.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         ServerBot.getStorageManager().updateGuildSettings(guildId, NOTIFY_USERS_KEY, new ArrayList<String>());
@@ -551,7 +551,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
                 + "Removed **" + userCount + "** notify user(s), **" + roleCount + "** notify role(s), "
                 + "**" + denyUsers + "** deny user(s), and **" + denyRoles + "** deny role(s).\n"
                 + "*(The server owner always receives alerts regardless.)*")
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleTest(SlashCommandInteractionEvent event) {
@@ -625,7 +625,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         Guild guild = event.getGuild();
         Member member = event.getMember();
         if (!guild.getOwnerId().equals(member.getId())) {
-            event.reply("Only the server owner can submit suspicious user reports.").setEphemeral(true).queue();
+            event.reply("Only the server owner can submit suspicious user reports.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         String userId = event.getOption("userid").getAsString().trim();
@@ -634,7 +634,7 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         if (!userId.matches("\\d{17,19}")) {
             event.reply(
                     "Invalid user ID format. User IDs should be 17-19 digit numbers.\nYou can get a user ID by enabling Developer Mode and right-clicking on a user.")
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         event.deferReply(true).queue();
@@ -816,11 +816,11 @@ public class SuspiciousNotifyCommand implements SlashCommand {
             response.append("Reason: ").append(reason).append("\n");
             response.append("Status: Pending validation");
 
-            event.getHook().sendMessage(response.toString()).setEphemeral(true).queue();
+            event.getHook().sendMessage(response.toString()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         } else {
             event.getHook().sendMessage(
                     "Failed to send the report. The bot owners may have DMs disabled.\nHowever, the user has been added to the masterlist.")
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 }

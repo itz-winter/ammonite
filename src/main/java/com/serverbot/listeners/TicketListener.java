@@ -70,7 +70,7 @@ public class TicketListener extends ListenerAdapter {
         if (!hasClosePermission(event.getMember())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T17",
-                    "You don't have permission to close this ticket.")).setEphemeral(true).queue();
+                    "You don't have permission to close this ticket.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -79,7 +79,7 @@ public class TicketListener extends ListenerAdapter {
         if (ticket == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T18",
-                    "This is not a valid ticket channel.")).setEphemeral(true).queue();
+                    "This is not a valid ticket channel.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -143,7 +143,7 @@ public class TicketListener extends ListenerAdapter {
         if (!hasClosePermission(event.getMember())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T17",
-                    "You don't have permission to archive this ticket.")).setEphemeral(true).queue();
+                    "You don't have permission to archive this ticket.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -152,7 +152,7 @@ public class TicketListener extends ListenerAdapter {
         if (ticket == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T18",
-                    "This is not a valid ticket channel.")).setEphemeral(true).queue();
+                    "This is not a valid ticket channel.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

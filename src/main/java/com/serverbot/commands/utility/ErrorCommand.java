@@ -42,7 +42,7 @@ public class ErrorCommand implements SlashCommand {
                         "Invalid Category",
                         "Invalid error category: `" + category + "`\n" +
                                 "Valid categories: 1, 2, 3, 4, 5, 6, 7, 8"))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             }
         }
     }

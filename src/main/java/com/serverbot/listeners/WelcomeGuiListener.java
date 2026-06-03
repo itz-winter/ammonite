@@ -39,14 +39,14 @@ public class WelcomeGuiListener extends ListenerAdapter {
 
         // Only the panel owner can interact
         if (!event.getUser().getId().equals(userId)) {
-            event.reply(CustomEmojis.ERROR + " This panel belongs to someone else.").setEphemeral(true).queue();
+            event.reply(CustomEmojis.ERROR + " This panel belongs to someone else.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         // Permission re-check
         if (!event.isFromGuild() || !PermissionManager.hasPermission(event.getMember(), "admin.welcome")) {
             event.reply(CustomEmojis.ERROR + " You no longer have permission to configure welcome settings.")
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -61,7 +61,7 @@ public class WelcomeGuiListener extends ListenerAdapter {
                 if (next && settings.get("welcomeChannelId") == null) {
                     event.reply(
                             CustomEmojis.WARN + " Please set a welcome channel first (use the **Set Channel** button).")
-                            .setEphemeral(true).queue();
+                            .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeEnabled", next);
@@ -80,7 +80,7 @@ public class WelcomeGuiListener extends ListenerAdapter {
             case "test" -> handleTest(event, settings, guild, userId, false);
             case "dmtest" -> handleTest(event, settings, guild, userId, true);
             case "refresh" -> refreshPanel(event, guildId, guild, userId);
-            default -> event.reply("Unknown action.").setEphemeral(true).queue();
+            default -> event.reply("Unknown action.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -125,7 +125,7 @@ public class WelcomeGuiListener extends ListenerAdapter {
                 if (tc == null) {
                     event.reply(
                             CustomEmojis.ERROR + " Channel not found. Use a channel mention `#channel`, name, or ID.")
-                            .setEphemeral(true).queue();
+                            .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeChannelId", tc.getId());
@@ -149,7 +149,7 @@ public class WelcomeGuiListener extends ListenerAdapter {
                     color = "#" + color;
                 if (!color.matches("#[0-9A-Fa-f]{6}")) {
                     event.reply(CustomEmojis.ERROR + " Invalid color. Use hex format like `#FF0000`.")
-                            .setEphemeral(true).queue();
+                            .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeEmbedColor", color.toUpperCase());
@@ -175,7 +175,7 @@ public class WelcomeGuiListener extends ListenerAdapter {
                 if (role == null) {
                     event.reply(CustomEmojis.ERROR
                             + " Role not found. Use a role mention `@Role`, name, or ID. Type `clear` to remove.")
-                            .setEphemeral(true).queue();
+                            .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeAutoRoleId", role.getId());
@@ -229,7 +229,7 @@ public class WelcomeGuiListener extends ListenerAdapter {
                             s -> event.reply(CustomEmojis.SUCCESS + " Test DM sent to your inbox.").setEphemeral(true)
                                     .queue(),
                             f -> event.reply(CustomEmojis.ERROR + " Could not send DM \u2014 are your DMs open?")
-                                    .setEphemeral(true).queue());
+                                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue());
         } else {
             event.replyEmbeds(eb.build()).queue();
         }

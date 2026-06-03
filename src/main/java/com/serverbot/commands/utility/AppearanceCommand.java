@@ -22,7 +22,7 @@ public class AppearanceCommand implements SlashCommand {
         // Check if user is bot owner
         if (!PermissionUtils.isBotOwner(event.getUser())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Bot Owner Only", "Only the bot owner can change the bot appearance.")).setEphemeral(true).queue();
+                    "Bot Owner Only", "Only the bot owner can change the bot appearance.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -50,7 +50,7 @@ public class AppearanceCommand implements SlashCommand {
             }
             default -> {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                        "Invalid Status", "Valid statuses are: online, dnd, idle, offline")).setEphemeral(true).queue();
+                        "Invalid Status", "Valid statuses are: online, dnd, idle, offline")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
         }
@@ -63,7 +63,7 @@ public class AppearanceCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Appearance Update Failed", "Failed to update bot appearance: " + e.getMessage()))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

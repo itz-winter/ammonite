@@ -23,7 +23,7 @@ public class BankCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -46,7 +46,7 @@ public class BankCommand implements SlashCommand {
                         "Invalid setting: `" + setting + "`\n" +
                                 "Valid settings: `balance`, `maxloan`, `minloan`, `autocollect`\n\n" +
                                 "Use `/bank` without arguments to see the help guide."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             }
         }
     }
@@ -88,7 +88,7 @@ public class BankCommand implements SlashCommand {
                         false)
                 .setFooter("Use -!help to dismiss future help messages • Permissions vary by setting");
 
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+        event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleBalance(SlashCommandInteractionEvent event) {
@@ -124,7 +124,7 @@ public class BankCommand implements SlashCommand {
                 case "set" -> {
                     if (amount == null) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                                "Missing Amount", "Please specify the amount to set.")).setEphemeral(true).queue();
+                                "Missing Amount", "Please specify the amount to set.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                     }
 
@@ -145,7 +145,7 @@ public class BankCommand implements SlashCommand {
                 case "add" -> {
                     if (amount == null) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                                "Missing Amount", "Please specify the amount to add.")).setEphemeral(true).queue();
+                                "Missing Amount", "Please specify the amount to add.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                     }
 
@@ -168,7 +168,7 @@ public class BankCommand implements SlashCommand {
                 case "subtract" -> {
                     if (amount == null) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                                "Missing Amount", "Please specify the amount to subtract.")).setEphemeral(true).queue();
+                                "Missing Amount", "Please specify the amount to subtract.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                     }
 
@@ -201,7 +201,7 @@ public class BankCommand implements SlashCommand {
                     "Failed to handle balance operation: " + e.getMessage() + "\n" +
                             "Error Code: **400** - Operation Failed\n" +
                             "Use `/error category:4` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -213,7 +213,7 @@ public class BankCommand implements SlashCommand {
                     "You need the `economy.admin.config` permission to configure loan settings.\n" +
                             "Error Code: **200** - Permission Denied\n" +
                             "Use `/error category:2` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -232,7 +232,7 @@ public class BankCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Update Failed",
-                    "Failed to update max loan setting: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to update max loan setting: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -261,7 +261,7 @@ public class BankCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Update Failed",
-                    "Failed to update min loan setting: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to update min loan setting: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -271,7 +271,7 @@ public class BankCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions",
                     "You need the `economy.admin.config` permission to configure auto-collect settings."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -292,7 +292,7 @@ public class BankCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Update Failed",
-                    "Failed to update auto-collect setting: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to update auto-collect setting: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

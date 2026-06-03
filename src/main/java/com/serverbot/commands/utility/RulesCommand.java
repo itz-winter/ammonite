@@ -27,7 +27,7 @@ public class RulesCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -41,7 +41,7 @@ public class RulesCommand implements SlashCommand {
                     "You don't have permission to perform this action.\n" +
                             "Required permission: `rules." + (action.equals("display") ? "use" : action)
                             + "` or `rules.*`"))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -54,7 +54,7 @@ public class RulesCommand implements SlashCommand {
             default -> {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Invalid Action",
-                        "Valid actions: `display`, `create`, `edit`, `delete`, `list`")).setEphemeral(true).queue();
+                        "Valid actions: `display`, `create`, `edit`, `delete`, `list`")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             }
         }
     }
@@ -116,7 +116,7 @@ public class RulesCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Display Error",
-                    "Failed to display rules: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to display rules: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -130,7 +130,7 @@ public class RulesCommand implements SlashCommand {
                     "Both `title` and `description` are required for creating rules.\n" +
                             "Error Code: **100** - Missing Parameter\n" +
                             "Use `/error category:1` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -143,7 +143,7 @@ public class RulesCommand implements SlashCommand {
                     "Rule title must be 100 characters or less.\n" +
                             "Error Code: **105** - Input Too Long\n" +
                             "Use `/error category:1` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -153,7 +153,7 @@ public class RulesCommand implements SlashCommand {
                     "Rule description must be 500 characters or less.\n" +
                             "Error Code: **105** - Input Too Long\n" +
                             "Use `/error category:1` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -174,7 +174,7 @@ public class RulesCommand implements SlashCommand {
                         "Maximum of 25 rules allowed per server.\n" +
                                 "Error Code: **321** - Limit Reached\n" +
                                 "Use `/error category:3` for full documentation."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -197,7 +197,7 @@ public class RulesCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Creation Failed",
-                    "Failed to create rule: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to create rule: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -212,7 +212,7 @@ public class RulesCommand implements SlashCommand {
                     "Rule number is required for editing.\n" +
                             "Error Code: **100** - Missing Parameter\n" +
                             "Use `/error category:1` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -222,7 +222,7 @@ public class RulesCommand implements SlashCommand {
                     "At least one of `title` or `description` must be provided for editing.\n" +
                             "Error Code: **100** - Missing Parameter\n" +
                             "Use `/error category:1` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -241,7 +241,7 @@ public class RulesCommand implements SlashCommand {
                         "No rules exist to edit.\n" +
                                 "Error Code: **300** - Resource Not Found\n" +
                                 "Use `/error category:3` for full documentation."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -251,7 +251,7 @@ public class RulesCommand implements SlashCommand {
                         "Rule number must be between 1 and " + rules.size() + ".\n" +
                                 "Error Code: **R08** - Invalid Rule Number\n" +
                                 "Use `/error category:R` for full R-series documentation."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -268,7 +268,7 @@ public class RulesCommand implements SlashCommand {
                             "Rule title must be 100 characters or less.\n" +
                                     "Error Code: **105** - Input Too Long\n" +
                                     "Use `/error category:1` for full documentation."))
-                            .setEphemeral(true).queue();
+                            .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     return;
                 }
                 rule = Map.of(
@@ -288,7 +288,7 @@ public class RulesCommand implements SlashCommand {
                             "Rule description must be 500 characters or less.\n" +
                                     "Error Code: **105** - Input Too Long\n" +
                                     "Use `/error category:1` for full documentation."))
-                            .setEphemeral(true).queue();
+                            .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     return;
                 }
                 rule = Map.of(
@@ -313,7 +313,7 @@ public class RulesCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Edit Failed",
-                    "Failed to edit rule: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to edit rule: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -326,7 +326,7 @@ public class RulesCommand implements SlashCommand {
                     "Rule number is required for deletion.\n" +
                             "Error Code: **100** - Missing Parameter\n" +
                             "Use `/error category:1` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -345,7 +345,7 @@ public class RulesCommand implements SlashCommand {
                         "No rules exist to delete.\n" +
                                 "Error Code: **300** - Resource Not Found\n" +
                                 "Use `/error category:3` for full documentation."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -355,7 +355,7 @@ public class RulesCommand implements SlashCommand {
                         "Rule number must be between 1 and " + rules.size() + ".\n" +
                                 "Error Code: **101** - Invalid Value\n" +
                                 "Use `/error category:1` for full documentation."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -374,7 +374,7 @@ public class RulesCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Deletion Failed",
-                    "Failed to delete rule: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to delete rule: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -391,7 +391,7 @@ public class RulesCommand implements SlashCommand {
                         "📋 Rules List",
                         "No rules have been created yet.\n" +
                                 "Use `/rules action:create` to add your first rule."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -415,12 +415,12 @@ public class RulesCommand implements SlashCommand {
                         false);
             }
 
-            event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+            event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "List Error",
-                    "Failed to list rules: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to list rules: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

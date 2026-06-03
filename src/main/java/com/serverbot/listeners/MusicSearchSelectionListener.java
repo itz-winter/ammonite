@@ -32,7 +32,7 @@ public class MusicSearchSelectionListener extends ListenerAdapter {
         if (pending == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Selection Expired",
-                    "This search has expired. Please run `/play` again.")).setEphemeral(true).queue();
+                    "This search has expired. Please run `/play` again.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -42,14 +42,14 @@ public class MusicSearchSelectionListener extends ListenerAdapter {
             index = Integer.parseInt(event.getValues().get(0));
         } catch (NumberFormatException | IndexOutOfBoundsException e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Selection", "Something went wrong. Please try again.")).setEphemeral(true).queue();
+                    "Invalid Selection", "Something went wrong. Please try again.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         List<AudioTrack> tracks = pending.tracks();
         if (index < 0 || index >= tracks.size()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Selection", "Something went wrong. Please try again.")).setEphemeral(true).queue();
+                    "Invalid Selection", "Something went wrong. Please try again.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -62,7 +62,7 @@ public class MusicSearchSelectionListener extends ListenerAdapter {
             if (!musicManager.joinChannel(voiceChannel)) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Connection Failed",
-                        "Failed to join your voice channel. Check bot permissions.")).setEphemeral(true).queue();
+                        "Failed to join your voice channel. Check bot permissions.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
         } else {

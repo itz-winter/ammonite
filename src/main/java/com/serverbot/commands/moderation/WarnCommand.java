@@ -28,7 +28,7 @@ public class WarnCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage(
-                    "Guild Only", "This command can only be used in servers.", USAGE)).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.", USAGE)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -37,7 +37,7 @@ public class WarnCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Insufficient Permissions",
                     "You need the `mod.warn` permission to use this command.\n\n" +
                             "Ask a server admin to grant you the `mod.warn` permission."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -48,13 +48,13 @@ public class WarnCommand implements SlashCommand {
         Member targetMember = event.getGuild().getMember(targetUser);
         if (targetMember == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage("User Not Found",
-                    "This user is not in the server!", USAGE, EXAMPLE)).setEphemeral(true).queue();
+                    "This user is not in the server!", USAGE, EXAMPLE)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         if (targetUser.isBot()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage("Invalid Target",
-                    "You cannot warn bots!", USAGE, EXAMPLE)).setEphemeral(true).queue();
+                    "You cannot warn bots!", USAGE, EXAMPLE)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -63,7 +63,7 @@ public class WarnCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Cannot Warn",
                     "You cannot warn this user due to role hierarchy!\n\n" +
                             "Your highest role must be above the target user's highest role."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

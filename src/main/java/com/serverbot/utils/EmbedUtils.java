@@ -3,6 +3,10 @@ package com.serverbot.utils;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.interactions.callbacks.IReplyCallback;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 
 import java.awt.Color;
 import java.time.Instant;
@@ -161,5 +165,49 @@ public class EmbedUtils {
         return new EmbedBuilder()
                 .setColor(color)
                 .setTimestamp(Instant.now());
+    }
+
+    // ── Shareable ephemeral helpers ───────────────────────────────────────────
+
+    /** The share button for an ephemeral message owned by userId. */
+    public static Button shareButton(String userId) {
+        return Button.secondary("share_req:" + userId, "\uD83D\uDCE4 Share");
+    }
+
+    /**
+     * Replies ephemerally with an embed and a share button.
+     * Works for SlashCommandInteractionEvent, ButtonInteractionEvent, ModalInteractionEvent, etc.
+     */
+    public static void replyEphemeral(IReplyCallback event, MessageEmbed embed) {
+        event.replyEmbeds(embed)
+                .setEphemeral(true)
+                .setComponents(ActionRow.of(shareButton(event.getUser().getId())))
+                .queue();
+    }
+
+    /**
+     * Replies ephemerally with a plain-text message wrapped in an info embed
+     * and a share button.
+     */
+    public static void replyEphemeralText(IReplyCallback event, String text) {
+        replyEphemeral(event, createInfoEmbed("", text));
+    }
+
+    /**
+     * Sends an ephemeral embed via a deferred interaction hook, with a share button.
+     * Pass the original user's ID so the share button is correctly owned.
+     */
+    public static void sendEphemeral(InteractionHook hook, String userId, MessageEmbed embed) {
+        hook.sendMessageEmbeds(embed)
+                .setComponents(ActionRow.of(shareButton(userId)))
+                .queue();
+    }
+
+    /**
+     * Sends an ephemeral plain-text message via a deferred interaction hook,
+     * wrapped in an info embed with a share button.
+     */
+    public static void sendEphemeralText(InteractionHook hook, String userId, String text) {
+        sendEphemeral(hook, userId, createInfoEmbed("", text));
     }
 }

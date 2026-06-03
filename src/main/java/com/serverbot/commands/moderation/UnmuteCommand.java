@@ -43,14 +43,14 @@ public class UnmuteCommand implements SlashCommand {
         // Check permissions
         if (!PermissionManager.hasPermission(event.getMember(), "mod.unmute")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("No Permission",
-                    "You don't have permission to unmute members!")).setEphemeral(true).queue();
+                    "You don't have permission to unmute members!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         Guild guild = event.getGuild();
         if (guild == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Error",
-                    "This command can only be used in a server!")).setEphemeral(true).queue();
+                    "This command can only be used in a server!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -62,21 +62,21 @@ public class UnmuteCommand implements SlashCommand {
         Member targetMember = guild.getMember(user);
         if (targetMember == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("User Not Found",
-                    "This user is not in the server!")).setEphemeral(true).queue();
+                    "This user is not in the server!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         // Check if the moderator can interact with the target
         if (!PermissionUtils.canInteractWith(event.getMember(), targetMember)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Cannot Unmute",
-                    "You cannot unmute this user due to role hierarchy!")).setEphemeral(true).queue();
+                    "You cannot unmute this user due to role hierarchy!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         // Check if bot can interact with the target
         if (!PermissionUtils.botCanInteractWith(guild, targetMember)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Cannot Unmute",
-                    "I cannot unmute this user due to role hierarchy!")).setEphemeral(true).queue();
+                    "I cannot unmute this user due to role hierarchy!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -84,14 +84,14 @@ public class UnmuteCommand implements SlashCommand {
         Role muteRole = guild.getRolesByName("Muted", true).stream().findFirst().orElse(null);
         if (muteRole == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Mute Role Not Found",
-                    "No 'Muted' role found in this server! Please create one first.")).setEphemeral(true).queue();
+                    "No 'Muted' role found in this server! Please create one first.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         // Check if user is actually muted
         if (!targetMember.getRoles().contains(muteRole)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("User Not Muted",
-                    "This user is not currently muted!")).setEphemeral(true).queue();
+                    "This user is not currently muted!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -122,7 +122,7 @@ public class UnmuteCommand implements SlashCommand {
                 },
                 error -> {
                     event.replyEmbeds(EmbedUtils.createErrorEmbed("Unmute Failed",
-                            "Failed to unmute user. Please check permissions.")).setEphemeral(true).queue();
+                            "Failed to unmute user. Please check permissions.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 });
     }
 

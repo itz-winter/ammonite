@@ -35,7 +35,7 @@ public class ProxySettingsCommand implements SlashCommand {
         if (subcommand == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error",
-                    "Please specify a subcommand.")).setEphemeral(true).queue();
+                    "Please specify a subcommand.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -55,7 +55,7 @@ public class ProxySettingsCommand implements SlashCommand {
             default:
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Error",
-                        "Unknown subcommand.")).setEphemeral(true).queue();
+                        "Unknown subcommand.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -90,7 +90,7 @@ public class ProxySettingsCommand implements SlashCommand {
             }
         }
 
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+        event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleAutoproxy(SlashCommandInteractionEvent event) {
@@ -112,7 +112,7 @@ public class ProxySettingsCommand implements SlashCommand {
                 if (memberName == null) {
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
                             "Error",
-                            "You must specify a member name for MEMBER autoproxy mode.")).setEphemeral(true).queue();
+                            "You must specify a member name for MEMBER autoproxy mode.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     return;
                 }
 
@@ -182,7 +182,7 @@ public class ProxySettingsCommand implements SlashCommand {
             default:
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Error",
-                        "Invalid setting. Valid settings: proxy, indicator, casesensitive")).setEphemeral(true).queue();
+                        "Invalid setting. Valid settings: proxy, indicator, casesensitive")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
         }
 
@@ -241,7 +241,7 @@ public class ProxySettingsCommand implements SlashCommand {
         if (member == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error 710",
-                    "Proxy member not found. Use `/proxy list` to see your members.")).setEphemeral(true).queue();
+                    "Proxy member not found. Use `/proxy list` to see your members.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

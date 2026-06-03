@@ -35,7 +35,7 @@ public class HelpCommand implements SlashCommand {
         if (command == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Command Not Found",
-                    "The command `" + commandName + "` does not exist.")).setEphemeral(true).queue();
+                    "The command `" + commandName + "` does not exist.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -52,7 +52,7 @@ public class HelpCommand implements SlashCommand {
             embed.addField("Usage", usage, false);
         }
 
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+        event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void showAllCommands(SlashCommandInteractionEvent event) {
@@ -96,7 +96,7 @@ public class HelpCommand implements SlashCommand {
                         "• Use `/error category:<letter>` for specific error categories (A-W)",
                 false);
 
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+        event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private String getCommandUsage(String commandName) {

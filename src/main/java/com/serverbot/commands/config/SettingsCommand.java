@@ -77,7 +77,7 @@ public class SettingsCommand implements SlashCommand {
 
         private void openPanel(SlashCommandInteractionEvent event) {
                 Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
-                event.reply(buildPanel(settings, event.getGuild(), event.getUser().getId())).setEphemeral(true).queue();
+                event.reply(buildPanel(settings, event.getGuild(), event.getUser().getId())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
 
         public static MessageCreateData buildPanel(Map<String, Object> settings, Guild guild, String userId) {
@@ -234,13 +234,13 @@ public class SettingsCommand implements SlashCommand {
                 if (opt == null) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Value",
                                         "Provide a number " + min + "\u2013" + max + " for **" + label + "**."))
-                                        .setEphemeral(true).queue();
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 int v = opt.getAsInt();
                 if (v < min || v > max) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range",
-                                        label + " must be " + min + "\u2013" + max + ".")).setEphemeral(true).queue();
+                                        label + " must be " + min + "\u2013" + max + ".")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                         return;
                 }
                 ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), key, v);
@@ -281,7 +281,7 @@ public class SettingsCommand implements SlashCommand {
                                         "Logs will be sent to " + ch.getAsMention() + ".")).queue();
                 } catch (Exception e) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Channel",
-                                        "That is not a text channel.")).setEphemeral(true).queue();
+                                        "That is not a text channel.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 }
         }
 

@@ -41,7 +41,7 @@ public class WorkCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -58,7 +58,7 @@ public class WorkCommand implements SlashCommand {
             if (economyEnabled != null && !economyEnabled) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Economy Disabled",
-                        "The economy system is disabled on this server.")).setEphemeral(true).queue();
+                        "The economy system is disabled on this server.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -83,7 +83,7 @@ public class WorkCommand implements SlashCommand {
                         "You need to rest before working again!\n" +
                                 "Time remaining: " + remainingMinutes + " minutes and " + remainingSecondsLeft
                                 + " seconds"))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -119,7 +119,7 @@ public class WorkCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Work Failed",
-                    "Failed to complete work: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to complete work: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

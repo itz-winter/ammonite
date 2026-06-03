@@ -38,7 +38,7 @@ public class TicketCommand implements SlashCommand {
         if (event.getGuild() == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T00",
-                    "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -103,7 +103,7 @@ public class TicketCommand implements SlashCommand {
         if (!hasTicketPermission(event.getMember(), "close")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T17",
-                    "You don't have permission to close tickets.")).setEphemeral(true).queue();
+                    "You don't have permission to close tickets.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -114,7 +114,7 @@ public class TicketCommand implements SlashCommand {
         if (ticket == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T18",
-                    "This command can only be used in ticket channels.")).setEphemeral(true).queue();
+                    "This command can only be used in ticket channels.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -144,7 +144,7 @@ public class TicketCommand implements SlashCommand {
         if (!hasTicketPermission(event.getMember(), "manage")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T17",
-                    "You don't have permission to manage tickets.")).setEphemeral(true).queue();
+                    "You don't have permission to manage tickets.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -152,7 +152,7 @@ public class TicketCommand implements SlashCommand {
         if (userToAdd == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T19",
-                    "Please specify a user to add.")).setEphemeral(true).queue();
+                    "Please specify a user to add.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -160,7 +160,7 @@ public class TicketCommand implements SlashCommand {
         if (ticket == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T18",
-                    "This command can only be used in ticket channels.")).setEphemeral(true).queue();
+                    "This command can only be used in ticket channels.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -189,7 +189,7 @@ public class TicketCommand implements SlashCommand {
         if (!hasTicketPermission(event.getMember(), "manage")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T17",
-                    "You don't have permission to manage tickets.")).setEphemeral(true).queue();
+                    "You don't have permission to manage tickets.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -197,7 +197,7 @@ public class TicketCommand implements SlashCommand {
         if (userToRemove == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T20",
-                    "Please specify a user to remove.")).setEphemeral(true).queue();
+                    "Please specify a user to remove.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -205,7 +205,7 @@ public class TicketCommand implements SlashCommand {
         if (ticket == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T18",
-                    "This command can only be used in ticket channels.")).setEphemeral(true).queue();
+                    "This command can only be used in ticket channels.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -234,7 +234,7 @@ public class TicketCommand implements SlashCommand {
         if (!event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T21",
-                    "You need Administrator permission to manage ticket categories.")).setEphemeral(true).queue();
+                    "You need Administrator permission to manage ticket categories.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -247,7 +247,7 @@ public class TicketCommand implements SlashCommand {
         if (categoryId == null || name == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T22",
-                    "Category ID and name are required.")).setEphemeral(true).queue();
+                    "Category ID and name are required.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -267,12 +267,12 @@ public class TicketCommand implements SlashCommand {
         if (result.equals("SUCCESS")) {
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                     "Category Created",
-                    "Ticket category `" + categoryId + "` has been created successfully!")).setEphemeral(true).queue();
+                    "Ticket category `" + categoryId + "` has been created successfully!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         } else {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error " + result,
                     getErrorMessage(result) + "\nUse `/error category:8` for full 8XX-series documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -280,7 +280,7 @@ public class TicketCommand implements SlashCommand {
         if (!event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T21",
-                    "You need Administrator permission to manage ticket categories.")).setEphemeral(true).queue();
+                    "You need Administrator permission to manage ticket categories.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -288,7 +288,7 @@ public class TicketCommand implements SlashCommand {
         if (categoryId == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T23",
-                    "Category ID is required.")).setEphemeral(true).queue();
+                    "Category ID is required.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -297,12 +297,12 @@ public class TicketCommand implements SlashCommand {
         if (result.equals("SUCCESS")) {
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                     "Category Deleted",
-                    "Ticket category `" + categoryId + "` has been deleted successfully!")).setEphemeral(true).queue();
+                    "Ticket category `" + categoryId + "` has been deleted successfully!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         } else {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error " + result,
                     getErrorMessage(result) + "\nUse `/error category:8` for full 8XX-series documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -314,7 +314,7 @@ public class TicketCommand implements SlashCommand {
                     "No Categories",
                     "No ticket categories have been configured for this server.\n" +
                             "Use `/ticket category-create` to create one."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -333,14 +333,14 @@ public class TicketCommand implements SlashCommand {
                     false);
         }
 
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+        event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleSettings(SlashCommandInteractionEvent event) {
         if (!event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T21",
-                    "You need Administrator permission to manage ticket settings.")).setEphemeral(true).queue();
+                    "You need Administrator permission to manage ticket settings.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -361,7 +361,7 @@ public class TicketCommand implements SlashCommand {
                         true)
                 .setColor(Color.BLUE);
 
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+        event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleInfo(SlashCommandInteractionEvent event) {
@@ -369,7 +369,7 @@ public class TicketCommand implements SlashCommand {
         if (ticket == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Error T18",
-                    "This command can only be used in ticket channels.")).setEphemeral(true).queue();
+                    "This command can only be used in ticket channels.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -388,7 +388,7 @@ public class TicketCommand implements SlashCommand {
                 .addField("Reason", ticket.getReason() != null ? ticket.getReason() : "No reason provided", false)
                 .setColor(Color.BLUE);
 
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+        event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private boolean hasTicketPermission(net.dv8tion.jda.api.entities.Member member, String action) {

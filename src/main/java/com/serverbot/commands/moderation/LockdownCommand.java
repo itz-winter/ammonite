@@ -26,7 +26,7 @@ public class LockdownCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -34,7 +34,7 @@ public class LockdownCommand implements SlashCommand {
         if (!PermissionManager.hasPermission(member, "mod.lockdown")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need moderation permissions to use this command."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -94,12 +94,12 @@ public class LockdownCommand implements SlashCommand {
                                         : channel.getAsMention() + " has been locked.";
 
                                 event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                                        "Channel Locked", responseMessage)).setEphemeral(true).queue();
+                                        "Channel Locked", responseMessage)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                             },
                             error -> {
                                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                                         "Lock Failed", "Failed to lock channel: " + error.getMessage()))
-                                        .setEphemeral(true).queue();
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                             });
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
@@ -155,12 +155,12 @@ public class LockdownCommand implements SlashCommand {
                 : channel.getAsMention() + " has been unlocked.";
 
         event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Channel Unlocked", responseMessage)).setEphemeral(true).queue();
+                "Channel Unlocked", responseMessage)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleUnlockError(SlashCommandInteractionEvent event, Throwable error) {
         event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                "Unlock Failed", "Failed to unlock channel: " + error.getMessage())).setEphemeral(true).queue();
+                "Unlock Failed", "Failed to unlock channel: " + error.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     public static CommandData getCommandData() {

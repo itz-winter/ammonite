@@ -37,7 +37,7 @@ public class PronounsCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -51,13 +51,13 @@ public class PronounsCommand implements SlashCommand {
                         "Feature Disabled",
                         "The pronouns system is disabled in this server.\n" +
                                 "Ask an administrator to enable it with `/settings pronouns enable`."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Settings Error",
-                    "Failed to check server settings: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to check server settings: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -85,7 +85,7 @@ public class PronounsCommand implements SlashCommand {
 
         if (targetMember == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "User Not Found", "The specified user is not in this server.")).setEphemeral(true).queue();
+                    "User Not Found", "The specified user is not in this server.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -141,11 +141,11 @@ public class PronounsCommand implements SlashCommand {
                     "I don't have sufficient permissions to manage roles. Please ensure I have:\n" +
                             "• **Manage Roles** permission\n" +
                             "• My role is above the pronoun roles in the hierarchy"))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Pronouns Update Failed",
-                    "Failed to update pronouns: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to update pronouns: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

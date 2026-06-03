@@ -24,7 +24,7 @@ public class LoggingCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -32,7 +32,7 @@ public class LoggingCommand implements SlashCommand {
         if (!PermissionManager.hasPermission(executor, "admin.logging")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need administrator permissions to configure logging."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -45,7 +45,7 @@ public class LoggingCommand implements SlashCommand {
             // Validate type is provided for actions that need it
             if (!action.equalsIgnoreCase("reset") && logType == null) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                        "Missing Type", "You must specify a logging type for this action.")).setEphemeral(true).queue();
+                        "Missing Type", "You must specify a logging type for this action.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -107,7 +107,7 @@ public class LoggingCommand implements SlashCommand {
                                 "Logging Status",
                                 "**Log Type:** " + logType.toUpperCase() + "\n" +
                                         "**Status:** Disabled"))
-                                .setEphemeral(true).queue();
+                                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     } else {
                         TextChannel logChannel = event.getGuild().getTextChannelById(channelId);
                         String channelMention = logChannel != null ? logChannel.getAsMention()
@@ -119,7 +119,7 @@ public class LoggingCommand implements SlashCommand {
                                 "**Log Type:** " + logType.toUpperCase() + "\n" +
                                         "**Channel:** " + channelMention + "\n" +
                                         "**Auto-logging:** " + autoLogStatus))
-                                .setEphemeral(true).queue();
+                                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     }
                 }
                 case "reset" -> {
@@ -148,7 +148,7 @@ public class LoggingCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Log Config Failed",
-                    "Failed to configure logging: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to configure logging: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

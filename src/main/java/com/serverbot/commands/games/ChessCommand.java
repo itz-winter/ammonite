@@ -46,14 +46,14 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         Member member = event.getMember();
         if (!PermissionManager.hasPermission(member, "chess.use")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Insufficient Permissions", "You don't have permission to play chess!")).setEphemeral(true).queue();
+                    "Insufficient Permissions", "You don't have permission to play chess!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -69,7 +69,7 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
 
         if (!vsBot && opponent.getId().equals(player1.getId())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Opponent", "You can't play chess against yourself!")).setEphemeral(true).queue();
+                    "Invalid Opponent", "You can't play chess against yourself!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -77,7 +77,7 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Invalid Opponent",
                     "You can't play chess against other bots! Use `/chess` with no opponent to play against me."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -98,7 +98,7 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
         if (activeGames.containsKey(gameId1) || (!vsBot && activeGames.containsKey(gameId2))) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Game in Progress",
-                    "One of the players is already in a chess game!")).setEphemeral(true).queue();
+                    "One of the players is already in a chess game!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -135,7 +135,7 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
 
         if (game == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Game Not Found", "Your chess game has expired or doesn't exist.")).setEphemeral(true).queue();
+                    "Game Not Found", "Your chess game has expired or doesn't exist.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -143,12 +143,12 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
         if (game.vsBot) {
             if (!userId.equals(game.whitePlayerId)) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                        "Not Your Game", "This isn't your chess game!")).setEphemeral(true).queue();
+                        "Not Your Game", "This isn't your chess game!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
         } else if (!game.isPlayerTurn(userId)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Not Your Turn", "Please wait for your opponent to make their move!")).setEphemeral(true).queue();
+                    "Not Your Turn", "Please wait for your opponent to make their move!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -166,7 +166,7 @@ public class ChessCommand extends ListenerAdapter implements SlashCommand {
 
         if (!validMove) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "No Valid Moves", "Unable to find a valid move. Try again!")).setEphemeral(true).queue();
+                    "No Valid Moves", "Unable to find a valid move. Try again!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

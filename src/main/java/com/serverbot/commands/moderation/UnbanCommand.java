@@ -41,14 +41,14 @@ public class UnbanCommand implements SlashCommand {
         // Check permissions
         if (!PermissionManager.hasPermission(event.getMember(), "mod.unban")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("No Permission",
-                    "You don't have permission to unban members!")).setEphemeral(true).queue();
+                    "You don't have permission to unban members!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         Guild guild = event.getGuild();
         if (guild == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Error",
-                    "This command can only be used in a server!")).setEphemeral(true).queue();
+                    "This command can only be used in a server!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -104,12 +104,12 @@ public class UnbanCommand implements SlashCommand {
                     error -> {
                         // User is not banned
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("User Not Banned",
-                                "This user is not currently banned from the server.")).setEphemeral(true).queue();
+                                "This user is not currently banned from the server.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     });
 
         } catch (NumberFormatException e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid User ID",
-                    "Please provide a valid user ID!")).setEphemeral(true).queue();
+                    "Please provide a valid user ID!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

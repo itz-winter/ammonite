@@ -20,7 +20,7 @@ public class PayCommandSimple implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -30,19 +30,19 @@ public class PayCommandSimple implements SlashCommand {
 
         if (recipient.isBot()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Recipient",
-                    "You cannot pay bots!")).setEphemeral(true).queue();
+                    "You cannot pay bots!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         if (recipient.equals(sender)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Recipient",
-                    "You cannot pay yourself!")).setEphemeral(true).queue();
+                    "You cannot pay yourself!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         if (amount <= 0) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Amount",
-                    "Amount must be greater than 0!")).setEphemeral(true).queue();
+                    "Amount must be greater than 0!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -57,7 +57,7 @@ public class PayCommandSimple implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Insufficient Funds",
                     String.format("You need %,d coins but only have %,d coins!",
                             amount, senderBalance)))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

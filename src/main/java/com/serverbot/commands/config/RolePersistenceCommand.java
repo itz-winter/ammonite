@@ -23,7 +23,7 @@ public class RolePersistenceCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -34,7 +34,7 @@ public class RolePersistenceCommand implements SlashCommand {
                     "You need the `admin.rolepersistence` permission to configure role persistence.\n" +
                             "Error Code: **200** - Permission Denied\n" +
                             "Use `/error category:2` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -50,7 +50,7 @@ public class RolePersistenceCommand implements SlashCommand {
                     "Unknown subcommand: " + subcommand + "\n" +
                             "Error Code: **101** - Invalid Value\n" +
                             "Use `/error category:1` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -75,7 +75,7 @@ public class RolePersistenceCommand implements SlashCommand {
                     "Failed to enable role persistence: " + e.getMessage() + "\n" +
                             "Error Code: **400** - Operation Failed\n" +
                             "Use `/error category:4` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -96,7 +96,7 @@ public class RolePersistenceCommand implements SlashCommand {
                     "Failed to disable role persistence: " + e.getMessage() + "\n" +
                             "Error Code: **400** - Operation Failed\n" +
                             "Use `/error category:4` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -119,7 +119,7 @@ public class RolePersistenceCommand implements SlashCommand {
                     status, storedUsersCount);
 
             event.replyEmbeds(EmbedUtils.createInfoEmbed(
-                    "🔄 Role Persistence Status", description)).setEphemeral(true).queue();
+                    "🔄 Role Persistence Status", description)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
@@ -127,7 +127,7 @@ public class RolePersistenceCommand implements SlashCommand {
                     "Failed to check role persistence status: " + e.getMessage() + "\n" +
                             "Error Code: **400** - Operation Failed\n" +
                             "Use `/error category:4` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -140,7 +140,7 @@ public class RolePersistenceCommand implements SlashCommand {
                             "To confirm, use: `/rolepersistence clear confirm:true`\n\n" +
                             "Error Code: **103** - Confirmation Required\n" +
                             "Use `/error category:1` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -161,7 +161,7 @@ public class RolePersistenceCommand implements SlashCommand {
                     "Failed to clear role persistence data: " + e.getMessage() + "\n" +
                             "Error Code: **400** - Operation Failed\n" +
                             "Use `/error category:4` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

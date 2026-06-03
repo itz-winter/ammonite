@@ -25,7 +25,7 @@ public class LogCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -33,7 +33,7 @@ public class LogCommand implements SlashCommand {
         if (!PermissionManager.hasPermission(member, "logging.view")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need the `logging.view` permission to view logs."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -64,7 +64,7 @@ public class LogCommand implements SlashCommand {
             if (logChannelId == null) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "No Log Channel",
-                        "No log channel is configured. Use `/logging set` to set one.")).setEphemeral(true).queue();
+                        "No log channel is configured. Use `/logging set` to set one.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -72,7 +72,7 @@ public class LogCommand implements SlashCommand {
             if (logChannel == null) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Log Channel Not Found",
-                        "The configured log channel no longer exists.")).setEphemeral(true).queue();
+                        "The configured log channel no longer exists.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -99,7 +99,7 @@ public class LogCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Log Error",
-                    "Failed to create log entry: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to create log entry: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

@@ -64,13 +64,13 @@ public class ServerMessagesCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "This command can only be used in servers."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         Member member = event.getMember();
         if (!PermissionManager.hasPermission(member, "admin.settings")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Insufficient Permissions",
-                    "You need the `admin.settings` permission.")).setEphemeral(true).queue();
+                    "You need the `admin.settings` permission.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -110,7 +110,7 @@ public class ServerMessagesCommand implements SlashCommand {
 
         if (!VALID_TYPES.contains(type)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Type", "Valid types: `" + TYPE_LIST + "`"))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -119,7 +119,7 @@ public class ServerMessagesCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createInfoEmbed("Default Messages",
                     "No custom messages set for `" + type
                             + "`. Using the built-in defaults.\nUse `/servermessages add` to add custom ones."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -142,17 +142,17 @@ public class ServerMessagesCommand implements SlashCommand {
 
         if (type == null || message == null || message.isBlank()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Options", "Please provide both type and message."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (!VALID_TYPES.contains(type)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Type", "Valid types: `" + TYPE_LIST + "`"))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (message.length() > 500) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Too Long", "Messages must be 500 characters or less."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -171,19 +171,19 @@ public class ServerMessagesCommand implements SlashCommand {
 
         if (type == null || pos == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Options", "Please provide type and position."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (!VALID_TYPES.contains(type)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Type", "Valid types: `" + TYPE_LIST + "`"))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         boolean removed = ServerBot.getStorageManager().removeCustomGuildMessage(guildId, type, pos - 1);
         if (!removed) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Position",
-                    "No message at position " + pos + " for `" + type + "`.")).setEphemeral(true).queue();
+                    "No message at position " + pos + " for `" + type + "`.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         DismissibleMessage.reply(event, new EmbedBuilder()
@@ -199,12 +199,12 @@ public class ServerMessagesCommand implements SlashCommand {
 
         if (type == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Type", "Please specify the message type to reset."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (!VALID_TYPES.contains(type)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Type", "Valid types: `" + TYPE_LIST + "`"))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

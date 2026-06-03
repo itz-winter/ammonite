@@ -30,7 +30,7 @@ public class PrefixCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -38,7 +38,7 @@ public class PrefixCommand implements SlashCommand {
         if (!PermissionManager.hasPermission(member, "admin.prefix")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need the `admin.prefix` permission to use this command."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -96,7 +96,7 @@ public class PrefixCommand implements SlashCommand {
         OptionMapping prefixOption = event.getOption("prefix");
         if (prefixOption == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Option", "Please specify a prefix to add."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         String newPrefix = prefixOption.getAsString().trim();
@@ -107,7 +107,7 @@ public class PrefixCommand implements SlashCommand {
         if (!added) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Already Exists", "The prefix `" + newPrefix + "` is already active for this server."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         List<String> all = ServerBot.getStorageManager().getPrefixes(guildId);
@@ -125,7 +125,7 @@ public class PrefixCommand implements SlashCommand {
         OptionMapping prefixOption = event.getOption("prefix");
         if (prefixOption == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Option", "Please specify a prefix to remove."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         String removePrefix = prefixOption.getAsString().trim();
@@ -133,7 +133,7 @@ public class PrefixCommand implements SlashCommand {
         if (!removed) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Not Found", "The prefix `" + removePrefix + "` is not currently active for this server."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         List<String> remaining = ServerBot.getStorageManager().getPrefixes(guildId);
@@ -201,23 +201,23 @@ public class PrefixCommand implements SlashCommand {
     private boolean validatePrefix(SlashCommandInteractionEvent event, String prefix) {
         if (prefix.isEmpty()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Prefix", "Prefix cannot be empty."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return false;
         }
         if (prefix.length() > 5) {
             event.replyEmbeds(
                     EmbedUtils.createErrorEmbed("Invalid Prefix", "Prefix cannot be longer than 5 characters."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return false;
         }
         if (prefix.contains(" ")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Prefix", "Prefix cannot contain spaces."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return false;
         }
         if (prefix.equals("/")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Prefix",
-                    "Cannot use `/` as prefix — it's reserved for slash commands.")).setEphemeral(true).queue();
+                    "Cannot use `/` as prefix — it's reserved for slash commands.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return false;
         }
         return true;

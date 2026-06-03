@@ -105,7 +105,7 @@ public class AutoConfigListener extends ListenerAdapter {
         if (event.getGuild() == null)
             return;
         if (!event.getUser().getId().equals(event.getGuild().getOwnerId())) {
-            event.reply("Only the server owner can use the setup wizard.").setEphemeral(true).queue();
+            event.reply("Only the server owner can use the setup wizard.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -123,7 +123,7 @@ public class AutoConfigListener extends ListenerAdapter {
                 });
                 event.reply(
                         "Alright! If you change your mind, you can access the setup process later using `/autoconfig`.")
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             }
 
             // Step 2: mod log — yes/no
@@ -251,7 +251,7 @@ public class AutoConfigListener extends ListenerAdapter {
                 }, err -> {
                 });
                 event.reply(CustomEmojis.SUCCESS + " Moderation log channel set to <#" + selected.getId() + ">")
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 sendStep3MsgLogDirect(event.getChannel().asTextChannel(), guildId);
             }
             case "ac_select_msglog" -> {
@@ -265,7 +265,7 @@ public class AutoConfigListener extends ListenerAdapter {
                 }, err -> {
                 });
                 event.reply(CustomEmojis.SUCCESS + " Message log channel set to <#" + selected.getId() + ">")
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 sendStep4JoinLeaveLogDirect(event.getChannel().asTextChannel(), guildId);
             }
             case "ac_select_joinlog" -> {
@@ -279,7 +279,7 @@ public class AutoConfigListener extends ListenerAdapter {
                 }, err -> {
                 });
                 event.reply(CustomEmojis.SUCCESS + " Join/leave log channel set to <#" + selected.getId() + ">")
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 sendStep5SuspiciousNotifyDirect(event.getChannel().asTextChannel(), guildId);
             }
             case "ac_select_suspicious" -> {
@@ -294,7 +294,7 @@ public class AutoConfigListener extends ListenerAdapter {
                 }, err -> {
                 });
                 event.reply(CustomEmojis.SUCCESS + " Suspicious notify list updated (" + ids.size() + " entries).")
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 sendStep6FeatureToggleDirect(event.getChannel().asTextChannel(), guildId);
             }
             default -> {
@@ -345,7 +345,7 @@ public class AutoConfigListener extends ListenerAdapter {
         }, err -> {
         });
         event.reply(CustomEmojis.SUCCESS + " Features updated. Disabled: "
-                + (disabled.isEmpty() ? "none" : String.join(", ", disabled))).setEphemeral(true).queue();
+                + (disabled.isEmpty() ? "none" : String.join(", ", disabled))).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         sendStep7Complete(event.getChannel().asTextChannel(), guildId);
     }
 

@@ -23,14 +23,14 @@ public class WarnCommandSimple implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         // Check permissions
         if (!PermissionManager.hasPermission(event.getMember(), "mod.warn")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Insufficient Permissions",
-                    "You need the `mod.warn` permission to warn members.")).setEphemeral(true).queue();
+                    "You need the `mod.warn` permission to warn members.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -41,20 +41,20 @@ public class WarnCommandSimple implements SlashCommand {
         Member targetMember = event.getGuild().getMember(targetUser);
         if (targetMember == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("User Not Found",
-                    "This user is not in the server!")).setEphemeral(true).queue();
+                    "This user is not in the server!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         if (targetUser.isBot()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Target",
-                    "You cannot warn bots!")).setEphemeral(true).queue();
+                    "You cannot warn bots!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         // Check if the moderator can interact with the target
         if (!PermissionUtils.canInteractWith(event.getMember(), targetMember)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Cannot Warn",
-                    "You cannot warn this user due to role hierarchy!")).setEphemeral(true).queue();
+                    "You cannot warn this user due to role hierarchy!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

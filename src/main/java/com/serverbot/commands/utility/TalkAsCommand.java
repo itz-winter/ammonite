@@ -50,7 +50,7 @@ public class TalkAsCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -62,7 +62,7 @@ public class TalkAsCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions",
                     "You need `talkas.use` to use this command freely, or `proxy.use` to send as one of your proxy members."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -74,7 +74,7 @@ public class TalkAsCommand implements SlashCommand {
         if (nameOption == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Missing Parameters [T01]",
-                    "The `name` parameter is required.")).setEphemeral(true).queue();
+                    "The `name` parameter is required.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -106,7 +106,7 @@ public class TalkAsCommand implements SlashCommand {
                         "No proxy member named `" + nameValue + "` was found.\n" +
                                 "Use `/proxy list` to see your members, or pick one from the autocomplete dropdown.\n" +
                                 "Error Code: **T11** - Proxy Not Found"))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -125,7 +125,7 @@ public class TalkAsCommand implements SlashCommand {
                     "Missing Content [T01]",
                     "You must provide at least a `message` or `embed_json`.\n" +
                             "Use `/embedgui` to build embeds interactively."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -135,7 +135,7 @@ public class TalkAsCommand implements SlashCommand {
                     "Invalid Name [T02]",
                     "Name must be between 1 and 80 characters.\n" +
                             "Error Code: **T02** - Invalid TalkAs Name"))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -145,7 +145,7 @@ public class TalkAsCommand implements SlashCommand {
                     "Invalid Message [T03]",
                     "Message must be 2000 characters or fewer.\n" +
                             "Error Code: **T03** - Invalid TalkAs Message"))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -155,7 +155,7 @@ public class TalkAsCommand implements SlashCommand {
                     "Invalid Avatar URL [T04]",
                     "Avatar must be a valid image URL (jpg, jpeg, png, gif, webp).\n" +
                             "Error Code: **T04** - Invalid Avatar URL"))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -169,7 +169,7 @@ public class TalkAsCommand implements SlashCommand {
                         "Invalid Embed JSON [T09]",
                         "Failed to parse embed JSON: " + e.getMessage() + "\n" +
                                 "Use `/embedgui` to build and export valid embed JSON."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
         }
@@ -184,14 +184,14 @@ public class TalkAsCommand implements SlashCommand {
                         "Invalid Buttons JSON [T10]",
                         "Failed to parse buttons from embed JSON: " + e.getMessage() + "\n" +
                                 "Use `/embedgui` to build and export valid embed JSON."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
         }
 
         TextChannel channel = event.getChannel().asTextChannel();
 
-        event.reply("ðŸ”„ Preparing webhook message...").setEphemeral(true).queue();
+        event.reply("ðŸ”„ Preparing webhook message...").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
 
         final EmbedBuilder finalEmbed = parsedEmbed;
         final List<Button> finalButtons = buttons;

@@ -67,7 +67,7 @@ public class PurgeCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -75,7 +75,7 @@ public class PurgeCommand implements SlashCommand {
         if (!PermissionManager.hasPermission(member, "mod.purge")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need moderation permissions to use this command."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -88,7 +88,7 @@ public class PurgeCommand implements SlashCommand {
             if (!(gc instanceof GuildMessageChannel)) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Invalid Channel", "The `channel` option must be a text or announcement channel."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
             channel = (GuildMessageChannel) gc;
@@ -101,7 +101,7 @@ public class PurgeCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Missing Permissions",
                     "I need **Manage Messages** and **Read Message History** in " + channel.getAsMention() + "."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -117,7 +117,7 @@ public class PurgeCommand implements SlashCommand {
 
         if (amount < 1 || amount > MAX_FETCH) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Amount", "Amount must be between 1 and " + MAX_FETCH + ".")).setEphemeral(true).queue();
+                    "Invalid Amount", "Amount must be between 1 and " + MAX_FETCH + ".")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -148,7 +148,7 @@ public class PurgeCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Contradicting Filters",
                     "`from_msg`/`to_msg` and `after`/`before` both define a time range. Use one or the other."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -166,7 +166,7 @@ public class PurgeCommand implements SlashCommand {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid `after`",
                         "Could not parse `" + afterStr + "` as a timestamp or message URL.\n" +
                                 "Accepted formats: `2024-03-15T14:30:00Z`, `2024-03-15`, or a message link."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
         }
@@ -178,7 +178,7 @@ public class PurgeCommand implements SlashCommand {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid `before`",
                         "Could not parse `" + beforeStr + "` as a timestamp or message URL.\n" +
                                 "Accepted formats: `2024-03-15T14:30:00Z`, `2024-03-15`, or a message link."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
         }
@@ -204,7 +204,7 @@ public class PurgeCommand implements SlashCommand {
 
         if (afterTime != null && beforeTime != null && !afterTime.isBefore(beforeTime)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Time Range", "`after` must be earlier than `before`.")).setEphemeral(true).queue();
+                    "Invalid Time Range", "`after` must be earlier than `before`.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

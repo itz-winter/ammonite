@@ -103,7 +103,7 @@ public class PrivacyCommand implements SlashCommand {
 
                 .setFooter("Last updated: February 2026 • Compliant with Discord Developer Terms of Service");
 
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+        event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     public static CommandData getCommandData() {

@@ -41,7 +41,7 @@ public class BlackjackCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -51,13 +51,13 @@ public class BlackjackCommand implements SlashCommand {
 
         if (points <= 0) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Amount", "You must bet at least 1 coin.")).setEphemeral(true).queue();
+                    "Invalid Amount", "You must bet at least 1 coin.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         if (points > 10000) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Bet Too High", "You cannot bet more than 10,000 coins at once.")).setEphemeral(true).queue();
+                    "Bet Too High", "You cannot bet more than 10,000 coins at once.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -67,7 +67,7 @@ public class BlackjackCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Funds",
                     String.format("You only have %,d coins but tried to bet %,d coins.", userBalance, points)))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -76,7 +76,7 @@ public class BlackjackCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Game In Progress",
                     "You already have an active blackjack game! Finish it before starting a new one."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

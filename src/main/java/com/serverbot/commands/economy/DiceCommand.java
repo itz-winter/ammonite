@@ -23,7 +23,7 @@ public class DiceCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -32,13 +32,13 @@ public class DiceCommand implements SlashCommand {
 
         if (betAmount <= 0) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Bet", "Bet amount must be greater than 0.")).setEphemeral(true).queue();
+                    "Invalid Bet", "Bet amount must be greater than 0.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         if (prediction < 1 || prediction > 6) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Prediction", "Prediction must be between 1 and 6.")).setEphemeral(true).queue();
+                    "Invalid Prediction", "Prediction must be between 1 and 6.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -53,7 +53,7 @@ public class DiceCommand implements SlashCommand {
                         "Insufficient Funds",
                         "You don't have enough points to place this bet.\n" +
                                 "Your balance: " + currentBalance + " points"))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -90,7 +90,7 @@ public class DiceCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Dice Roll Failed",
-                    "Failed to process dice roll: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to process dice roll: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

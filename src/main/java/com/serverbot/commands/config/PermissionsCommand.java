@@ -31,12 +31,12 @@ public class PermissionsCommand implements SlashCommand {
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (!PermissionManager.hasPermission(event.getMember(), "admin.permissions")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("No Permission",
-                    "You need `admin.permissions` to manage permissions.")).setEphemeral(true).queue();
+                    "You need `admin.permissions` to manage permissions.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -82,7 +82,7 @@ public class PermissionsCommand implements SlashCommand {
             // Show @everyone permissions
             Map<String, Boolean> perms = PermissionManager.getEveryonePermissions(guildId);
             event.replyEmbeds(buildPermEmbed("@everyone", null, perms, event.getGuild().getName()).build())
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -93,7 +93,7 @@ public class PermissionsCommand implements SlashCommand {
                 event.replyEmbeds(
                         buildPermEmbed(member.getEffectiveName(), "\uD83D\uDC64", perms, event.getGuild().getName())
                                 .build())
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
         } catch (Exception ignored) {
@@ -103,7 +103,7 @@ public class PermissionsCommand implements SlashCommand {
             Role role = targetOpt.getAsRole();
             Map<String, Boolean> perms = PermissionManager.getRolePermissions(guildId, role.getId());
             event.replyEmbeds(buildPermEmbed(role.getName(), "\uD83C\uDFAD", perms, event.getGuild().getName()).build())
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "Could not resolve target.")).setEphemeral(true)
                     .queue();
@@ -166,7 +166,7 @@ public class PermissionsCommand implements SlashCommand {
 
         if (nodeOpt == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Node",
-                    "Specify a permission node to remove.")).setEphemeral(true).queue();
+                    "Specify a permission node to remove.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -243,7 +243,7 @@ public class PermissionsCommand implements SlashCommand {
                                 + "\u2022 Explicit deny always wins over allow.",
                         false)
                 .setFooter("Guild owners and Discord Administrators bypass all permission checks.");
-        event.replyEmbeds(eb.build()).setEphemeral(true).queue();
+        event.replyEmbeds(eb.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // Metadata

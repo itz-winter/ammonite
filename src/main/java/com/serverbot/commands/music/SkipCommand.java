@@ -22,14 +22,14 @@ public class SkipCommand implements SlashCommand {
 
         if (!musicManager.isConnected(event.getGuild())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Not Playing", "The bot is not currently playing music.")).setEphemeral(true).queue();
+                    "Not Playing", "The bot is not currently playing music.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
         if (gmm.getScheduler().getCurrentTrack() == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Nothing Playing", "There is no track currently playing.")).setEphemeral(true).queue();
+                    "Nothing Playing", "There is no track currently playing.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

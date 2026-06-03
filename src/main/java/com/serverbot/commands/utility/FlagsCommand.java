@@ -34,7 +34,7 @@ public class FlagsCommand implements SlashCommand {
             case "display" -> handleDisplay(event);
             default -> {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                        "Unknown Subcommand", "Unknown subcommand: " + subcommand)).setEphemeral(true).queue();
+                        "Unknown Subcommand", "Unknown subcommand: " + subcommand)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             }
         }
     }
@@ -72,7 +72,7 @@ public class FlagsCommand implements SlashCommand {
                     "Unknown Flag",
                     "Unknown flag: `" + flagName + "`\n" +
                             "Use `/flags list` to see available flags."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

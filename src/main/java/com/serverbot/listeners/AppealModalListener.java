@@ -32,7 +32,7 @@ public class AppealModalListener extends ListenerAdapter {
         String[] parts = event.getModalId().split(":");
         if (parts.length != 4) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Appeal", "This appeal form is malformed.")).setEphemeral(true).queue();
+                    "Invalid Appeal", "This appeal form is malformed.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -52,7 +52,7 @@ public class AppealModalListener extends ListenerAdapter {
         Guild guild = event.getJDA().getGuildById(guildId);
         if (guild == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Server Not Found", "The server for this appeal could not be found.")).setEphemeral(true).queue();
+                    "Server Not Found", "The server for this appeal could not be found.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -62,7 +62,7 @@ public class AppealModalListener extends ListenerAdapter {
 
         if (reasonMapping == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Missing Information", "Appeal reason is required.")).setEphemeral(true).queue();
+                    "Missing Information", "Appeal reason is required.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -87,13 +87,13 @@ public class AppealModalListener extends ListenerAdapter {
                     "Appeal Submitted",
                     "Your appeal has been submitted successfully. The server moderators will review it and " +
                             "respond accordingly. Thank you for taking the time to explain your situation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
 
         } catch (Exception e) {
             ServerBot.getLogger().error("Error processing appeal submission: {}", e.getMessage(), e);
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Appeal Failed", "There was an error submitting your appeal. Please try again later."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 }

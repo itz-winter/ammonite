@@ -28,7 +28,7 @@ public class BackupCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -36,7 +36,7 @@ public class BackupCommand implements SlashCommand {
         if (!PermissionManager.hasPermission(member, "admin.backup")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need the `admin.backup` permission to manage server backups."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -148,7 +148,7 @@ public class BackupCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "List Failed",
-                    "Failed to list backups: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to list backups: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -156,7 +156,7 @@ public class BackupCommand implements SlashCommand {
         OptionMapping timestampOption = event.getOption("timestamp");
         if (timestampOption == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Missing Parameter", "Please specify the backup timestamp.")).setEphemeral(true).queue();
+                    "Missing Parameter", "Please specify the backup timestamp.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -170,7 +170,7 @@ public class BackupCommand implements SlashCommand {
             if (backupData == null) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Backup Not Found",
-                        "No backup found with timestamp: " + timestamp)).setEphemeral(true).queue();
+                        "No backup found with timestamp: " + timestamp)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -202,7 +202,7 @@ public class BackupCommand implements SlashCommand {
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Info Failed",
-                    "Failed to get backup info: " + e.getMessage())).setEphemeral(true).queue();
+                    "Failed to get backup info: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -210,7 +210,7 @@ public class BackupCommand implements SlashCommand {
         OptionMapping timestampOption = event.getOption("timestamp");
         if (timestampOption == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Missing Parameter", "Please specify the backup timestamp to restore.")).setEphemeral(true).queue();
+                    "Missing Parameter", "Please specify the backup timestamp to restore.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

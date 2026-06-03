@@ -20,7 +20,7 @@ public class StatusCommand implements SlashCommand {
         // Check if user is bot owner
         if (!PermissionUtils.isBotOwner(event.getUser())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Bot Owner Only", "Only the bot owner can change the bot status.")).setEphemeral(true).queue();
+                    "Bot Owner Only", "Only the bot owner can change the bot status.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -52,10 +52,10 @@ public class StatusCommand implements SlashCommand {
         try {
             event.getJDA().getPresence().setActivity(null);
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                    "Status Cleared", "Bot status has been cleared.")).setEphemeral(true).queue();
+                    "Status Cleared", "Bot status has been cleared.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Status Clear Failed", "Failed to clear bot status: " + e.getMessage())).setEphemeral(true).queue();
+                    "Status Clear Failed", "Failed to clear bot status: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

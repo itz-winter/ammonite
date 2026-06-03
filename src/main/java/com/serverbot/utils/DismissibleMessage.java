@@ -164,15 +164,11 @@ public class DismissibleMessage {
      * @param ephemeral Whether the message should be ephemeral
      */
     public static void reply(SlashCommandInteractionEvent event, MessageEmbed embed, boolean ephemeral) {
-        String senderId = event.getUser().getId();
-        Button dismissButton = Button.danger(DISMISS_BUTTON_PREFIX + senderId, "🗑️ Dismiss");
-
         if (ephemeral) {
-            // Ephemeral messages can't have action rows with dismiss buttons in the same
-            // way
-            // Just reply ephemeral without dismiss button
-            event.replyEmbeds(embed).setEphemeral(true).queue();
+            EmbedUtils.replyEphemeral(event, embed);
         } else {
+            String senderId = event.getUser().getId();
+            Button dismissButton = Button.danger(DISMISS_BUTTON_PREFIX + senderId, "\uD83D\uDDD1\uFE0F Dismiss");
             event.replyEmbeds(embed)
                     .setComponents(ActionRow.of(dismissButton))
                     .queue();

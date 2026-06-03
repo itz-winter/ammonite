@@ -24,7 +24,7 @@ public class EchoCommand implements SlashCommand {
          * if (!event.isFromGuild()) {
          * event.replyEmbeds(EmbedUtils.createErrorEmbed(
          * "Guild Only", "This command can only be used in servers."
-         * )).setEphemeral(true).queue();
+         * )).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
          * return;
          * }
          */
@@ -33,7 +33,7 @@ public class EchoCommand implements SlashCommand {
         if (!PermissionManager.hasPermission(member, "utility.echo")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need moderation permissions to use this command."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -45,7 +45,7 @@ public class EchoCommand implements SlashCommand {
                     "Message Too Long",
                     "❌ Message too long! The maximum length is 2000 characters. Your message is " + message.length()
                             + " characters."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -57,7 +57,7 @@ public class EchoCommand implements SlashCommand {
         if (!targetChannel.canTalk()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Cannot Send Message", "I don't have permission to send messages in that channel."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -67,17 +67,17 @@ public class EchoCommand implements SlashCommand {
                     if (targetChannel.equals(event.getChannel())) {
                         // If same channel, just acknowledge
                         event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                                "Message Sent", "Your message has been sent.")).setEphemeral(true).queue();
+                                "Message Sent", "Your message has been sent.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     } else {
                         // If different channel, show where it was sent
                         event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                                 "Message Sent", "Your message has been sent to " + targetChannel.getAsMention()))
-                                .setEphemeral(true).queue();
+                                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     }
                 },
                 error -> {
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                            "Send Failed", "Failed to send message: " + error.getMessage())).setEphemeral(true).queue();
+                            "Send Failed", "Failed to send message: " + error.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 });
     }
 

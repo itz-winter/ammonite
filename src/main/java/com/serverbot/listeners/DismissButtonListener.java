@@ -23,8 +23,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DismissButtonListener extends ListenerAdapter {
 
     /**
-     * Temporary store for embeds pending a share-confirmation.
-     * Key = userId, Value = the embed from their ephemeral message.
+     * Temporary store for pending share items.
+     * For embed messages, stores the MessageEmbed.
+     * For text-only messages, stores the text content wrapped in a synthetic embed.
+     * Key = userId, Value = the embed to post publicly.
      * Entries are removed once the user confirms or cancels.
      */
     private static final Map<String, MessageEmbed> pendingShares = new ConcurrentHashMap<>();
@@ -39,25 +41,35 @@ public class DismissButtonListener extends ListenerAdapter {
             String ownerId = buttonId.substring("share_req:".length());
             if (!event.getUser().getId().equals(ownerId)) {
                 event.reply("Only the person who ran this command can share it.")
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
+
+            // Prefer an embed; fall back to wrapping the message text in an info embed
             List<MessageEmbed> embeds = event.getMessage().getEmbeds();
-            if (embeds.isEmpty()) {
-                event.reply("Could not find the embed to share.").setEphemeral(true).queue();
-                return;
+            MessageEmbed toShare;
+            if (!embeds.isEmpty()) {
+                toShare = embeds.get(0);
+            } else {
+                String content = event.getMessage().getContentRaw();
+                if (content.isBlank()) {
+                    event.reply("Nothing to share.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    return;
+                }
+                toShare = EmbedUtils.createInfoEmbed("Shared Result", content);
             }
-            // Stash the original embed so the confirm step can retrieve it
-            pendingShares.put(ownerId, embeds.get(0));
+
+            // Stash so the confirm step can retrieve it
+            pendingShares.put(ownerId, toShare);
 
             event.editMessageEmbeds(
                     EmbedUtils.createInfoEmbed(
-                            "📤 Share to Channel?",
+                            "\uD83D\uDCE4 Share to Channel?",
                             "This will post the result publicly in this channel so others can see it.\n\n"
                                     + "Click **Post it** to confirm, or **Cancel** to go back."))
                     .setComponents(ActionRow.of(
-                            Button.success("share_yes:" + ownerId, "✅ Post it"),
-                            Button.secondary("share_no:" + ownerId, "❌ Cancel")))
+                            Button.success("share_yes:" + ownerId, "\u2705 Post it"),
+                            Button.secondary("share_no:" + ownerId, "\u274C Cancel")))
                     .queue();
             return;
         }
@@ -67,7 +79,7 @@ public class DismissButtonListener extends ListenerAdapter {
             String ownerId = buttonId.substring("share_yes:".length());
             if (!event.getUser().getId().equals(ownerId)) {
                 event.reply("Only the person who ran this command can confirm this.")
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
             MessageEmbed stored = pendingShares.remove(ownerId);
@@ -85,9 +97,9 @@ public class DismissButtonListener extends ListenerAdapter {
                         .setComponents(List.of()).queue();
                 return;
             }
-            // Post the original embed publicly with a dismiss button for the owner
+            // Post publicly with a dismiss button for the owner
             Button dismissBtn = Button.danger(
-                    DismissibleMessage.DISMISS_BUTTON_PREFIX + ownerId, "🗑️ Dismiss");
+                    DismissibleMessage.DISMISS_BUTTON_PREFIX + ownerId, "\uD83D\uDDD1\uFE0F Dismiss");
             channel.sendMessageEmbeds(stored)
                     .setComponents(ActionRow.of(dismissBtn))
                     .queue();
@@ -103,7 +115,7 @@ public class DismissButtonListener extends ListenerAdapter {
             String ownerId = buttonId.substring("share_no:".length());
             if (!event.getUser().getId().equals(ownerId)) {
                 event.reply("Only the person who ran this command can cancel this.")
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
             pendingShares.remove(ownerId);
@@ -124,7 +136,7 @@ public class DismissButtonListener extends ListenerAdapter {
 
             if (!event.getUser().getId().equals(ownerId)) {
                 event.reply("Only the playlist owner can confirm this deletion.")
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -146,7 +158,7 @@ public class DismissButtonListener extends ListenerAdapter {
             String ownerId = buttonId.split(":", 2)[1];
             if (!event.getUser().getId().equals(ownerId)) {
                 event.reply("Only the playlist owner can cancel this.")
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
             event.editMessageEmbeds(EmbedUtils.createInfoEmbed(
@@ -166,11 +178,11 @@ public class DismissButtonListener extends ListenerAdapter {
             event.getMessage().delete().queue(
                     success -> {
                     },
-                    failure -> event.reply("Unable to delete message.").setEphemeral(true).queue());
+                    failure -> event.reply("Unable to delete message.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue());
             event.deferEdit().queue();
         } else {
             event.reply("Only the person who ran this command can dismiss this message.")
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 }

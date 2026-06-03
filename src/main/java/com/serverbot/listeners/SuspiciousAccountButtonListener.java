@@ -61,7 +61,7 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
         BotConfig config = ServerBot.getConfigManager().getConfig();
         List<String> botOwnerIds = config.getAllOwnerIds();
         if (!botOwnerIds.contains(event.getUser().getId())) {
-            event.reply("Only bot owners can perform this action.").setEphemeral(true).queue();
+            event.reply("Only bot owners can perform this action.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -92,7 +92,7 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
                     handleRemoveUser(event, userId);
                     break;
                 default:
-                    event.reply("Unknown action.").setEphemeral(true).queue();
+                    event.reply("Unknown action.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             }
         } else if (parts.length == 3) {
             // Legacy format: suspicious_<action>:<userId>:<guildId>
@@ -114,10 +114,10 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
                     handleViewDetailsFromAlert(event, userId, guildId);
                     break;
                 default:
-                    event.reply("Unknown action.").setEphemeral(true).queue();
+                    event.reply("Unknown action.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             }
         } else {
-            event.reply("Invalid button data.").setEphemeral(true).queue();
+            event.reply("Invalid button data.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -413,10 +413,10 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
 
             embed.setTimestamp(Instant.now());
 
-            event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+            event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         } catch (Exception e) {
             logger.error("Error displaying suspicious user details for {}: {}", userId, e.getMessage(), e);
-            event.reply("An error occurred while retrieving user details.").setEphemeral(true).queue();
+            event.reply("An error occurred while retrieving user details.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -427,7 +427,7 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
         FileStorageManager storage = ServerBot.getStorageManager();
 
         if (!storage.isUserSuspicious(userId)) {
-            event.reply("This user is no longer in the suspicious masterlist.").setEphemeral(true).queue();
+            event.reply("This user is no longer in the suspicious masterlist.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -582,13 +582,13 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
         BotConfig config = ServerBot.getConfigManager().getConfig();
         List<String> botOwnerIds = config.getAllOwnerIds();
         if (!botOwnerIds.contains(event.getUser().getId())) {
-            event.reply("Only bot owners can perform this action.").setEphemeral(true).queue();
+            event.reply("Only bot owners can perform this action.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         String[] parts = modalId.split(":");
         if (parts.length != 3) {
-            event.reply("Invalid modal data.").setEphemeral(true).queue();
+            event.reply("Invalid modal data.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -619,7 +619,7 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
 
         confirmEmbed.setTimestamp(Instant.now());
 
-        event.replyEmbeds(confirmEmbed.build()).setEphemeral(true).queue();
+        event.replyEmbeds(confirmEmbed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
 
         // Broadcast note to other bot owners
         broadcastNoteToOwners(event, userId, guildId, note, suggestedAction);
@@ -780,7 +780,7 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
                     embed.setTimestamp(Instant.now())
                             .setFooter("Suspicious Account Detection System");
 
-                    event.getHook().sendMessageEmbeds(embed.build()).setEphemeral(true).queue();
+                    event.getHook().sendMessageEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 },
                 error -> {
                     // Fallback if user not retrievable
@@ -795,7 +795,7 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
                         embed.addField("Detection Reason", reason, false);
                     }
 
-                    event.getHook().sendMessageEmbeds(embed.build()).setEphemeral(true).queue();
+                    event.getHook().sendMessageEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 });
     }
 
@@ -915,7 +915,7 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
 
         Guild guild = event.getJDA().getGuildById(guildId);
         if (guild == null) {
-            event.reply("Could not find the server.").setEphemeral(true).queue();
+            event.reply("Could not find the server.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -943,7 +943,7 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
         // Only bot owners may page through the masterlist
         BotConfig config = ServerBot.getConfigManager().getConfig();
         if (!config.getAllOwnerIds().contains(event.getUser().getId())) {
-            event.reply("Only bot owners can navigate this list.").setEphemeral(true).queue();
+            event.reply("Only bot owners can navigate this list.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

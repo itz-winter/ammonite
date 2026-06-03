@@ -28,7 +28,7 @@ public class WarnsCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -39,7 +39,7 @@ public class WarnsCommand implements SlashCommand {
         if (!targetUser.equals(event.getUser()) && !PermissionManager.hasPermission(member, "mod.warns")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need the `mod.warns` permission to view other users' warnings."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -50,7 +50,7 @@ public class WarnsCommand implements SlashCommand {
             if (warnings.isEmpty()) {
                 String target = targetUser.equals(event.getUser()) ? "You have" : targetUser.getName() + " has";
                 event.replyEmbeds(EmbedUtils.createInfoEmbed(
-                        "No Warnings", target + " no active warnings.")).setEphemeral(true).queue();
+                        "No Warnings", target + " no active warnings.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -101,7 +101,7 @@ public class WarnsCommand implements SlashCommand {
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Storage Error", "Failed to retrieve warnings: " + e.getMessage())).setEphemeral(true).queue();
+                    "Storage Error", "Failed to retrieve warnings: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

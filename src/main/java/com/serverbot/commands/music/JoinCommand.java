@@ -26,7 +26,7 @@ public class JoinCommand implements SlashCommand {
         if (voiceState == null || !voiceState.inAudioChannel()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Not in Voice Channel",
-                    "You need to be in a voice channel for me to join.")).setEphemeral(true).queue();
+                    "You need to be in a voice channel for me to join.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -38,7 +38,7 @@ public class JoinCommand implements SlashCommand {
             if (currentChannel != null && currentChannel.getIdLong() == channel.getIdLong()) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Already Connected",
-                        "I'm already in your voice channel!")).setEphemeral(true).queue();
+                        "I'm already in your voice channel!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
         }
@@ -50,7 +50,7 @@ public class JoinCommand implements SlashCommand {
         } else {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Connection Failed",
-                    "Failed to join **" + channel.getName() + "**. Check bot permissions.")).setEphemeral(true).queue();
+                    "Failed to join **" + channel.getName() + "**. Check bot permissions.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

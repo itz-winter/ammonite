@@ -29,7 +29,7 @@ public class KickCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage(
-                    "Guild Only", "This command can only be used in servers.", USAGE)).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.", USAGE)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -39,7 +39,7 @@ public class KickCommand implements SlashCommand {
                     "Insufficient Permissions",
                     "You need the `mod.kick` permission to use this command.\n\n" +
                             "Ask a server admin to grant you the `mod.kick` permission."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -51,7 +51,7 @@ public class KickCommand implements SlashCommand {
 
         if (targetMember == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage(
-                    "User Not Found", "This user is not in the server.", USAGE, EXAMPLE)).setEphemeral(true).queue();
+                    "User Not Found", "This user is not in the server.", USAGE, EXAMPLE)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -60,7 +60,7 @@ public class KickCommand implements SlashCommand {
                     "Cannot Kick User",
                     "You cannot kick this user due to role hierarchy.\n\n" +
                             "Your highest role must be above the target user's highest role."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -69,7 +69,7 @@ public class KickCommand implements SlashCommand {
                     "Cannot Kick User",
                     "I cannot kick this user due to role hierarchy.\n\n" +
                             "Move my role higher than the target user's highest role."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -97,7 +97,7 @@ public class KickCommand implements SlashCommand {
 
                 }, error -> {
                     event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                            "Kick Failed", "Failed to kick user: " + error.getMessage())).setEphemeral(true).queue();
+                            "Kick Failed", "Failed to kick user: " + error.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 });
     }
 

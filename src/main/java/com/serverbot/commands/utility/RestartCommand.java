@@ -19,7 +19,7 @@ public class RestartCommand implements SlashCommand {
         if (!PermissionUtils.isBotOwner(event.getUser())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Access Denied",
-                    "This command can only be used by the bot owner.")).setEphemeral(true).queue();
+                    "This command can only be used by the bot owner.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 

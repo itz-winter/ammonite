@@ -41,14 +41,14 @@ public class AutoConfigCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Error",
-                    "This command must be used in a server.")).setEphemeral(true).queue();
+                    "This command must be used in a server.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         // Only the server owner should run setup
         if (!event.getUser().getId().equals(event.getGuild().getOwnerId())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Owner Only",
-                    "Only the server owner can run the setup wizard.")).setEphemeral(true).queue();
+                    "Only the server owner can run the setup wizard.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -56,6 +56,6 @@ public class AutoConfigCommand implements SlashCommand {
         AutoConfigListener.sendSetupPrompt(event.getChannel().asTextChannel(), event.getGuild());
 
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Setup Wizard",
-                "The configuration wizard has been started in this channel!")).setEphemeral(true).queue();
+                "The configuration wizard has been started in this channel!")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 }

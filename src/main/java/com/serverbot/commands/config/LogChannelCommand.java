@@ -31,7 +31,7 @@ public class LogChannelCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -39,7 +39,7 @@ public class LogChannelCommand implements SlashCommand {
         if (!PermissionManager.hasPermission(member, "admin.logging")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need the `admin.logging` permission to configure log channels."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -52,7 +52,7 @@ public class LogChannelCommand implements SlashCommand {
             case "list" -> handleList(event);
             case "clear" -> handleClear(event);
             default -> event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Subcommand", "Unknown subcommand: " + subcommand)).setEphemeral(true).queue();
+                    "Invalid Subcommand", "Unknown subcommand: " + subcommand)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -67,7 +67,7 @@ public class LogChannelCommand implements SlashCommand {
                     "Please specify a channel for logging.\n" +
                             "Error Code: **100** - Missing Parameter\n" +
                             "Use `/error category:1` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -80,7 +80,7 @@ public class LogChannelCommand implements SlashCommand {
                     "Valid log types: " + String.join(", ", VALID_LOG_TYPES) + "\n" +
                             "Error Code: **101** - Invalid Value\n" +
                             "Use `/error category:1` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -112,7 +112,7 @@ public class LogChannelCommand implements SlashCommand {
                     "Failed to set log channel: " + e.getMessage() + "\n" +
                             "Error Code: **400** - Operation Failed\n" +
                             "Use `/error category:4` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -127,7 +127,7 @@ public class LogChannelCommand implements SlashCommand {
                     "Please specify a channel for logging.\n" +
                             "Error Code: **100** - Missing Parameter\n" +
                             "Use `/error category:1` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -138,7 +138,7 @@ public class LogChannelCommand implements SlashCommand {
                     "Please specify which log type to add.\n" +
                             "Error Code: **100** - Missing Parameter\n" +
                             "Use `/error category:1` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -152,7 +152,7 @@ public class LogChannelCommand implements SlashCommand {
                             "Error Code: **101** - Invalid Value\n" +
                             "Use `/error category:1` for full documentation."
 
-            )).setEphemeral(true).queue();
+            )).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -169,7 +169,7 @@ public class LogChannelCommand implements SlashCommand {
                     "Failed to add log type: " + e.getMessage() + "\n" +
                             "Error Code: **400** - Operation Failed\n" +
                             "Use `/error category:4` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -184,7 +184,7 @@ public class LogChannelCommand implements SlashCommand {
 
                             "Error Code: **101** - Invalid Value\n" +
                             "Use `/error category:1` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -212,7 +212,7 @@ public class LogChannelCommand implements SlashCommand {
                     "Failed to remove log type: " + e.getMessage() + "\n" +
                             "Error Code: **400** - Operation Failed\n" +
                             "Use `/error category:4` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -245,7 +245,7 @@ public class LogChannelCommand implements SlashCommand {
                     .queue();
         } else {
             event.replyEmbeds(EmbedUtils.createInfoEmbed(
-                    "Log Channels", description.toString())).setEphemeral(true).queue();
+                    "Log Channels", description.toString())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -266,7 +266,7 @@ public class LogChannelCommand implements SlashCommand {
                     "Failed to clear log channels: " + e.getMessage() + "\n" +
                             "Error Code: **400** - Operation Failed\n" +
                             "Use `/error category:4` for full documentation."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

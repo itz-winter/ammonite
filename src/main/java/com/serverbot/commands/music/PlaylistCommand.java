@@ -86,7 +86,7 @@ public class PlaylistCommand implements SlashCommand {
             case "play" -> handlePlay(event);
             default ->
                 event.replyEmbeds(EmbedUtils.createErrorEmbed("Unknown Subcommand", "Unknown subcommand: " + sub))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -98,24 +98,24 @@ public class PlaylistCommand implements SlashCommand {
         String desc = event.getOption("description", "", OptionMapping::getAsString);
         if (name == null || name.isBlank()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Name", "Please provide a playlist name."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (name.length() > 50) {
             event.replyEmbeds(
                     EmbedUtils.createErrorEmbed("Name Too Long", "Playlist name must be 50 characters or less."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         boolean created = ServerBot.getStorageManager().createUserPlaylist(userId, name, desc);
         if (!created) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Already Exists",
-                    "You already have a playlist named **" + name + "**.")).setEphemeral(true).queue();
+                    "You already have a playlist named **" + name + "**.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Playlist Created",
                 "**" + name + "** has been created.\nUse `/playlist add name:" + name + " urls:<url>` to add tracks."))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // delete
@@ -125,14 +125,14 @@ public class PlaylistCommand implements SlashCommand {
         String name = event.getOption("name", OptionMapping::getAsString);
         if (name == null || name.isBlank()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Name", "Please provide a playlist name."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         FileStorageManager.UserPlaylist pl = ServerBot.getStorageManager().getUserPlaylist(userId, name);
         if (pl == null) {
             event.replyEmbeds(
                     EmbedUtils.createErrorEmbed("Not Found", "You don't have a playlist named **" + name + "**."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -147,7 +147,7 @@ public class PlaylistCommand implements SlashCommand {
                         "This will permanently remove all **" + pl.entries.size() + "** track(s).")
                 .build())
                 .setComponents(ActionRow.of(confirm, cancel))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // rename
@@ -158,17 +158,17 @@ public class PlaylistCommand implements SlashCommand {
         String newName = event.getOption("newname", OptionMapping::getAsString);
         if (name == null || name.isBlank() || newName == null || newName.isBlank()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Options",
-                    "Please provide both the current name and a new name.")).setEphemeral(true).queue();
+                    "Please provide both the current name and a new name.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (newName.length() > 50) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Name Too Long",
-                    "New playlist name must be 50 characters or less.")).setEphemeral(true).queue();
+                    "New playlist name must be 50 characters or less.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (name.equalsIgnoreCase(newName)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Same Name",
-                    "The new name is the same as the current name.")).setEphemeral(true).queue();
+                    "The new name is the same as the current name.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         boolean renamed = ServerBot.getStorageManager().renameUserPlaylist(userId, name, newName);
@@ -176,15 +176,15 @@ public class PlaylistCommand implements SlashCommand {
             FileStorageManager.UserPlaylist existing = ServerBot.getStorageManager().getUserPlaylist(userId, name);
             if (existing == null) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Found",
-                        "You don't have a playlist named **" + name + "**.")).setEphemeral(true).queue();
+                        "You don't have a playlist named **" + name + "**.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             } else {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed("Name Taken",
-                        "You already have a playlist named **" + newName + "**.")).setEphemeral(true).queue();
+                        "You already have a playlist named **" + newName + "**.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             }
             return;
         }
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Playlist Renamed",
-                "**" + name + "** has been renamed to **" + newName + "**.")).setEphemeral(true).queue();
+                "**" + name + "** has been renamed to **" + newName + "**.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // add
@@ -196,13 +196,13 @@ public class PlaylistCommand implements SlashCommand {
 
         if (name == null || urlInput == null || name.isBlank() || urlInput.isBlank()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Options",
-                    "Please provide both a playlist name and at least one URL.")).setEphemeral(true).queue();
+                    "Please provide both a playlist name and at least one URL.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         FileStorageManager.UserPlaylist pl = ServerBot.getStorageManager().getUserPlaylist(userId, name);
         if (pl == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Found",
-                    "You don't have a playlist named **" + name + "**.")).setEphemeral(true).queue();
+                    "You don't have a playlist named **" + name + "**.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -212,7 +212,7 @@ public class PlaylistCommand implements SlashCommand {
 
         if (urlList.isEmpty()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("No URLs",
-                    "Please provide at least one valid URL.")).setEphemeral(true).queue();
+                    "Please provide at least one valid URL.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -302,7 +302,7 @@ public class PlaylistCommand implements SlashCommand {
         Integer pos = event.getOption("position", OptionMapping::getAsInt);
         if (name == null || pos == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Options",
-                    "Please provide the playlist name and track position.")).setEphemeral(true).queue();
+                    "Please provide the playlist name and track position.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         int idx = pos - 1;
@@ -310,18 +310,18 @@ public class PlaylistCommand implements SlashCommand {
         if (pl == null) {
             event.replyEmbeds(
                     EmbedUtils.createErrorEmbed("Not Found", "You don't have a playlist named **" + name + "**."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (idx < 0 || idx >= pl.entries.size()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Position",
-                    "Position must be between **1** and **" + pl.entries.size() + "**.")).setEphemeral(true).queue();
+                    "Position must be between **1** and **" + pl.entries.size() + "**.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         String removed = pl.entries.get(idx).title;
         ServerBot.getStorageManager().removeTrackFromPlaylist(userId, name, idx);
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Track Removed",
-                "Removed **" + removed + "** from **" + name + "**.")).setEphemeral(true).queue();
+                "Removed **" + removed + "** from **" + name + "**.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // reorder
@@ -333,36 +333,36 @@ public class PlaylistCommand implements SlashCommand {
         Integer to = event.getOption("to", OptionMapping::getAsInt);
         if (name == null || from == null || to == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Options",
-                    "Please provide the playlist name, and the `from` and `to` positions.")).setEphemeral(true).queue();
+                    "Please provide the playlist name, and the `from` and `to` positions.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         FileStorageManager.UserPlaylist pl = ServerBot.getStorageManager().getUserPlaylist(userId, name);
         if (pl == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Found",
-                    "You don't have a playlist named **" + name + "**.")).setEphemeral(true).queue();
+                    "You don't have a playlist named **" + name + "**.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (pl.entries.isEmpty()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Empty Playlist",
-                    "**" + name + "** has no tracks to reorder.")).setEphemeral(true).queue();
+                    "**" + name + "** has no tracks to reorder.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         int size = pl.entries.size();
         if (from < 1 || from > size || to < 1 || to > size) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Position",
-                    "Positions must be between **1** and **" + size + "**.")).setEphemeral(true).queue();
+                    "Positions must be between **1** and **" + size + "**.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (from.equals(to)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Same Position",
-                    "The `from` and `to` positions are the same.")).setEphemeral(true).queue();
+                    "The `from` and `to` positions are the same.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         String trackTitle = pl.entries.get(from - 1).title;
         ServerBot.getStorageManager().reorderTrackInPlaylist(userId, name, from - 1, to - 1);
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Track Reordered",
                 "Moved **" + trackTitle + "** from position **" + from + "** to **" + to + "** in **" + name + "**."))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // list
@@ -372,7 +372,7 @@ public class PlaylistCommand implements SlashCommand {
         List<FileStorageManager.UserPlaylist> playlists = ServerBot.getStorageManager().getUserPlaylists(userId);
         if (playlists.isEmpty()) {
             event.replyEmbeds(EmbedUtils.createInfoEmbed("No Playlists",
-                    "You have no saved playlists. Use `/playlist create` to make one.")).setEphemeral(true).queue();
+                    "You have no saved playlists. Use `/playlist create` to make one.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         StringBuilder sb = new StringBuilder();
@@ -389,7 +389,7 @@ public class PlaylistCommand implements SlashCommand {
                 .setTitle(CustomEmojis.NOTE + " Your Playlists")
                 .setDescription(sb.toString())
                 .setFooter("Use /playlist show name:<name> to see tracks")
-                .build()).setEphemeral(true).queue();
+                .build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // show
@@ -399,19 +399,19 @@ public class PlaylistCommand implements SlashCommand {
         String name = event.getOption("name", OptionMapping::getAsString);
         if (name == null || name.isBlank()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Name", "Please provide a playlist name."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         FileStorageManager.UserPlaylist pl = ServerBot.getStorageManager().getUserPlaylist(userId, name);
         if (pl == null) {
             event.replyEmbeds(
                     EmbedUtils.createErrorEmbed("Not Found", "You don't have a playlist named **" + name + "**."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (pl.entries.isEmpty()) {
             event.replyEmbeds(EmbedUtils.createInfoEmbed("Empty Playlist",
-                    "**" + name + "** has no tracks yet. Use `/playlist add` to add some.")).setEphemeral(true).queue();
+                    "**" + name + "** has no tracks yet. Use `/playlist add` to add some.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         StringBuilder sb = new StringBuilder();
@@ -432,7 +432,7 @@ public class PlaylistCommand implements SlashCommand {
                 .setFooter(pl.entries.size() + " track(s) total");
         if (pl.description != null && !pl.description.isBlank())
             embed.addField("Description", pl.description, false);
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+        event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // play
@@ -442,19 +442,19 @@ public class PlaylistCommand implements SlashCommand {
         String name = event.getOption("name", OptionMapping::getAsString);
         if (name == null || name.isBlank()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Name", "Please provide the playlist name to play."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         FileStorageManager.UserPlaylist pl = ServerBot.getStorageManager().getUserPlaylist(userId, name);
         if (pl == null) {
             event.replyEmbeds(
                     EmbedUtils.createErrorEmbed("Not Found", "You don't have a playlist named **" + name + "**."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (pl.entries.isEmpty()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Empty Playlist",
-                    "**" + name + "** has no tracks. Add some with `/playlist add`.")).setEphemeral(true).queue();
+                    "**" + name + "** has no tracks. Add some with `/playlist add`.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -463,7 +463,7 @@ public class PlaylistCommand implements SlashCommand {
         GuildVoiceState vs = member == null ? null : member.getVoiceState();
         if (vs == null || !vs.inAudioChannel()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Not in Voice Channel",
-                    "You need to be in a voice channel to play music.")).setEphemeral(true).queue();
+                    "You need to be in a voice channel to play music.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         AudioChannel voiceChannel = vs.getChannel();

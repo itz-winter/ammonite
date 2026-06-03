@@ -39,12 +39,12 @@ public class WelcomeCommand implements SlashCommand {
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         if (!PermissionManager.hasPermission(event.getMember(), "admin.welcome")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("No Permission",
-                    "You need `admin.welcome` to configure welcome settings.")).setEphemeral(true).queue();
+                    "You need `admin.welcome` to configure welcome settings.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -72,7 +72,7 @@ public class WelcomeCommand implements SlashCommand {
 
     private void openPanel(SlashCommandInteractionEvent event) {
         Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
-        event.reply(buildPanel(settings, event.getGuild(), event.getUser().getId())).setEphemeral(true).queue();
+        event.reply(buildPanel(settings, event.getGuild(), event.getUser().getId())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     public static MessageCreateData buildPanel(Map<String, Object> settings, Guild guild, String userId) {
@@ -179,7 +179,7 @@ public class WelcomeCommand implements SlashCommand {
 
             if (enabled && s.get("welcomeChannelId") == null) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed("No Channel Set",
-                        "Set a channel first with `/welcome action:channel`.")).setEphemeral(true).queue();
+                        "Set a channel first with `/welcome action:channel`.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
             ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeEnabled", enabled);
@@ -187,7 +187,7 @@ public class WelcomeCommand implements SlashCommand {
                     "Channel Welcome " + (enabled ? "Enabled " + CustomEmojis.ON : "Disabled " + CustomEmojis.OFF),
                     "Channel welcome messages are now " + (enabled ? "**on**." : "**off**."))).queue();
         } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Failed", e.getMessage())).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Failed", e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -197,13 +197,13 @@ public class WelcomeCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Text",
                     "Usage: `/welcome action:message text:<message>`\n"
                             + "Placeholders: `{user}` `{username}` `{server}` `{membercount}`"))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         String msg = opt.getAsString();
         if (msg.length() > 1000) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Too Long", "Must be \u2264 1000 characters."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         try {
@@ -211,7 +211,7 @@ public class WelcomeCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createSuccessEmbed("Welcome Message Updated",
                     msg.length() > 200 ? msg.substring(0, 197) + "\u2026" : msg)).queue();
         } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Failed", e.getMessage())).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Failed", e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -219,7 +219,7 @@ public class WelcomeCommand implements SlashCommand {
         OptionMapping opt = event.getOption("color");
         if (opt == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Color",
-                    "Usage: `/welcome action:color color:#RRGGBB`")).setEphemeral(true).queue();
+                    "Usage: `/welcome action:color color:#RRGGBB`")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         String color = opt.getAsString().trim();
@@ -227,7 +227,7 @@ public class WelcomeCommand implements SlashCommand {
             color = "#" + color;
         if (!color.matches("#[0-9A-Fa-f]{6}")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Color", "Use hex format: `#FF0000`"))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         try {
@@ -236,7 +236,7 @@ public class WelcomeCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createSuccessEmbed("Color Updated",
                     "Embed color \u2192 **" + color.toUpperCase() + "**")).queue();
         } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Failed", e.getMessage())).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Failed", e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -244,7 +244,7 @@ public class WelcomeCommand implements SlashCommand {
         OptionMapping opt = event.getOption("channel");
         if (opt == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Channel",
-                    "Usage: `/welcome action:channel channel:#channel`")).setEphemeral(true).queue();
+                    "Usage: `/welcome action:channel channel:#channel`")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         try {
@@ -254,7 +254,7 @@ public class WelcomeCommand implements SlashCommand {
                     "Welcome messages \u2192 " + ch.getAsMention())).queue();
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Channel", "Could not resolve that channel."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -273,7 +273,7 @@ public class WelcomeCommand implements SlashCommand {
                         "New members will receive " + role.getAsMention() + ".")).queue();
             }
         } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Failed", e.getMessage())).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Failed", e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -292,7 +292,7 @@ public class WelcomeCommand implements SlashCommand {
                     .setFooter("Member #" + event.getGuild().getMemberCount() + " \u2022 This is a test preview");
             event.replyEmbeds(eb.build()).queue();
         } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Test Failed", e.getMessage())).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Test Failed", e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -307,7 +307,7 @@ public class WelcomeCommand implements SlashCommand {
                     "DM Welcome " + (enabled ? "Enabled " + CustomEmojis.ON : "Disabled " + CustomEmojis.OFF),
                     "DM welcome messages are now " + (enabled ? "**on**." : "**off**."))).queue();
         } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Failed", e.getMessage())).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Failed", e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -315,13 +315,13 @@ public class WelcomeCommand implements SlashCommand {
         OptionMapping opt = event.getOption("text");
         if (opt == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Text",
-                    "Usage: `/welcome action:dm-message text:<message>`")).setEphemeral(true).queue();
+                    "Usage: `/welcome action:dm-message text:<message>`")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         String msg = opt.getAsString();
         if (msg.length() > 1000) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Too Long", "Must be \u2264 1000 characters."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         try {
@@ -329,7 +329,7 @@ public class WelcomeCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createSuccessEmbed("DM Message Updated",
                     msg.length() > 200 ? msg.substring(0, 197) + "\u2026" : msg)).queue();
         } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Failed", e.getMessage())).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Failed", e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -352,11 +352,11 @@ public class WelcomeCommand implements SlashCommand {
                     .flatMap(ch -> ch.sendMessageEmbeds(eb.build()))
                     .queue(
                             suc -> event.replyEmbeds(EmbedUtils.createSuccessEmbed("DM Sent",
-                                    "Test DM sent to your inbox.")).setEphemeral(true).queue(),
+                                    "Test DM sent to your inbox.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue(),
                             fail -> event.replyEmbeds(EmbedUtils.createErrorEmbed("DM Failed",
-                                    "Could not send DM \u2014 are your DMs open?")).setEphemeral(true).queue());
+                                    "Could not send DM \u2014 are your DMs open?")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue());
         } catch (Exception e) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Test Failed", e.getMessage())).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Test Failed", e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

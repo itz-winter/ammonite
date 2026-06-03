@@ -187,7 +187,7 @@ public class GlobalChatCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         String sub = event.getSubcommandName();
         if (sub == null) {
-            event.reply("Unknown subcommand.").setEphemeral(true).queue();
+            event.reply("Unknown subcommand.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -213,7 +213,7 @@ public class GlobalChatCommand implements SlashCommand {
             case "addmod" -> handleAddMod(event, service);
             case "removemod" -> handleRemoveMod(event, service);
             case "addcoowner" -> handleAddCoOwner(event, service);
-            default -> event.reply("Unknown subcommand.").setEphemeral(true).queue();
+            default -> event.reply("Unknown subcommand.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
@@ -242,7 +242,7 @@ public class GlobalChatCommand implements SlashCommand {
 
         if (!vis.equalsIgnoreCase("public") && !vis.equalsIgnoreCase("private")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Visibility",
-                    "Visibility must be `public` or `private`.")).setEphemeral(true).queue();
+                    "Visibility must be `public` or `private`.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -310,7 +310,7 @@ public class GlobalChatCommand implements SlashCommand {
             });
         }
 
-        event.replyEmbeds(eb.build()).setEphemeral(true).queue();
+        event.replyEmbeds(eb.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // edit
@@ -343,7 +343,7 @@ public class GlobalChatCommand implements SlashCommand {
         if (newVis != null) {
             if (!newVis.equalsIgnoreCase("public") && !newVis.equalsIgnoreCase("private")) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Visibility",
-                        "Visibility must be `public` or `private`.")).setEphemeral(true).queue();
+                        "Visibility must be `public` or `private`.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
             gc.setVisibility(newVis.toLowerCase());
@@ -397,7 +397,7 @@ public class GlobalChatCommand implements SlashCommand {
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Channel Updated",
                 "Global chat channel **" + gc.getName() + "** has been updated.\n\n**Display name:** " + formatPreview +
                         "\n**Webhook mode:** " + (gc.isWebhookEnabled() ? "webhook" : "text")))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // delete
@@ -435,7 +435,7 @@ public class GlobalChatCommand implements SlashCommand {
             }, err -> {
             });
             event.replyEmbeds(EmbedUtils.createInfoEmbed("Deletion Requested",
-                    "The channel owner has been notified and must confirm the deletion.")).setEphemeral(true).queue();
+                    "The channel owner has been notified and must confirm the deletion.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -453,7 +453,7 @@ public class GlobalChatCommand implements SlashCommand {
 
         service.deleteChannel(channelId);
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Channel Deleted",
-                "Global chat channel **" + gc.getName() + "** has been deleted.")).setEphemeral(true).queue();
+                "Global chat channel **" + gc.getName() + "** has been deleted.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // link
@@ -461,14 +461,14 @@ public class GlobalChatCommand implements SlashCommand {
     private void handleLink(SlashCommandInteractionEvent event, GlobalChatService service) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "This command must be used in a server."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         // Permission check
         if (!PermissionManager.hasPermission(event.getMember(), "globalchat.link")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("No Permission",
-                    "You need the `globalchat.link` permission to link channels.")).setEphemeral(true).queue();
+                    "You need the `globalchat.link` permission to link channels.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -481,7 +481,7 @@ public class GlobalChatCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Channel",
                     "Could not find a text channel matching `" + channelInput
                             + "`. Use the autocomplete or paste a channel ID."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -493,7 +493,7 @@ public class GlobalChatCommand implements SlashCommand {
 
         String error = service.linkChannel(channelId, event.getGuild().getId(), target.getId(), key);
         if (error != null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Link Failed", error)).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Link Failed", error)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -510,7 +510,7 @@ public class GlobalChatCommand implements SlashCommand {
     private void handleUnlink(SlashCommandInteractionEvent event, GlobalChatService service) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "This command must be used in a server."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -522,7 +522,7 @@ public class GlobalChatCommand implements SlashCommand {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Channel",
                     "Could not find a text channel matching `" + channelInput
                             + "`. Use the autocomplete or paste a channel ID."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -530,7 +530,7 @@ public class GlobalChatCommand implements SlashCommand {
 
         if (globalId == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Linked",
-                    "That channel is not linked to any global chat.")).setEphemeral(true).queue();
+                    "That channel is not linked to any global chat.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -540,20 +540,20 @@ public class GlobalChatCommand implements SlashCommand {
         boolean isChannelOwner = gc != null && gc.hasManageAccess(event.getUser().getId());
         if (!isChannelOwner && !PermissionManager.hasPermission(event.getMember(), "globalchat.unlink")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("No Permission",
-                    "You need the `globalchat.unlink` permission to unlink channels.")).setEphemeral(true).queue();
+                    "You need the `globalchat.unlink` permission to unlink channels.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         String error = service.unlinkChannel(event.getGuild().getId(), target.getId());
         if (error != null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Unlink Failed", error)).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Unlink Failed", error)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Channel Unlinked",
                 target.getAsMention() + " has been unlinked from global chat" +
                         (gc != null ? " **" + gc.getName() + "**" : "") + "."))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // info
@@ -602,7 +602,7 @@ public class GlobalChatCommand implements SlashCommand {
             eb.addField("Rules", service.formatRules(gc), false);
         }
 
-        event.replyEmbeds(eb.build()).setEphemeral(true).queue();
+        event.replyEmbeds(eb.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // list
@@ -612,7 +612,7 @@ public class GlobalChatCommand implements SlashCommand {
         if (owned.isEmpty()) {
             event.replyEmbeds(EmbedUtils.createInfoEmbed("No Channels",
                     "You don't own or co-own any global chat channels.\nUse `/globalchat create` to make one!"))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -631,7 +631,7 @@ public class GlobalChatCommand implements SlashCommand {
                     false);
         }
 
-        event.replyEmbeds(eb.build()).setEphemeral(true).queue();
+        event.replyEmbeds(eb.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // setrules
@@ -728,7 +728,7 @@ public class GlobalChatCommand implements SlashCommand {
         });
 
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Management Panel Sent",
-                "The management panel has been sent to your DMs.")).setEphemeral(true).queue();
+                "The management panel has been sent to your DMs.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // Moderation subcommands
@@ -749,11 +749,11 @@ public class GlobalChatCommand implements SlashCommand {
 
         String error = service.kickServer(channelId, serverId, reason, event.getJDA());
         if (error != null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Server Kicked", "Server `" + serverId + "` has been kicked."))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleBan(SlashCommandInteractionEvent event, GlobalChatService service) {
@@ -772,11 +772,11 @@ public class GlobalChatCommand implements SlashCommand {
 
         String error = service.banServer(channelId, serverId, reason, event.getJDA());
         if (error != null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Server Banned", "Server `" + serverId + "` has been banned."))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleUnban(SlashCommandInteractionEvent event, GlobalChatService service) {
@@ -794,12 +794,12 @@ public class GlobalChatCommand implements SlashCommand {
 
         String error = service.unbanServer(channelId, serverId);
         if (error != null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         event.replyEmbeds(
                 EmbedUtils.createSuccessEmbed("Server Unbanned", "Server `" + serverId + "` has been unbanned."))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleWarn(SlashCommandInteractionEvent event, GlobalChatService service) {
@@ -818,11 +818,11 @@ public class GlobalChatCommand implements SlashCommand {
 
         String error = service.warnServer(channelId, serverId, reason, event.getJDA());
         if (error != null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Server Warned", "Server `" + serverId + "` has been warned."))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleUnwarn(SlashCommandInteractionEvent event, GlobalChatService service) {
@@ -840,11 +840,11 @@ public class GlobalChatCommand implements SlashCommand {
 
         String error = service.unwarnServer(channelId, serverId);
         if (error != null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Warnings Cleared",
-                "Warnings for server `" + serverId + "` have been cleared.")).setEphemeral(true).queue();
+                "Warnings for server `" + serverId + "` have been cleared.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleMute(SlashCommandInteractionEvent event, GlobalChatService service) {
@@ -866,13 +866,13 @@ public class GlobalChatCommand implements SlashCommand {
 
         String error = service.muteServer(channelId, serverId, durationMs, reason, event.getJDA());
         if (error != null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Server Muted",
                 "Server `" + serverId + "` has been muted" + (durationMs <= 0 ? " permanently" : " for " + durationStr)
                         + "."))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleUnmute(SlashCommandInteractionEvent event, GlobalChatService service) {
@@ -890,12 +890,12 @@ public class GlobalChatCommand implements SlashCommand {
 
         String error = service.unmuteServer(channelId, serverId, event.getJDA());
         if (error != null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         event.replyEmbeds(
                 EmbedUtils.createSuccessEmbed("Server Unmuted", "Server `" + serverId + "` has been unmuted."))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleAddMod(SlashCommandInteractionEvent event, GlobalChatService service) {
@@ -913,12 +913,12 @@ public class GlobalChatCommand implements SlashCommand {
         String userId = event.getOption("user", OptionMapping::getAsUser).getId();
         String error = service.addModerator(channelId, userId);
         if (error != null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         event.replyEmbeds(
                 EmbedUtils.createSuccessEmbed("Moderator Added", "<@" + userId + "> has been added as a moderator."))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleRemoveMod(SlashCommandInteractionEvent event, GlobalChatService service) {
@@ -936,11 +936,11 @@ public class GlobalChatCommand implements SlashCommand {
         String userId = event.getOption("user", OptionMapping::getAsUser).getId();
         String error = service.removeModerator(channelId, userId);
         if (error != null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("Moderator Removed",
-                "<@" + userId + "> has been removed as a moderator.")).setEphemeral(true).queue();
+                "<@" + userId + "> has been removed as a moderator.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void handleAddCoOwner(SlashCommandInteractionEvent event, GlobalChatService service) {
@@ -952,26 +952,26 @@ public class GlobalChatCommand implements SlashCommand {
         }
         if (!gc.isOwner(event.getUser().getId())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("No Access", "Only the channel owner can add co-owners."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         String userId = event.getOption("user", OptionMapping::getAsUser).getId();
         String error = service.addCoOwner(channelId, userId);
         if (error != null) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", error)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
         event.replyEmbeds(
                 EmbedUtils.createSuccessEmbed("Co-Owner Added", "<@" + userId + "> has been added as a co-owner."))
-                .setEphemeral(true).queue();
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // Helpers
 
     private void replyNotFound(SlashCommandInteractionEvent event) {
         event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Found",
-                "Global chat channel not found. Check the channel ID.")).setEphemeral(true).queue();
+                "Global chat channel not found. Check the channel ID.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     private void replyNoAccess(SlashCommandInteractionEvent event) {

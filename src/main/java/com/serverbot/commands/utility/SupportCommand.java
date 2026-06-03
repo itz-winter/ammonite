@@ -20,12 +20,12 @@ public class SupportCommand implements SlashCommand {
 
         if (supportLink == null || supportLink.isBlank()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Support Link Not Set", "The support link is invalid or has been removed.")).setEphemeral(true).queue();
+                    "Support Link Not Set", "The support link is invalid or has been removed.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "Support Link", "You can get support for the bot by visiting the following link:\n" + supportLink)).setEphemeral(true).queue();
+                "Support Link", "You can get support for the bot by visiting the following link:\n" + supportLink)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     @Override

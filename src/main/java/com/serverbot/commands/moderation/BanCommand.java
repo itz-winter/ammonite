@@ -33,7 +33,7 @@ public class BanCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage(
-                    "Guild Only", "This command can only be used in servers.", USAGE)).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.", USAGE)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -43,7 +43,7 @@ public class BanCommand implements SlashCommand {
                     "Insufficient Permissions",
                     "You need the `mod.ban` permission to use this command.\n\n" +
                             "Ask a server admin to grant you the `mod.ban` permission."))
-                    .setEphemeral(true).queue();
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -61,7 +61,7 @@ public class BanCommand implements SlashCommand {
                         "Cannot Ban User",
                         "You cannot ban this user due to role hierarchy.\n\n" +
                                 "Your highest role must be above the target user's highest role."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -70,7 +70,7 @@ public class BanCommand implements SlashCommand {
                         "Cannot Ban User",
                         "I cannot ban this user due to role hierarchy.\n\n" +
                                 "Move my role higher than the target user's highest role."))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
         }
@@ -85,7 +85,7 @@ public class BanCommand implements SlashCommand {
                         "Please provide a valid duration format.\n\n" +
                                 "**Valid formats:** `1d`, `2h`, `30m`, `1w`, `12h30m`\n" +
                                 "**Units:** `s`=seconds, `m`=minutes, `h`=hours, `d`=days, `w`=weeks",
-                        USAGE, EXAMPLE)).setEphemeral(true).queue();
+                        USAGE, EXAMPLE)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
         } else {
@@ -126,7 +126,7 @@ public class BanCommand implements SlashCommand {
 
                 }, error -> {
                     event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                            "Ban Failed", "Failed to ban user: " + error.getMessage())).setEphemeral(true).queue();
+                            "Ban Failed", "Failed to ban user: " + error.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 });
     }
 

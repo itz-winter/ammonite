@@ -29,7 +29,7 @@ public class TimeoutCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -37,7 +37,7 @@ public class TimeoutCommand implements SlashCommand {
         if (!PermissionManager.hasPermission(moderator, "mod.timeout")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions",
-                    "You need the `mod.timeout` permission to use this command.")).setEphemeral(true).queue();
+                    "You need the `mod.timeout` permission to use this command.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -46,7 +46,7 @@ public class TimeoutCommand implements SlashCommand {
 
         if (targetMember == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "User Not Found", "This user is not in the server.")).setEphemeral(true).queue();
+                    "User Not Found", "This user is not in the server.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -54,7 +54,7 @@ public class TimeoutCommand implements SlashCommand {
         if (!event.getGuild().getSelfMember().hasPermission(Permission.MODERATE_MEMBERS)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Missing Bot Permissions",
-                    "I need the 'Moderate Members' permission to timeout users.")).setEphemeral(true).queue();
+                    "I need the 'Moderate Members' permission to timeout users.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -69,14 +69,14 @@ public class TimeoutCommand implements SlashCommand {
         // Don't let users timeout themselves or users with higher/equal permissions
         if (targetUser.getId().equals(moderator.getUser().getId())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Invalid Target", "You cannot timeout yourself.")).setEphemeral(true).queue();
+                    "Invalid Target", "You cannot timeout yourself.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
         if (!moderator.canInteract(targetMember)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Cannot Timeout",
-                    "You cannot timeout this user. They have higher or equal permissions.")).setEphemeral(true).queue();
+                    "You cannot timeout this user. They have higher or equal permissions.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
@@ -92,7 +92,7 @@ public class TimeoutCommand implements SlashCommand {
                         "Invalid Duration",
                         "Please provide a valid duration (e.g., 1h, 30m, 2d, 1h30m, 10m360s).\n" +
                                 "Supported units: s (seconds), m (minutes), h (hours), d (days)"))
-                        .setEphemeral(true).queue();
+                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -100,7 +100,7 @@ public class TimeoutCommand implements SlashCommand {
             if (timeoutDuration.toDays() > 28) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Duration Too Long",
-                        "Timeout duration cannot exceed 28 days.")).setEphemeral(true).queue();
+                        "Timeout duration cannot exceed 28 days.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
@@ -148,13 +148,13 @@ public class TimeoutCommand implements SlashCommand {
                     error -> {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed(
                                 "Timeout Failed",
-                                "Failed to timeout user: " + error.getMessage())).setEphemeral(true).queue();
+                                "Failed to timeout user: " + error.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                     });
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Timeout Failed",
-                    "An error occurred while timing out the user: " + e.getMessage())).setEphemeral(true).queue();
+                    "An error occurred while timing out the user: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 

@@ -20,7 +20,7 @@ public class LeaveCommand implements SlashCommand {
         if (!musicManager.isConnected(event.getGuild())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Not Connected",
-                    "I'm not currently in a voice channel.")).setEphemeral(true).queue();
+                    "I'm not currently in a voice channel.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
 
