@@ -52,7 +52,7 @@ public class HelpCommand implements SlashCommand {
             embed.addField("Usage", usage, false);
         }
 
-        event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
     }
 
     private void showAllCommands(SlashCommandInteractionEvent event) {

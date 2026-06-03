@@ -28,14 +28,14 @@ public class RobCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         // Check if economy is enabled
         if (!isEconomyEnabled(event.getGuild().getId())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Economy Disabled", "The economy system is disabled in this server.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    "Economy Disabled", "The economy system is disabled in this server.")).setEphemeral(true).queue();
             return;
         }
 

@@ -29,7 +29,7 @@ public class KickCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbedWithUsage(
-                    "Guild Only", "This command can only be used in servers.", USAGE)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    "Guild Only", "This command can only be used in servers.", USAGE)).setEphemeral(true).queue();
             return;
         }
 
@@ -39,7 +39,7 @@ public class KickCommand implements SlashCommand {
                     "Insufficient Permissions",
                     "You need the `mod.kick` permission to use this command.\n\n" +
                             "Ask a server admin to grant you the `mod.kick` permission."))
-                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    .setEphemeral(true).queue();
             return;
         }
 

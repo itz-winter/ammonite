@@ -39,12 +39,12 @@ public class WelcomeCommand implements SlashCommand {
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).setEphemeral(true).queue();
             return;
         }
         if (!PermissionManager.hasPermission(event.getMember(), "admin.welcome")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("No Permission",
-                    "You need `admin.welcome` to configure welcome settings.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    "You need `admin.welcome` to configure welcome settings.")).setEphemeral(true).queue();
             return;
         }
 

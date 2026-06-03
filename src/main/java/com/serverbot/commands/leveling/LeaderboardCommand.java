@@ -22,14 +22,14 @@ public class LeaderboardCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         // Check if leveling is enabled
         if (!isLevelingEnabled(event.getGuild().getId())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Leveling Disabled", "The leveling system is disabled in this server.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    "Leveling Disabled", "The leveling system is disabled in this server.")).setEphemeral(true).queue();
             return;
         }
 

@@ -24,7 +24,7 @@ public class EchoCommand implements SlashCommand {
          * if (!event.isFromGuild()) {
          * event.replyEmbeds(EmbedUtils.createErrorEmbed(
          * "Guild Only", "This command can only be used in servers."
-         * )).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+         * )).setEphemeral(true).queue();
          * return;
          * }
          */
@@ -33,7 +33,7 @@ public class EchoCommand implements SlashCommand {
         if (!PermissionManager.hasPermission(member, "utility.echo")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need moderation permissions to use this command."))
-                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    .setEphemeral(true).queue();
             return;
         }
 

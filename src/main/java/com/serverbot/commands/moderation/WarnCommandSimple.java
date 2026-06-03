@@ -23,14 +23,14 @@ public class WarnCommandSimple implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         // Check permissions
         if (!PermissionManager.hasPermission(event.getMember(), "mod.warn")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Insufficient Permissions",
-                    "You need the `mod.warn` permission to warn members.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    "You need the `mod.warn` permission to warn members.")).setEphemeral(true).queue();
             return;
         }
 

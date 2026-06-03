@@ -23,14 +23,14 @@ public class AddBalanceCommand implements SlashCommand {
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
             return;
         }
 
         String subcommand = event.getSubcommandName();
         if (!"balance".equals(subcommand)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Unknown Subcommand", "Unknown subcommand: " + subcommand)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    "Unknown Subcommand", "Unknown subcommand: " + subcommand)).setEphemeral(true).queue();
             return;
         }
 
@@ -40,7 +40,7 @@ public class AddBalanceCommand implements SlashCommand {
         if (!PermissionManager.hasPermission(member, "economy.admin.add")) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need the `economy.admin.add` permission to add balance to users."))
-                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    .setEphemeral(true).queue();
             return;
         }
 

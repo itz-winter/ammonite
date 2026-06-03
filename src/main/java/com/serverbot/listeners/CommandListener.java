@@ -41,7 +41,7 @@ public class CommandListener extends ListenerAdapter {
             SafeRestAction.queue(
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
                             "Guild Only Command",
-                            "This command can only be used in servers.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))),
+                            "This command can only be used in servers.")).setEphemeral(true),
                     "reply with guild only error");
             return;
         }
