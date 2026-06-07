@@ -341,6 +341,11 @@ public class ErrorCommand implements SlashCommand {
     public String getDescription() {
         return "View comprehensive error code documentation";
     }
+    
+    @Override
+    public boolean isGuildOnly() {
+        return false;
+    }
 
     @Override
     public CommandCategory getCategory() {

@@ -7,9 +7,10 @@ import com.serverbot.models.ProxyMember;
 import com.serverbot.services.ProxyService;
 import com.serverbot.utils.CustomEmojis;
 import com.serverbot.utils.EmbedUtils;
-import com.serverbot.utils.PermissionManager;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
@@ -440,5 +441,27 @@ public class ProxyMemberCommand implements SlashCommand {
     @Override
     public boolean isGuildOnly() {
         return false; // Allow in DMs for global proxy management
+    }
+    
+    @Override
+    public void handleAutoComplete(CommandAutoCompleteInteractionEvent event) {
+        String focusedOption = event.getFocusedOption().getName();
+        
+        switch (focusedOption) {
+            case "member":
+                // Get user's proxy members for autocomplete
+                String guildId = event.getGuild() != null ? event.getGuild().getId() : null;
+                List<ProxyMember> members = proxyService.getUserMembers(event.getUser().getId(), guildId);
+                
+                // Filter and limit to 25 choices (Discord limit)
+                List<Command.Choice> choices = members.stream()
+                    .filter(member -> member.getName().toLowerCase().startsWith(event.getFocusedOption().getValue().toLowerCase()))
+                    .limit(25)
+                    .map(member -> new Command.Choice(member.getName(), member.getName()))
+                    .toList();
+                
+                event.replyChoices(choices).queue();
+                break;
+        }
     }
 }

@@ -108,4 +108,9 @@ public class EchoCommand implements SlashCommand {
     public boolean requiresPermissions() {
         return true;
     }
+    
+    @Override
+    public boolean isGuildOnly() {
+        return false;
+    }
 }

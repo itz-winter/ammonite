@@ -4,6 +4,7 @@ import com.serverbot.commands.CommandCategory;
 import com.serverbot.commands.SlashCommand;
 import com.serverbot.utils.EmbedUtils;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.Command;
@@ -11,13 +12,14 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 
 /**
@@ -39,8 +41,25 @@ public class FlagsCommand implements SlashCommand {
         }
     }
 
+    @Override
+    public void handleAutoComplete(CommandAutoCompleteInteractionEvent event) {
+        List<Command.Choice> choices = new java.util.ArrayList<>();
+        String input = event.getFocusedOption().getValue().toLowerCase();
+
+        for (String flagName : PrideCommand.getAvailableFlagNames()) {
+            if (input.isEmpty() || flagName.contains(input)) {
+                choices.add(new Command.Choice(flagName, flagName));
+                if (choices.size() >= 25) {
+                    break;
+                }
+            }
+        }
+
+        event.replyChoices(choices).queue();
+    }
+
     private void handleList(SlashCommandInteractionEvent event) {
-        Map<String, Color[]> flags = PrideCommand.getAvailableFlags();
+        Set<String> flags = PrideCommand.getAvailableFlagNames();
 
         EmbedBuilder embed = new EmbedBuilder()
                 .setTitle("🏳️‍🌈 Available Pride Flags")
@@ -48,7 +67,7 @@ public class FlagsCommand implements SlashCommand {
                 .setColor(new Color(255, 20, 147)); // Deep pink
 
         StringJoiner flagList = new StringJoiner("\n");
-        for (String flagName : flags.keySet()) {
+        for (String flagName : flags) {
             String displayName = capitalize(flagName);
             String description = getFlagDescription(flagName);
             flagList.add("**" + displayName + "** (`" + flagName + "`) - " + description);
@@ -65,9 +84,9 @@ public class FlagsCommand implements SlashCommand {
 
     private void handleDisplay(SlashCommandInteractionEvent event) {
         String flagName = event.getOption("flag").getAsString().toLowerCase();
-        Map<String, Color[]> flags = PrideCommand.getAvailableFlags();
+        Set<String> flags = PrideCommand.getAvailableFlagNames();
 
-        if (!flags.containsKey(flagName)) {
+        if (!flags.contains(flagName)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Unknown Flag",
                     "Unknown flag: `" + flagName + "`\n" +
@@ -79,16 +98,7 @@ public class FlagsCommand implements SlashCommand {
         event.deferReply().queue();
 
         try {
-            Color[] colors = flags.get(flagName);
-            BufferedImage flagImage;
-
-            // Special handling for intersex flag
-            if ("intersex".equals(flagName)) {
-                flagImage = createIntersexFlag(400, 200);
-            } else {
-                flagImage = createFlagImage(colors, 400, 200);
-            }
-
+            BufferedImage flagImage = PrideCommand.getFlagImage(flagName);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ImageIO.write(flagImage, "PNG", baos);
             byte[] imageData = baos.toByteArray();
@@ -96,7 +106,7 @@ public class FlagsCommand implements SlashCommand {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle("🏳️‍🌈 " + capitalize(flagName) + " Pride Flag")
                     .setDescription(getFlagDescription(flagName))
-                    .setColor(colors[0])
+                    .setColor(new Color(255, 20, 147))
                     .setImage("attachment://flag.png")
                     .addField("Usage", "`/pride avatar " + flagName + "`\n`/pride image <url> " + flagName + "`",
                             false);
@@ -216,35 +226,7 @@ public class FlagsCommand implements SlashCommand {
                         new SubcommandData("display", "Display a specific pride flag")
                                 .addOptions(
                                         new OptionData(OptionType.STRING, "flag", "Flag to display", true)
-                                                .addChoices(
-                                                        new Command.Choice("Pride (Traditional)", "pride"),
-                                                        new Command.Choice("Progress Pride", "progress"),
-                                                        new Command.Choice("Transgender", "trans"),
-                                                        new Command.Choice("Bisexual", "bi"),
-                                                        new Command.Choice("Pansexual", "pan"),
-                                                        new Command.Choice("Lesbian", "lesbian"),
-                                                        new Command.Choice("Asexual", "ace"),
-                                                        new Command.Choice("Aromantic", "aro"),
-                                                        new Command.Choice("Non-binary", "nonbinary"),
-                                                        new Command.Choice("Genderfluid", "genderfluid"),
-                                                        new Command.Choice("Agender", "agender"),
-                                                        new Command.Choice("Demisexual", "demisexual"),
-                                                        new Command.Choice("Demiromantic", "demiromantic"),
-                                                        new Command.Choice("Polysexual", "polysexual"),
-                                                        new Command.Choice("Omnisexual", "omnisexual"),
-                                                        new Command.Choice("Questioning", "questioning"),
-                                                        new Command.Choice("Intersex", "intersex"),
-                                                        new Command.Choice("Polyamorous", "polyamorous"),
-                                                        new Command.Choice("Neutrois", "neutrois"),
-                                                        new Command.Choice("Two-Spirit", "twospirit"),
-                                                        new Command.Choice("MLM/Vincian", "mlm"),
-                                                        new Command.Choice("Aroace", "aroace"),
-                                                        new Command.Choice("Graysexual", "graysexual"),
-                                                        new Command.Choice("Grayromantic", "grayromantic"),
-                                                        new Command.Choice("Bigender", "bigender")
-                                                // Note: Discord allows max 25 choices. Use /flags list to see all
-                                                // available flags
-                                                )));
+                                                .setAutoComplete(true)));
     }
 
     @Override
@@ -255,6 +237,11 @@ public class FlagsCommand implements SlashCommand {
     @Override
     public String getDescription() {
         return "List and display pride flags";
+    }
+
+    @Override
+    public boolean isGuildOnly(){
+        return false;
     }
 
     @Override
