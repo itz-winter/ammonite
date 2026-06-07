@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 
 import java.awt.*;
@@ -395,26 +396,31 @@ public class ProxyMemberCommand implements SlashCommand {
                     .addOption(OptionType.STRING, "suffix", "Proxy tag suffix (e.g., '~alice')", false),
                     
                 new SubcommandData("edit", "Edit a proxy member")
-                    .addOption(OptionType.STRING, "member", "Name of the member to edit", true)
+                    .addOptions(new OptionData(OptionType.STRING, "member", "Name of the member to edit", true)
+                        .setAutoComplete(true))
                     .addOption(OptionType.STRING, "field", "Field to edit (name, displayname, avatar, pronouns, description, color, keepproxy)", true)
                     .addOption(OptionType.STRING, "value", "New value for the field", true),
                     
                 new SubcommandData("delete", "Delete a proxy member")
-                    .addOption(OptionType.STRING, "member", "Name of the member to delete", true),
+                    .addOptions(new OptionData(OptionType.STRING, "member", "Name of the member to delete", true)
+                        .setAutoComplete(true)),
                     
                 new SubcommandData("info", "View information about a proxy member")
-                    .addOption(OptionType.STRING, "member", "Name of the member", true),
+                    .addOptions(new OptionData(OptionType.STRING, "member", "Name of the member", true)
+                        .setAutoComplete(true)),
                     
                 new SubcommandData("list", "List all your proxy members"),
                     
                 new SubcommandData("addtag", "Add a proxy tag to a member")
-                    .addOption(OptionType.STRING, "member", "Name of the member", true)
+                    .addOptions(new OptionData(OptionType.STRING, "member", "Name of the member", true)
+                        .setAutoComplete(true))
                     .addOption(OptionType.STRING, "prefix", "Proxy tag prefix", false)
                     .addOption(OptionType.STRING, "suffix", "Proxy tag suffix", false),
                     
-                new SubcommandData("removetag", "Remove a proxy tag from a member")
-                    .addOption(OptionType.STRING, "member", "Name of the member", true)
-                    .addOption(OptionType.INTEGER, "index", "Index of the tag to remove (use /proxy info to see)", true)
+new SubcommandData("removetag", "Remove a proxy tag from a member")
+                    .addOptions(new OptionData(OptionType.STRING, "member", "Name of the member", true)
+                        .setAutoComplete(true),
+                        new OptionData(OptionType.INTEGER, "index", "Index of the tag to remove (use /proxy info to see)", true))
             );
     }
     
@@ -452,12 +458,21 @@ public class ProxyMemberCommand implements SlashCommand {
                 // Get user's proxy members for autocomplete
                 String guildId = event.getGuild() != null ? event.getGuild().getId() : null;
                 List<ProxyMember> members = proxyService.getUserMembers(event.getUser().getId(), guildId);
+                String typed = event.getFocusedOption().getValue().toLowerCase();
                 
                 // Filter and limit to 25 choices (Discord limit)
                 List<Command.Choice> choices = members.stream()
-                    .filter(member -> member.getName().toLowerCase().startsWith(event.getFocusedOption().getValue().toLowerCase()))
+                    .filter(member -> 
+                        member.getName().toLowerCase().startsWith(typed) ||
+                        (member.getDisplayName() != null && member.getDisplayName().toLowerCase().startsWith(typed))
+                    )
                     .limit(25)
-                    .map(member -> new Command.Choice(member.getName(), member.getName()))
+                    .map(member -> {
+                        String choiceName = member.getDisplayName() != null ? 
+                            member.getDisplayName() + " (" + member.getName() + ")" : 
+                            member.getName();
+                        return new Command.Choice(choiceName, member.getName());
+                    })
                     .toList();
                 
                 event.replyChoices(choices).queue();

@@ -8,15 +8,18 @@ import com.serverbot.models.ProxySettings;
 import com.serverbot.services.ProxyService;
 import com.serverbot.utils.EmbedUtils;
 import com.serverbot.utils.CustomEmojis;
-import com.serverbot.utils.PermissionManager;
+
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
-
-import java.awt.*;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
+import net.dv8tion.jda.api.interactions.commands.Command;
+import java.awt.Color;
+import java.util.List;
 
 /**
  * Command for managing proxy settings and switching members
@@ -271,6 +274,38 @@ public class ProxySettingsCommand implements SlashCommand {
                 });
     }
 
+    @Override
+    public void handleAutoComplete(CommandAutoCompleteInteractionEvent event) {
+        String focusedOption = event.getFocusedOption().getName();
+        
+        switch (focusedOption) {
+            case "member":
+                // Get user's proxy members for autocomplete
+                String guildId = event.getGuild() != null ? event.getGuild().getId() : null;
+                ProxyService proxyService = ServerBot.getProxyService();
+                List<ProxyMember> members = proxyService.getUserMembers(event.getUser().getId(), guildId);
+                String typed = event.getFocusedOption().getValue().toLowerCase();
+                
+                // Filter and limit to 25 choices (Discord limit)
+                List<Command.Choice> choices = members.stream()
+                    .filter(member -> 
+                        member.getName().toLowerCase().startsWith(typed) ||
+                        (member.getDisplayName() != null && member.getDisplayName().toLowerCase().startsWith(typed))
+                    )
+                    .limit(25)
+                    .map(member -> {
+                        String choiceName = member.getDisplayName() != null ? 
+                            member.getDisplayName() + " (" + member.getName() + ")" : 
+                            member.getName();
+                        return new Command.Choice(choiceName, member.getName());
+                    })
+                    .toList();
+                
+                event.replyChoices(choices).queue();
+                break;
+        }
+    }
+
     public static CommandData getCommandData() {
         return Commands.slash("proxysettings", "Manage proxy settings and switch members")
                 .addSubcommands(
@@ -288,8 +323,8 @@ public class ProxySettingsCommand implements SlashCommand {
                                 .addOption(OptionType.BOOLEAN, "enabled", "Enable or disable", true),
 
                         new SubcommandData("switch", "Switch to a member (or switch out)")
-                                .addOption(OptionType.STRING, "member", "Member name (leave empty to switch out)",
-                                        false));
+                                .addOptions(new OptionData(OptionType.STRING, "member", "Name of the member to switch to", true)
+                                        .setAutoComplete(true)));
     }
 
     @Override
