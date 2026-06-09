@@ -81,8 +81,24 @@ public class PrefixCommandService {
         Map.entry("timeout", "timeout"),
         Map.entry("purge", "purge"),
         Map.entry("echo", "echo"),
+        Map.entry("write", "echo"),
+        Map.entry("say", "echo"),
+        Map.entry("writehost","echo" ),
         Map.entry("rules", "rules"),
         Map.entry("talkas", "talkas"),
+        // Utility aliases
+        Map.entry("pride", "pride"),
+        Map.entry("flag", "pride"),
+        Map.entry("gay", "pride"),
+        Map.entry("lgbt", "pride"),
+        Map.entry("avatar", "avatar"),
+        Map.entry("pfp", "avatar"),
+        // Proxy command aliases
+        Map.entry("autoproxy", "autoproxy"),
+        Map.entry("ap", "autoproxy"),
+        Map.entry("proxy", "proxy"),
+        Map.entry("px", "proxy"),
+        Map.entry("p", "proxy"),
         // Moderation aliases
         Map.entry("softban", "softban"),
         Map.entry("hist", "hist"),
@@ -90,9 +106,11 @@ public class PrefixCommandService {
         Map.entry("warns", "warns"),
         Map.entry("lockdown", "lockdown"),
         Map.entry("lock", "lockdown"),
+        Map.entry("ldown", "lockdown"),
         // Economy aliases
         Map.entry("rob", "rob"),
         Map.entry("steal", "rob"),
+        Map.entry("crime", "rob"),
         Map.entry("blackjack", "blackjack"),
         Map.entry("bj", "blackjack"),
         Map.entry("bank", "bank"),
@@ -435,6 +453,26 @@ public class PrefixCommandService {
             case "shuffle":
                 handleShuffleCommand(event);
                 break;
+            case "pride":
+                handlePrideCommand(event, options);
+                break;
+            case "avatar":
+                handleAvatarCommand(event, options);
+                break;
+            case "proxy": {
+                String gId = event.isFromGuild() ? event.getGuild().getId() : null;
+                String uId = event.getAuthor().getId();
+                String joinedArgs = String.join(" ", args);
+                handleProxyMemberCommand(event, joinedArgs, gId, uId);
+                break;
+            }
+            case "autoproxy": {
+                String gId = event.isFromGuild() ? event.getGuild().getId() : null;
+                String uId = event.getAuthor().getId();
+                String joinedArgs = String.join(" ", args);
+                handleAutoproxyCommand(event, joinedArgs, gId, uId);
+                break;
+            }
             case "globalchat":
                 handleGlobalChatCommand(event, args);
                 break;
@@ -1310,6 +1348,32 @@ public class PrefixCommandService {
         
         // Send the message as if the bot said it
         event.getChannel().sendMessage(message).queue();
+    }
+
+    /**
+     * Handle avatar command — shows the user's own avatar or a mentioned user's.
+     */
+    private void handleAvatarCommand(MessageReceivedEvent event, Map<String, String> options) {
+        User user = event.getAuthor();
+        String avatarUrl = user.getEffectiveAvatarUrl() + "?size=4096";
+        EmbedBuilder embed = new EmbedBuilder()
+            .setColor(EmbedUtils.INFO_COLOR)
+            .setAuthor(user.getName(), null, user.getEffectiveAvatarUrl())
+            .setTitle("🖼️ " + user.getName() + "'s Avatar")
+            .setImage(avatarUrl)
+            .setFooter("User ID: " + user.getId());
+        event.getChannel().sendMessageEmbeds(embed.build()).queue();
+    }
+
+    /**
+     * Handle pride command — redirects to slash command since this uses image processing.
+     */
+    private void handlePrideCommand(MessageReceivedEvent event, Map<String, String> options) {
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+            "Pride Command",
+            "The pride command is only available as a slash command. Please use `/pride` instead.\n\n" +
+            "Example: `/pride flag:transgender`"
+        )).queue();
     }
 
     /**
