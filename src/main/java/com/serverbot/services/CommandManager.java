@@ -130,6 +130,7 @@ public class CommandManager {
         // Proxy commands (PluralKit-style)
         registerCommand(new com.serverbot.commands.proxy.ProxyMemberCommand());
         registerCommand(new com.serverbot.commands.proxy.ProxySettingsCommand());
+        registerCommand(new com.serverbot.commands.proxy.AutoProxyCommand());
 
         // Global chat commands
         registerCommand(new com.serverbot.commands.utility.GlobalChatCommand());
@@ -301,6 +302,7 @@ public class CommandManager {
         // Proxy commands (PluralKit-style)
         commandDataList.add(com.serverbot.commands.proxy.ProxyMemberCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.proxy.ProxySettingsCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.proxy.AutoProxyCommand.getCommandData());
 
         // Global chat commands
         commandDataList.add(com.serverbot.commands.utility.GlobalChatCommand.getCommandData());

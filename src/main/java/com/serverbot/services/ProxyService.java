@@ -117,7 +117,10 @@ public class ProxyService {
 
                 // Add proxy tag if provided
                 if (prefix != null || suffix != null) {
-                    member.addProxyTag(prefix != null ? prefix : "", suffix != null ? suffix : "");
+                    member.addProxyTag(
+                        sanitizeProxyTag(prefix != null ? prefix : ""),
+                        sanitizeProxyTag(suffix != null ? suffix : "")
+                    );
                 }
 
                 // Save member
@@ -131,6 +134,19 @@ public class ProxyService {
                 return "702"; // Data creation failed
             }
         });
+    }
+
+    /**
+     * Sanitize a proxy tag by removing Discord mention syntax.
+     * Prevents @everyone, @here, and user/role/channel mentions.
+     */
+    private String sanitizeProxyTag(String tag) {
+        if (tag == null) return "";
+        // Replace @everyone and @here with zero-width space to break mentions
+        String result = tag.replaceAll("@(everyone|here)", "@\u200B$1");
+        // Remove user/role/channel mentions like <@12345>, <@&12345>, <#12345>
+        result = result.replaceAll("<[@#&!]+\\d+>", "");
+        return result.trim();
     }
 
     /**
@@ -233,7 +249,10 @@ public class ProxyService {
                     return "720"; // Invalid tag
                 }
 
-                member.addProxyTag(prefix != null ? prefix : "", suffix != null ? suffix : "");
+                member.addProxyTag(
+                    sanitizeProxyTag(prefix != null ? prefix : ""),
+                    sanitizeProxyTag(suffix != null ? suffix : "")
+                );
                 saveMembers();
 
                 return "SUCCESS";
@@ -489,12 +508,26 @@ public class ProxyService {
                 final String finalProxiedContent = proxiedContent;
                 final ProxySettings finalSettings = settings;
 
-                // Get or create webhook for this channel
-                TextChannel channel = originalMessage.getChannel().asTextChannel();
-                Webhook webhook = getOrCreateWebhook(channel).join();
+                // Get the effective text channel (parent channel if in a thread)
+                net.dv8tion.jda.api.entities.channel.Channel channelUnion = originalMessage.getChannel();
+                TextChannel textChannel;
+                net.dv8tion.jda.api.entities.channel.ChannelType channelType = channelUnion.getType();
+                if (channelType == net.dv8tion.jda.api.entities.channel.ChannelType.GUILD_PUBLIC_THREAD ||
+                    channelType == net.dv8tion.jda.api.entities.channel.ChannelType.GUILD_PRIVATE_THREAD ||
+                    channelType == net.dv8tion.jda.api.entities.channel.ChannelType.GUILD_NEWS_THREAD) {
+                    net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel thread = (net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel) channelUnion;
+                    textChannel = thread.getParentChannel().asTextChannel();
+                } else if (channelType == net.dv8tion.jda.api.entities.channel.ChannelType.TEXT) {
+                    textChannel = (TextChannel) channelUnion;
+                } else {
+                    logger.warn("Cannot proxy message in channel type: " + channelType);
+                    return new ProxyResult(false, null, null);
+                }
+                
+                Webhook webhook = getOrCreateWebhook(textChannel).join();
 
                 if (webhook == null) {
-                    logger.warn("Failed to get webhook for channel: " + channel.getId());
+                    logger.warn("Failed to get webhook for channel: " + textChannel.getId());
                     return new ProxyResult(false, null, null);
                 }
 
@@ -548,7 +581,7 @@ public class ProxyService {
                                     originalMessage.getId(),
                                     author.getId(),
                                     finalMatchedMember.getMemberId(),
-                                    channel.getId(),
+                                    textChannel.getId(),
                                     guildId,
                                     Instant.now());
 

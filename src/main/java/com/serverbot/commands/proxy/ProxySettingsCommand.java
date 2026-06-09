@@ -135,7 +135,7 @@ public class ProxySettingsCommand implements SlashCommand {
                 settings.setAutoproxyMemberId(member.getMemberId());
             }
 
-            event.deferReply().queue();
+            event.deferReply(true).queue();
 
             proxyService.updateSettings(
                     event.getUser().getId(),
@@ -189,7 +189,7 @@ public class ProxySettingsCommand implements SlashCommand {
                 return;
         }
 
-        event.deferReply().queue();
+        event.deferReply(true).queue();
 
         proxyService.updateSettings(
                 event.getUser().getId(),
@@ -222,7 +222,7 @@ public class ProxySettingsCommand implements SlashCommand {
             settings.setLastProxiedMemberId(null);
             settings.setLastSwitchTime(null);
 
-            event.deferReply().queue();
+            event.deferReply(true).queue();
 
             proxyService.updateSettings(
                     event.getUser().getId(),
@@ -248,7 +248,7 @@ public class ProxySettingsCommand implements SlashCommand {
             return;
         }
 
-        event.deferReply().queue();
+        event.deferReply(true).queue();
 
         proxyService.switchMember(
                 event.getUser().getId(),
@@ -260,8 +260,8 @@ public class ProxySettingsCommand implements SlashCommand {
                                 .setDescription("Now fronting: **" + member.getName() + "**")
                                 .setColor(Color.GREEN);
 
-                        if (member.getAvatarUrl() != null) {
-                            embed.setThumbnail(member.getAvatarUrl());
+                        if (member.getOriginalAvatarUrl() != null) {
+                            embed.setThumbnail(member.getOriginalAvatarUrl());
                         }
 
                         event.getHook().editOriginalEmbeds(embed.build()).queue();
@@ -282,8 +282,7 @@ public class ProxySettingsCommand implements SlashCommand {
             case "member":
                 // Get user's proxy members for autocomplete
                 String guildId = event.getGuild() != null ? event.getGuild().getId() : null;
-                ProxyService proxyService = ServerBot.getProxyService();
-                List<ProxyMember> members = proxyService.getUserMembers(event.getUser().getId(), guildId);
+                List<ProxyMember> members = this.proxyService.getUserMembers(event.getUser().getId(), guildId);
                 String typed = event.getFocusedOption().getValue().toLowerCase();
                 
                 // Filter and limit to 25 choices (Discord limit)
@@ -314,8 +313,8 @@ public class ProxySettingsCommand implements SlashCommand {
                         new SubcommandData("autoproxy", "Set autoproxy mode")
                                 .addOption(OptionType.STRING, "mode",
                                         "Autoproxy mode (OFF, FRONT, LATCH, MEMBER, STICKY)", true)
-                                .addOption(OptionType.STRING, "member", "Member name (required for MEMBER mode)",
-                                        false),
+                                .addOptions(new OptionData(OptionType.STRING, "member", "Member name (required for MEMBER mode)",
+                                        false).setAutoComplete(true)),
 
                         new SubcommandData("toggle", "Toggle a proxy setting")
                                 .addOption(OptionType.STRING, "setting",

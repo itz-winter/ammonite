@@ -30,12 +30,10 @@ public class ProxyListener extends ListenerAdapter {
             return;
         }
 
-        // Ignore messages in threads (for now)
-        if (event.isFromThread()) {
+        // Ignore messages in DMs (proxy not supported there yet)
+        if (!event.isFromGuild()) {
             return;
         }
-
-        // Ignore commands
         String content = event.getMessage().getContentRaw();
         if (content.startsWith("/") || content.startsWith("!")) {
             return;

@@ -80,9 +80,21 @@ public class ProxyMemberCommand implements SlashCommand {
         String avatarUrl = event.getOption("avatar") != null ? 
                           event.getOption("avatar").getAsString() : null;
         String prefix = event.getOption("prefix") != null ? 
-                       event.getOption("prefix").getAsString() : null;
+                       sanitizeProxyTag(event.getOption("prefix").getAsString()) : null;
         String suffix = event.getOption("suffix") != null ? 
-                       event.getOption("suffix").getAsString() : null;
+                       sanitizeProxyTag(event.getOption("suffix").getAsString()) : null;
+        
+        // Check prefix conflict with bot command prefixes
+        if (prefix != null && !prefix.isEmpty()) {
+            String conflictError = checkPrefixConflict(prefix, event);
+            if (conflictError != null) {
+                event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                    "Prefix Conflict",
+                    conflictError
+                )).setEphemeral(true).queue();
+                return;
+            }
+        }
         
         event.deferReply().queue();
         
@@ -114,8 +126,8 @@ public class ProxyMemberCommand implements SlashCommand {
                     .addField("ID", member.getMemberId(), false)
                     .setColor(Color.GREEN);
                 
-                if (member.getAvatarUrl() != null) {
-                    embed.setThumbnail(member.getAvatarUrl());
+                if (member.getOriginalAvatarUrl() != null) {
+                    embed.setThumbnail(member.getOriginalAvatarUrl());
                 }
                 
                 if (!member.getProxyTags().isEmpty()) {
@@ -129,6 +141,51 @@ public class ProxyMemberCommand implements SlashCommand {
                 event.getHook().editOriginalEmbeds(embed.build()).queue();
             }
         });
+    }
+    
+    /**
+     * Sanitize a proxy tag (prefix or suffix) by removing Discord mention syntax.
+     * This prevents @everyone, @here, <@userid> mentions from being injected.
+     */
+    private String sanitizeProxyTag(String tag) {
+        if (tag == null) return null;
+        // Remove @everyone and @here mentions
+        tag = tag.replaceAll("@(everyone|here)", "@​$1");
+        // Remove user/role/channel mentions like <@12345>, <@&12345>, <#12345>
+        tag = tag.replaceAll("<[@#&!]+\\d+>", "");
+        return tag.trim();
+    }
+    
+    /**
+     * Check if a proxy prefix conflicts with bot command prefixes in the guild.
+     * If prefix commands are disabled, there is no conflict.
+     * Only checks against the origin guild, not other servers.
+     * Returns an error message if conflict exists, null otherwise.
+     */
+    private String checkPrefixConflict(String prefix, SlashCommandInteractionEvent event) {
+        if (!event.isFromGuild()) {
+            return null; // DMs don't have command prefixes to conflict with
+        }
+        
+        String guildId = event.getGuild().getId();
+        
+        // If prefix commands are disabled in this guild, no conflict
+        if (!com.serverbot.ServerBot.getStorageManager().arePrefixCommandsEnabled(guildId)) {
+            return null;
+        }
+        
+        // Get bot command prefixes for this guild
+        java.util.List<String> guildPrefixes = com.serverbot.ServerBot.getStorageManager().getPrefixes(guildId);
+        
+        for (String cmdPrefix : guildPrefixes) {
+            if (prefix.equals(cmdPrefix) || prefix.startsWith(cmdPrefix)) {
+                return "Your chosen proxy prefix `" + prefix + "` conflicts with the bot's command prefix `" + cmdPrefix + "` configured for this server. " +
+                       "Please choose a different proxy prefix to avoid unexpected behavior. " +
+                       "Tip: Try adding a space or special character to your prefix (e.g. `" + prefix + " ` or `" + prefix + "~`).";
+            }
+        }
+        
+        return null;
     }
     
     private void handleEdit(SlashCommandInteractionEvent event) {
@@ -245,8 +302,8 @@ public class ProxyMemberCommand implements SlashCommand {
             embed.setDescription(member.getDescription());
         }
         
-        if (member.getAvatarUrl() != null) {
-            embed.setThumbnail(member.getAvatarUrl());
+        if (member.getOriginalAvatarUrl() != null) {
+            embed.setThumbnail(member.getOriginalAvatarUrl());
         }
         
         if (!member.getProxyTags().isEmpty()) {
@@ -306,9 +363,9 @@ public class ProxyMemberCommand implements SlashCommand {
     private void handleAddTag(SlashCommandInteractionEvent event) {
         String memberName = event.getOption("member").getAsString();
         String prefix = event.getOption("prefix") != null ? 
-                       event.getOption("prefix").getAsString() : null;
+                       sanitizeProxyTag(event.getOption("prefix").getAsString()) : null;
         String suffix = event.getOption("suffix") != null ? 
-                       event.getOption("suffix").getAsString() : null;
+                       sanitizeProxyTag(event.getOption("suffix").getAsString()) : null;
         
         // Use null guildId to search both global and guild-specific
         String guildId = event.getGuild() != null ? event.getGuild().getId() : null;
@@ -348,7 +405,7 @@ public class ProxyMemberCommand implements SlashCommand {
     
     private void handleRemoveTag(SlashCommandInteractionEvent event) {
         String memberName = event.getOption("member").getAsString();
-        int tagIndex = event.getOption("index").getAsInt();
+        int tagIndex = (event.getOption("index").getAsInt())-1; // Convert to 0-based index
         
         // Use null guildId to search both global and guild-specific
         String guildId = event.getGuild() != null ? event.getGuild().getId() : null;

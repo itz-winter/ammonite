@@ -180,7 +180,11 @@ public class GlobalChatCommand implements SlashCommand {
                 .addSubcommands(new SubcommandData("addcoowner", "Add a co-owner to your global chat channel")
                         .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true)
                                 .setAutoComplete(true))
-                        .addOption(OptionType.USER, "user", "User to add as co-owner", true));
+                        .addOption(OptionType.USER, "user", "User to add as co-owner", true))
+                // servers
+                .addSubcommands(new SubcommandData("servers", "List servers linked to a global chat channel")
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                                .setAutoComplete(true)));
     }
 
     @Override
@@ -213,6 +217,7 @@ public class GlobalChatCommand implements SlashCommand {
             case "addmod" -> handleAddMod(event, service);
             case "removemod" -> handleRemoveMod(event, service);
             case "addcoowner" -> handleAddCoOwner(event, service);
+            case "servers" -> handleServers(event, service);
             default -> event.reply("Unknown subcommand.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
@@ -965,6 +970,50 @@ public class GlobalChatCommand implements SlashCommand {
         event.replyEmbeds(
                 EmbedUtils.createSuccessEmbed("Co-Owner Added", "<@" + userId + "> has been added as a co-owner."))
                 .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+    }
+
+    private void handleServers(SlashCommandInteractionEvent event, GlobalChatService service) {
+        String channelId = event.getOption("channelid", OptionMapping::getAsString);
+        GlobalChatChannel gc = service.getChannel(channelId);
+        if (gc == null) {
+            replyNotFound(event);
+            return;
+        }
+
+        Map<String, String> linked = gc.getLinkedChannels();
+        if (linked.isEmpty()) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("No Servers Linked",
+                    "No servers are currently linked to **" + gc.getName() + "**."))
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+            return;
+        }
+
+        EmbedBuilder embed = new EmbedBuilder()
+                .setTitle("🌐 " + gc.getName() + " — Linked Servers")
+                .setColor(Color.CYAN)
+                .setDescription("**" + linked.size() + "** server(s) linked");
+
+        StringBuilder sb = new StringBuilder();
+        int count = 0;
+        for (Map.Entry<String, String> entry : linked.entrySet()) {
+            count++;
+            String guildId = entry.getKey();
+            String textChId = entry.getValue();
+            String guildName = count + ". Server ID: `" + guildId + "`";
+            String channelRef = "Channel: <#" + textChId + ">";
+            sb.append(guildName).append("\n").append(channelRef).append("\n\n");
+            if (sb.length() > 1024) {
+                embed.addField("Servers (continued)", sb.toString(), false);
+                sb = new StringBuilder();
+            }
+        }
+        if (!sb.isEmpty()) {
+            embed.addField("Linked Servers", sb.toString(), false);
+        }
+
+        event.replyEmbeds(embed.build()).setEphemeral(true)
+                .setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(
+                    net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
     // Helpers

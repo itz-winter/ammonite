@@ -11,7 +11,9 @@ import com.serverbot.utils.PermissionManager;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Webhook;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
@@ -189,7 +191,23 @@ public class TalkAsCommand implements SlashCommand {
             }
         }
 
-        TextChannel channel = event.getChannel().asTextChannel();
+        // Resolve the effective text channel (use parent channel if in a thread)
+        net.dv8tion.jda.api.entities.channel.Channel eventChannel = event.getChannel();
+        TextChannel channel;
+        if (event.getChannelType() == ChannelType.GUILD_PUBLIC_THREAD ||
+            event.getChannelType() == ChannelType.GUILD_PRIVATE_THREAD ||
+            event.getChannelType() == ChannelType.GUILD_NEWS_THREAD) {
+            ThreadChannel thread = (ThreadChannel) eventChannel;
+            channel = thread.getParentChannel().asTextChannel();
+        } else if (event.getChannelType() == ChannelType.TEXT) {
+            channel = (TextChannel) eventChannel;
+        } else {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                    "Unsupported Channel",
+                    "This command can only be used in text channels or threads."))
+                    .setEphemeral(true).queue();
+            return;
+        }
 
         event.reply("ðŸ”„ Preparing webhook message...").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
 
