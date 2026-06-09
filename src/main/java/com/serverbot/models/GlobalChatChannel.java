@@ -57,6 +57,17 @@ public class GlobalChatChannel {
     // (false)
     private boolean webhookEnabled = true;
 
+    // ===== Join/Leave message settings =====
+    private boolean joinMessagesEnabled = true;
+    private boolean leaveMessagesEnabled = true;
+    private String joinMessageType = "embed";   // "embed" or "plaintext"
+    private String leaveMessageType = "embed";  // "embed" or "plaintext"
+    private String joinMessageTitle;   // custom embed title (null = default)
+    private String leaveMessageTitle;  // custom embed title (null = default)
+    private String joinMessagePlaintext; // custom plaintext (null = default)
+    private String leaveMessagePlaintext; // custom plaintext (null = default)
+    private boolean topicShowServerCount = true; // show linked server count in channel topic
+
     public GlobalChatChannel() {
         this.coOwnerIds = new HashSet<>();
         this.moderatorIds = new HashSet<>();
@@ -351,5 +362,79 @@ public class GlobalChatChannel {
 
     public void setWebhookEnabled(boolean webhookEnabled) {
         this.webhookEnabled = webhookEnabled;
+    }
+
+    // ===== Join/Leave message settings =====
+
+    public boolean isJoinMessagesEnabled() {
+        return joinMessagesEnabled;
+    }
+
+    public void setJoinMessagesEnabled(boolean joinMessagesEnabled) {
+        this.joinMessagesEnabled = joinMessagesEnabled;
+    }
+
+    public boolean isLeaveMessagesEnabled() {
+        return leaveMessagesEnabled;
+    }
+
+    public void setLeaveMessagesEnabled(boolean leaveMessagesEnabled) {
+        this.leaveMessagesEnabled = leaveMessagesEnabled;
+    }
+
+    public String getJoinMessageType() {
+        return joinMessageType;
+    }
+
+    public void setJoinMessageType(String joinMessageType) {
+        this.joinMessageType = joinMessageType;
+    }
+
+    public String getLeaveMessageType() {
+        return leaveMessageType;
+    }
+
+    public void setLeaveMessageType(String leaveMessageType) {
+        this.leaveMessageType = leaveMessageType;
+    }
+
+    public String getJoinMessageTitle() {
+        return joinMessageTitle;
+    }
+
+    public void setJoinMessageTitle(String joinMessageTitle) {
+        this.joinMessageTitle = joinMessageTitle;
+    }
+
+    public String getLeaveMessageTitle() {
+        return leaveMessageTitle;
+    }
+
+    public void setLeaveMessageTitle(String leaveMessageTitle) {
+        this.leaveMessageTitle = leaveMessageTitle;
+    }
+
+    public String getJoinMessagePlaintext() {
+        return joinMessagePlaintext;
+    }
+
+    public void setJoinMessagePlaintext(String joinMessagePlaintext) {
+        this.joinMessagePlaintext = joinMessagePlaintext;
+    }
+
+    public String getLeaveMessagePlaintext() {
+        return leaveMessagePlaintext;
+    }
+
+    public void setLeaveMessagePlaintext(String leaveMessagePlaintext) {
+        this.leaveMessagePlaintext = leaveMessagePlaintext;
+    }
+
+    public boolean isTopicShowServerCount() {
+        return topicShowServerCount;
+    }
+
+    public void setTopicShowServerCount(boolean topicShowServerCount) {
+        this.topicShowServerCount = topicShowServerCount;
     }
 }

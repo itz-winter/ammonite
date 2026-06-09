@@ -226,6 +226,21 @@ public class GlobalChatService {
         return null; // success
     }
 
+    /**
+     * Link a guild's text channel to a global chat channel and trigger join notification.
+     * Returns null on success, or an error message string on failure.
+     */
+    public String linkChannel(String globalChannelId, String guildId, String textChannelId, String providedKey, String serverName, JDA jda) {
+        String error = linkChannel(globalChannelId, guildId, textChannelId, providedKey);
+        if (error == null && jda != null) {
+            // Send join message to all linked channels
+            sendJoinLeaveMessage(globalChannelId, guildId, serverName, true, jda);
+            // Update channel topics
+            updateLinkedChannelTopics(globalChannelId, jda);
+        }
+        return error;
+    }
+
     public String unlinkChannel(String guildId, String textChannelId) {
         String globalId = textChannelToGlobal.get(textChannelId);
         if (globalId == null) return "This channel is not linked to any global chat channel.";
@@ -241,6 +256,24 @@ public class GlobalChatService {
         webhookCache.remove(textChannelId);
         saveChannels();
         return null;
+    }
+
+    /**
+     * Unlink a guild's text channel from a global chat channel and trigger leave notification.
+     * Returns null on success, or an error message string on failure.
+     */
+    public String unlinkChannel(String guildId, String textChannelId, String serverName, JDA jda) {
+        String globalId = textChannelToGlobal.get(textChannelId);
+        if (globalId == null) return "This channel is not linked to any global chat channel.";
+
+        String error = unlinkChannel(guildId, textChannelId);
+        if (error == null && jda != null) {
+            // Send leave message to all remaining linked channels
+            sendJoinLeaveMessage(globalId, guildId, serverName, false, jda);
+            // Update channel topics
+            updateLinkedChannelTopics(globalId, jda);
+        }
+        return error;
     }
 
     /**
@@ -925,6 +958,121 @@ public class GlobalChatService {
 
     public void clearManagePanelState(String userId) {
         managePanelStates.remove(userId);
+    }
+
+    // Join/Leave messages
+
+    /**
+     * Send a join/leave message to all linked channels of a global chat.
+     */
+    public void sendJoinLeaveMessage(String globalChannelId, String guildId, String serverName, boolean isJoin, JDA jda) {
+        GlobalChatChannel gc = channels.get(globalChannelId);
+        if (gc == null) return;
+
+        // Check if join/leave messages are enabled
+        if (isJoin && !gc.isJoinMessagesEnabled()) return;
+        if (!isJoin && !gc.isLeaveMessagesEnabled()) return;
+
+        int linkedCount = gc.getLinkedChannels().size();
+
+        for (Map.Entry<String, String> entry : gc.getLinkedChannels().entrySet()) {
+            String linkedGuildId = entry.getKey();
+            String textChId = entry.getValue();
+            Guild linkedGuild = jda.getGuildById(linkedGuildId);
+            if (linkedGuild == null) continue;
+            TextChannel tc = linkedGuild.getTextChannelById(textChId);
+            if (tc == null) continue;
+
+            String messageType = isJoin ? gc.getJoinMessageType() : gc.getLeaveMessageType();
+            String gcName = gc.getName();
+
+            if ("plaintext".equalsIgnoreCase(messageType)) {
+                String plaintext;
+                if (isJoin) {
+                    plaintext = gc.getJoinMessagePlaintext() != null
+                        ? gc.getJoinMessagePlaintext()
+                        : "Heya, {" + serverName + "} joined {" + gcName + "}! ({" + linkedCount + "} servers currently linked)";
+                } else {
+                    plaintext = gc.getLeaveMessagePlaintext() != null
+                        ? gc.getLeaveMessagePlaintext()
+                        : "Awh, {" + serverName + "} left {" + gcName + "} :(";
+                }
+                // Resolve placeholders
+                plaintext = plaintext
+                    .replace("{server}", serverName)
+                    .replace("{gc_name}", gcName)
+                    .replace("{servers}", String.valueOf(linkedCount));
+                tc.sendMessage(plaintext).queue(null, err -> {});
+            } else {
+                // Embed message (default)
+                String title;
+                if (isJoin) {
+                    title = gc.getJoinMessageTitle() != null
+                        ? gc.getJoinMessageTitle()
+                        : "Heya, {" + serverName + "} joined {" + gcName + "}!";
+                } else {
+                    title = gc.getLeaveMessageTitle() != null
+                        ? gc.getLeaveMessageTitle()
+                        : "Awh, {" + serverName + "} left {" + gcName + "} :(";
+                }
+                // Resolve placeholders
+                title = title
+                    .replace("{server}", serverName)
+                    .replace("{gc_name}", gcName)
+                    .replace("{servers}", String.valueOf(linkedCount));
+
+                net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                    .setTitle(title)
+                    .setFooter(linkedCount + " servers currently linked")
+                    .setTimestamp(java.time.Instant.now());
+
+                // Try to get server icon
+                Guild joiningGuild = jda.getGuildById(guildId);
+                if (joiningGuild != null && joiningGuild.getIconUrl() != null) {
+                    embed.setThumbnail(joiningGuild.getIconUrl());
+                }
+
+                tc.sendMessageEmbeds(embed.build()).queue(null, err -> {});
+            }
+        }
+    }
+
+    /**
+     * Update the channel topic of all linked channels to show the linked server count.
+     */
+    public void updateLinkedChannelTopics(String globalChannelId, JDA jda) {
+        GlobalChatChannel gc = channels.get(globalChannelId);
+        if (gc == null) return;
+
+        int linkedCount = gc.getLinkedChannels().size();
+
+        for (Map.Entry<String, String> entry : gc.getLinkedChannels().entrySet()) {
+            String linkedGuildId = entry.getKey();
+            String textChId = entry.getValue();
+            Guild linkedGuild = jda.getGuildById(linkedGuildId);
+            if (linkedGuild == null) continue;
+            TextChannel tc = linkedGuild.getTextChannelById(textChId);
+            if (tc == null) continue;
+
+            // Only update if topic tracking is enabled globally
+            if (gc.isTopicShowServerCount()) {
+                String topic = tc.getTopic();
+                String newTopic;
+                String prefix = "🌐 **" + gc.getName() + "** — ";
+                String serverInfo = linkedCount + " server" + (linkedCount == 1 ? "" : "s") + " linked";
+
+                if (topic != null && topic.contains(prefix)) {
+                    // Replace existing server count line
+                    newTopic = topic.replaceAll(prefix + ".*", prefix + serverInfo);
+                } else if (topic != null && !topic.isEmpty()) {
+                    newTopic = topic + "\n" + prefix + serverInfo;
+                } else {
+                    newTopic = prefix + serverInfo;
+                }
+
+                tc.getManager().setTopic(newTopic).queue(null, err -> {});
+            }
+        }
     }
 
     // Helpers

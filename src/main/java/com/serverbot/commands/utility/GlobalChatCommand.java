@@ -496,7 +496,8 @@ public class GlobalChatCommand implements SlashCommand {
             return;
         }
 
-        String error = service.linkChannel(channelId, event.getGuild().getId(), target.getId(), key);
+        String serverName = event.getGuild().getName();
+        String error = service.linkChannel(channelId, event.getGuild().getId(), target.getId(), key, serverName, event.getJDA());
         if (error != null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Link Failed", error)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
@@ -549,7 +550,8 @@ public class GlobalChatCommand implements SlashCommand {
             return;
         }
 
-        String error = service.unlinkChannel(event.getGuild().getId(), target.getId());
+        String serverName = event.getGuild().getName();
+        String error = service.unlinkChannel(event.getGuild().getId(), target.getId(), serverName, event.getJDA());
         if (error != null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Unlink Failed", error)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
