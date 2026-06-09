@@ -15,7 +15,6 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -30,11 +29,12 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Pride flag overlay command
+ * Pride flag overlay command - Translated from pride-bee reference algorithm
  */
 public class PrideCommand implements SlashCommand {
 
-    // Mapping from flag names to PNG resource filenames in /flags/
+    private static final int IMAGE_SIZE = 1024;
+
     private static final Map<String, String> FLAG_FILENAMES = new HashMap<>();
     private static final Color EMBED_COLOR = new Color(255, 105, 180);
 
@@ -122,7 +122,7 @@ public class PrideCommand implements SlashCommand {
     }
 
     @Override
-    public void execute(SlashCommandInteractionEvent event) {        // Check if no required parameters provided - show help
+    public void execute(SlashCommandInteractionEvent event) {
         if (event.getOption("flag") == null) {
             showPrideHelp(event);
             return;
@@ -151,9 +151,9 @@ public class PrideCommand implements SlashCommand {
                 .setDescription("Apply pride flag overlays to avatars or images")
                 .setColor(0xFF69B4)
                 .addField("**Basic Usage**",
-                        "`/pride flag:<flag> [type:avatar] [user:@user] [style:overlay]`\n" +
-                                "`/pride flag:<flag> type:url image_url:<url> [style:overlay]`\n" +
-                                "`/pride flag:<flag> type:custom image:<file> [style:overlay]`",
+                        "`/pride flag:<flag> [type:avatar] [user:@user] [style:border]`\n" +
+                                "`/pride flag:<flag> type:url image_url:<url> [style:border]`\n" +
+                                "`/pride flag:<flag> type:custom image:<file> [style:border]`",
                         false)
                 .addField("**Parameters**",
                         "• `flag` - Pride flag to apply (required)\n" +
@@ -161,7 +161,7 @@ public class PrideCommand implements SlashCommand {
                                 "• `user` - User for avatar type (default: you)\n" +
                                 "• `image_url` - URL for url type\n" +
                                 "• `image` - File upload for custom type\n" +
-                                "• `style` - How to apply flag (overlay/border, default: overlay)\n" +
+                                "• `style` - How to apply flag (overlay/border, default: border)\n" +
                                 "• `border_style` - Shape of border when style=border (circular/frame, default: circular)\n" +
                                 "• `border_thickness` - Border thickness in pixels (5–100, default: 20)",
                         false)
@@ -171,10 +171,10 @@ public class PrideCommand implements SlashCommand {
                                 "and many more...",
                         false)
                 .addField("**Examples**",
-                        "`/pride flag:trans` - Apply trans flag to your avatar\n" +
-                                "`/pride flag:pride user:@friend style:border` - Apply pride flag border to friend's avatar\n"
+                        "`/pride flag:trans` - Apply trans flag border to your avatar\n" +
+                                "`/pride flag:pride user:@friend` - Apply pride flag border to friend's avatar\n"
                                 +
-                                "`/pride flag:lesbian type:url image_url:https://example.com/image.png`",
+                                "`/pride flag:lesbian type:url image_url:https://example.com/image.png style:overlay`",
                         false)
                 .setFooter("Use -!help to dismiss future help messages");
 
@@ -201,7 +201,7 @@ public class PrideCommand implements SlashCommand {
     private void handleAvatar(SlashCommandInteractionEvent event) {
         User targetUser = event.getOption("user") != null ? event.getOption("user").getAsUser() : event.getUser();
         String flagName = event.getOption("flag").getAsString().toLowerCase();
-        String style = event.getOption("style") != null ? event.getOption("style").getAsString() : "overlay";
+        String style = event.getOption("style") != null ? event.getOption("style").getAsString() : "border";
         String borderStyle = event.getOption("border_style") != null ? event.getOption("border_style").getAsString() : "circular";
         int borderThickness = event.getOption("border_thickness") != null ? (int) event.getOption("border_thickness").getAsLong() : 20;
 
@@ -217,10 +217,9 @@ public class PrideCommand implements SlashCommand {
         event.deferReply().queue();
 
         try {
-            String avatarUrl = targetUser.getAvatarUrl();
-            if (avatarUrl == null) {
-                avatarUrl = targetUser.getDefaultAvatarUrl();
-            }
+            // Use highest-resolution avatar URL (4096px) like AvatarCommand does
+            String avatarUrl = targetUser.getEffectiveAvatarUrl() + "?size=4096";
+            avatarUrl = com.serverbot.utils.AvatarCacheManager.cacheAvatar(avatarUrl);
 
             BufferedImage result = applyPrideFlag(avatarUrl, flagName, style, borderStyle, borderThickness);
 
@@ -253,7 +252,7 @@ public class PrideCommand implements SlashCommand {
         String flagName = event.getOption("flag").getAsString().toLowerCase();
         String style = event.getOption("style") != null ? event.getOption("style").getAsString() : "border";
         String borderStyle = event.getOption("border_style") != null ? event.getOption("border_style").getAsString() : "circular";
-        int borderThickness = event.getOption("border_thickness") != null ? (int) event.getOption("border_thickness").getAsLong() : 10;
+        int borderThickness = event.getOption("border_thickness") != null ? (int) event.getOption("border_thickness").getAsLong() : 20;
 
         if (!FLAG_FILENAMES.containsKey(flagName)) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
@@ -295,7 +294,7 @@ public class PrideCommand implements SlashCommand {
     private void handleCustom(SlashCommandInteractionEvent event) {
         net.dv8tion.jda.api.entities.Message.Attachment attachment = event.getOption("image").getAsAttachment();
         String flagName = event.getOption("flag").getAsString().toLowerCase();
-        String style = event.getOption("style") != null ? event.getOption("style").getAsString() : "overlay";
+        String style = event.getOption("style") != null ? event.getOption("style").getAsString() : "border";
         String borderStyle = event.getOption("border_style") != null ? event.getOption("border_style").getAsString() : "circular";
         int borderThickness = event.getOption("border_thickness") != null ? (int) event.getOption("border_thickness").getAsLong() : 20;
 
@@ -308,7 +307,6 @@ public class PrideCommand implements SlashCommand {
             return;
         }
 
-        // Check if attachment is an image
         if (!attachment.isImage()) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Invalid File",
@@ -346,36 +344,175 @@ public class PrideCommand implements SlashCommand {
         }
     }
 
-    private BufferedImage applyPrideFlag(String imageUrl, String flagName, String arrangement, String borderStyle, int borderThickness) throws IOException {
-        // Download the image
-        URL url = new URL(imageUrl);
-        BufferedImage originalImage = ImageIO.read(url);
+    // ========================================================================
+    // Image processing - translated from pride-bee reference algorithm
+    // ========================================================================
 
-        if (originalImage == null) {
+    private BufferedImage applyPrideFlag(String imageUrl, String flagName, String arrangement, String borderStyle, int borderThickness) throws IOException {
+        // Download the source image
+        URL url = new URL(imageUrl);
+        BufferedImage sourceImage = ImageIO.read(url);
+        if (sourceImage == null) {
             throw new IOException("Could not read image from URL");
         }
 
-        int width = originalImage.getWidth();
-        int height = originalImage.getHeight();
-        BufferedImage result = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2d = result.createGraphics();
+        // Resize source to 1024x1024 (same as reference: IMAGE_SIZE=1024)
+        BufferedImage sourceResized = resizeImage(sourceImage, IMAGE_SIZE, IMAGE_SIZE);
 
-        // Enable anti-aliasing
+        // Load the flag image
+        BufferedImage flagImage = loadFlagImage(flagName);
+        if (flagImage == null) {
+            throw new IOException("Could not load flag image: " + flagName);
+        }
+        // Resize flag to 1024x1024
+        BufferedImage flagResized = resizeImage(flagImage, IMAGE_SIZE, IMAGE_SIZE);
+
+        BufferedImage result;
+        switch (arrangement.toLowerCase()) {
+            case "overlay" -> result = renderOverlay(flagResized, sourceResized);
+            case "border" -> {
+                if ("frame".equals(borderStyle)) {
+                    result = renderFrame(flagResized, sourceResized, borderThickness);
+                } else {
+                    result = renderCircularBorder(flagResized, sourceResized, borderThickness);
+                }
+            }
+            default -> result = renderCircularBorder(flagResized, sourceResized, borderThickness);
+        }
+
+        return result;
+    }
+
+    /**
+     * Renders the flag as a circular border around the avatar.
+     * Algorithm (from reference):
+     * 1. Make avatar circular
+     * 2. Resize circular avatar to IMAGE_SIZE - padding*2 (padding = borderThickness)
+     * 3. On a canvas with the flag, overlay the circular avatar at (padding, padding)
+     * 4. Clip the whole result to a circle
+     */
+    private BufferedImage renderCircularBorder(BufferedImage flagImage, BufferedImage avatarImage, int borderThickness) {
+        int padding = borderThickness;
+        int innerSize = IMAGE_SIZE - padding * 2;
+
+        // Step 1: Make avatar circular
+        BufferedImage circularAvatar = applyCircleClip(avatarImage);
+
+        // Step 2: Resize circular avatar to inner size
+        BufferedImage resizedAvatar = resizeImage(circularAvatar, innerSize, innerSize);
+
+        // Step 3: On a canvas with the flag, overlay the circular avatar
+        BufferedImage composited = new BufferedImage(IMAGE_SIZE, IMAGE_SIZE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = composited.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+        // Draw flag as background
+        g2d.drawImage(flagImage, 0, 0, IMAGE_SIZE, IMAGE_SIZE, null);
+
+        // Draw circular avatar on top, centered with padding
+        g2d.drawImage(resizedAvatar, padding, padding, innerSize, innerSize, null);
+
+        g2d.dispose();
+
+        // Step 4: Clip the whole result to a circle
+        return applyCircleClip(composited);
+    }
+
+    /**
+     * Renders the flag as an overlay blended over the full avatar (multiply blend).
+     * Algorithm (from reference with mask=true):
+     * 1. Composite flag over avatar with multiply blend
+     * 2. Clip to circle
+     */
+    private BufferedImage renderOverlay(BufferedImage flagImage, BufferedImage avatarImage) {
+        BufferedImage result = new BufferedImage(IMAGE_SIZE, IMAGE_SIZE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = result.createGraphics();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
-        // Draw original image
-        g2d.drawImage(originalImage, 0, 0, null);
+        // Draw the avatar as base
+        g2d.drawImage(avatarImage, 0, 0, IMAGE_SIZE, IMAGE_SIZE, null);
 
-        BufferedImage flagImage = loadFlagImage(flagName);
-        switch (arrangement.toLowerCase()) {
-            case "overlay" -> drawOverlayFromImage(g2d, width, height, flagImage);
-            case "border" -> drawBorderFromImage(g2d, width, height, flagImage, borderStyle, borderThickness);
-            default -> drawOverlayFromImage(g2d, width, height, flagImage);
-        }
+        // Multiply blend the flag over the avatar
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f));
+        g2d.drawImage(flagImage, 0, 0, IMAGE_SIZE, IMAGE_SIZE, null);
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
 
         g2d.dispose();
+
+        return applyCircleClip(result);
+    }
+
+    /**
+     * Renders the flag as a rectangular frame border around the avatar.
+     * The avatar stays in the center, flag stripes appear on all four sides.
+     */
+    private BufferedImage renderFrame(BufferedImage flagImage, BufferedImage avatarImage, int borderThickness) {
+        int padding = borderThickness;
+        int innerSize = IMAGE_SIZE - padding * 2;
+
+        BufferedImage result = new BufferedImage(IMAGE_SIZE, IMAGE_SIZE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = result.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
+        // Draw flag as background
+        g2d.drawImage(flagImage, 0, 0, IMAGE_SIZE, IMAGE_SIZE, null);
+
+        // Draw avatar on top, centered
+        BufferedImage resizedAvatar = resizeImage(avatarImage, innerSize, innerSize);
+        g2d.drawImage(resizedAvatar, padding, padding, innerSize, innerSize, null);
+
+        g2d.dispose();
+
         return result;
+    }
+
+    /**
+     * Creates a circular clip on the image. Everything outside the
+     * largest inscribed circle becomes transparent.
+     */
+    private BufferedImage applyCircleClip(BufferedImage source) {
+        int width = source.getWidth();
+        int height = source.getHeight();
+        int diameter = Math.min(width, height);
+
+        BufferedImage result = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = result.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
+        // Create an ellipse-shaped clip
+        Ellipse2D.Double circle = new Ellipse2D.Double(
+            (width - diameter) / 2.0,
+            (height - diameter) / 2.0,
+            diameter,
+            diameter
+        );
+        g2d.setClip(circle);
+
+        // Draw the source image clipped to the circle
+        g2d.drawImage(source, 0, 0, null);
+
+        g2d.dispose();
+
+        return result;
+    }
+
+    /**
+     * Resizes an image to the specified dimensions.
+     */
+    private BufferedImage resizeImage(BufferedImage source, int targetWidth, int targetHeight) {
+        BufferedImage resized = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = resized.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.drawImage(source, 0, 0, targetWidth, targetHeight, null);
+        g2d.dispose();
+        return resized;
     }
 
     private BufferedImage loadFlagImage(String flagName) {
@@ -386,44 +523,6 @@ public class PrideCommand implements SlashCommand {
         } catch (IOException e) {
             return null;
         }
-    }
-
-    private void drawOverlayFromImage(Graphics2D g2d, int width, int height, BufferedImage flagImage) {
-        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.35f));
-        g2d.drawImage(flagImage, 0, 0, width, height, null);
-        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
-    }
-
-    private void drawBorderFromImage(Graphics2D g2d, int width, int height, BufferedImage flagImage, String borderStyle, int borderThickness) {
-        // Scale the flag image to the avatar dimensions
-        BufferedImage scaledFlag = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D fg = scaledFlag.createGraphics();
-        fg.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        fg.drawImage(flagImage, 0, 0, width, height, null);
-        fg.dispose();
-
-        if ("frame".equals(borderStyle)) {
-            // Rectangular frame
-            Area outerArea = new Area(new java.awt.Rectangle(0, 0, width, height));
-            Area innerArea = new Area(new java.awt.Rectangle(
-                    borderThickness, borderThickness,
-                    width - 2 * borderThickness, height - 2 * borderThickness));
-            outerArea.subtract(innerArea);
-            g2d.setClip(outerArea);
-        } else {
-            // Circular ring (default)
-            int cx = width / 2, cy = height / 2;
-            int radius = Math.min(width, height) / 2;
-            int innerRadius = Math.max(0, radius - borderThickness);
-            Ellipse2D.Double outer = new Ellipse2D.Double(cx - radius, cy - radius, radius * 2, radius * 2);
-            Ellipse2D.Double inner = new Ellipse2D.Double(cx - innerRadius, cy - innerRadius, innerRadius * 2, innerRadius * 2);
-            Area ring = new Area(outer);
-            ring.subtract(new Area(inner));
-            g2d.setClip(ring);
-        }
-
-        g2d.drawImage(scaledFlag, 0, 0, null);
-        g2d.setClip(null);
     }
 
     private String capitalize(String str) {
