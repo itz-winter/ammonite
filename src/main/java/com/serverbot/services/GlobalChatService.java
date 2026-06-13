@@ -1062,8 +1062,10 @@ public class GlobalChatService {
                 String serverInfo = linkedCount + " server" + (linkedCount == 1 ? "" : "s") + " linked";
 
                 if (topic != null && topic.contains(prefix)) {
-                    // Replace existing server count line
-                    newTopic = topic.replaceAll(prefix + ".*", prefix + serverInfo);
+                    // Replace existing server count line — use literal replacement, not regex
+                    int prefixIndex = topic.indexOf(prefix);
+                    String beforePrefix = topic.substring(0, prefixIndex);
+                    newTopic = beforePrefix + prefix + serverInfo;
                 } else if (topic != null && !topic.isEmpty()) {
                     newTopic = topic + "\n" + prefix + serverInfo;
                 } else {

@@ -1110,14 +1110,14 @@ public class GlobalChatCommand implements SlashCommand {
         if (enabled != null) gc.setJoinMessagesEnabled(enabled);
         if (messageType != null) gc.setJoinMessageType(messageType);
         if (title != null) {
-            if (title.equalsIgnoreCase("reset") || title.equalsIgnoreCase("default")) {
+            if (title.equalsIgnoreCase("reset") || title.equalsIgnoreCase("default") || title.equals("{}")) {
                 gc.setJoinMessageTitle(null);
             } else {
                 gc.setJoinMessageTitle(title);
             }
         }
         if (plaintext != null) {
-            if (plaintext.equalsIgnoreCase("reset") || plaintext.equalsIgnoreCase("default")) {
+            if (plaintext.equalsIgnoreCase("reset") || plaintext.equalsIgnoreCase("default") || plaintext.equals("{}")) {
                 gc.setJoinMessagePlaintext(null);
             } else {
                 gc.setJoinMessagePlaintext(plaintext);
