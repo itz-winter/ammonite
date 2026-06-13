@@ -1179,6 +1179,27 @@
                 </ul>
             </div>
         </div>
+
+        <div class="cmd-row" data-cmd="autoproxy">
+            <div class="cmd-summary" onclick="toggleCmd(this)">
+                <span class="cmd-name">/autoproxy<span class="cmd-expand-icon">&#9654;</span></span>
+                <span class="cmd-desc">Quick-toggle autoproxy on/off</span>
+                <span class="cmd-perm">—</span>
+            </div>
+            <div class="cmd-detail">
+                <h4>Syntax</h4>
+                <div class="syntax-block">/autoproxy <span class="optional">[enabled]</span></div>
+                <h4>Details</h4>
+                <ul>
+                    <li>No argument = toggle current state.</li>
+                    <li>Set to <code>true</code> or <code>false</code> to enable/disable.</li>
+                    <li>Use <code>/proxysettings autoproxy</code> for advanced mode selection.</li>
+                </ul>
+                <h4>Examples</h4>
+                <div class="example-block"><code>/autoproxy</code> — toggle</div>
+                <div class="example-block"><code>/autoproxy enabled:true</code> — enable</div>
+            </div>
+        </div>
     </div>
 
     <!-- ============================================================ -->
@@ -1244,6 +1265,11 @@
                     <tr><td><code>addmod</code></td><td>Add a moderator to your channel</td></tr>
                     <tr><td><code>removemod</code></td><td>Remove a moderator</td></tr>
                     <tr><td><code>addcoowner</code></td><td>Add a co-owner to your channel</td></tr>
+                    <tr><td><code>removecoowner</code></td><td>Remove a co-owner</td></tr>
+                    <tr><td><code>transferowner</code></td><td>Transfer channel ownership</td></tr>
+                    <tr><td><code>servers</code></td><td>List servers linked to a global chat</td></tr>
+                    <tr><td><code>editjoin</code></td><td>Configure join messages (enable, type, title, plaintext)</td></tr>
+                    <tr><td><code>editleave</code></td><td>Configure leave messages (enable, type, title, plaintext)</td></tr>
                 </table>
                 <h4>Examples</h4>
                 <div class="example-block"><code>/globalchat create name:Lounge description:A chill cross-server chat</code></div>

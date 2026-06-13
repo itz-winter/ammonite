@@ -20,7 +20,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Set;
-import java.util.StringJoiner;
 
 /**
  * Command to list and display pride flags
@@ -63,19 +62,27 @@ public class FlagsCommand implements SlashCommand {
 
         EmbedBuilder embed = new EmbedBuilder()
                 .setTitle("🏳️‍🌈 Available Pride Flags")
-                .setDescription("Here are all the available pride flags you can use:")
+                .setDescription("Here are all **" + flags.size() + "** available pride flags you can use:")
                 .setColor(new Color(255, 20, 147)); // Deep pink
 
-        StringJoiner flagList = new StringJoiner("\n");
+        // Build flag list, splitting into multiple fields if it exceeds 1024 chars
+        StringBuilder currentField = new StringBuilder();
+        int fieldCount = 0;
         for (String flagName : flags) {
-            String displayName = capitalize(flagName);
-            String description = getFlagDescription(flagName);
-            flagList.add("**" + displayName + "** (`" + flagName + "`) - " + description);
+            String entry = "`" + flagName + "`\n";
+            if (currentField.length() + entry.length() > 950) {
+                embed.addField(fieldCount == 0 ? "Flags" : "Flags (continued)", currentField.toString(), false);
+                currentField = new StringBuilder();
+                fieldCount++;
+            }
+            currentField.append(entry);
+        }
+        if (currentField.length() > 0) {
+            embed.addField(fieldCount == 0 ? "Flags" : "Flags (continued)", currentField.toString(), false);
         }
 
-        embed.addField("Flags", flagList.toString(), false);
         embed.addField("Usage",
-                "Use `/pride avatar <flag>` or `/pride image <url> <flag>` to apply a flag\n" +
+                "Use `/pride flag:<flag>` to apply a flag\n" +
                         "Use `/flags display <flag>` to see what a flag looks like",
                 false);
 

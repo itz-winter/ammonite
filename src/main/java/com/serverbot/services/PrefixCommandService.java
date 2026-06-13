@@ -98,7 +98,6 @@ public class PrefixCommandService {
         Map.entry("ap", "autoproxy"),
         Map.entry("proxy", "proxy"),
         Map.entry("px", "proxy"),
-        Map.entry("p", "proxy"),
         // Moderation aliases
         Map.entry("softban", "softban"),
         Map.entry("hist", "hist"),
@@ -477,11 +476,7 @@ public class PrefixCommandService {
                 handleGlobalChatCommand(event, args);
                 break;
             default:
-                // Command is registered as a slash command but has no prefix implementation
-                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                    "Not Available via Prefix",
-                    "The prefix version of `" + commandName + "` is not available. Please use `/" + commandName + "` instead."
-                )).queue();
+                // Command is registered but has no prefix implementation - silently ignore
                 break;
         }
     }

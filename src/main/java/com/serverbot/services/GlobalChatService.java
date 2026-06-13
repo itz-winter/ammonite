@@ -991,11 +991,11 @@ public class GlobalChatService {
                 if (isJoin) {
                     plaintext = gc.getJoinMessagePlaintext() != null
                         ? gc.getJoinMessagePlaintext()
-                        : "Heya, {" + serverName + "} joined {" + gcName + "}! ({" + linkedCount + "} servers currently linked)";
+                        : "Heya, {server} joined {gc_name}! ({servers} servers currently linked)";
                 } else {
                     plaintext = gc.getLeaveMessagePlaintext() != null
                         ? gc.getLeaveMessagePlaintext()
-                        : "Awh, {" + serverName + "} left {" + gcName + "} :(";
+                        : "Awh, {server} left {gc_name} :(";
                 }
                 // Resolve placeholders
                 plaintext = plaintext
@@ -1009,11 +1009,11 @@ public class GlobalChatService {
                 if (isJoin) {
                     title = gc.getJoinMessageTitle() != null
                         ? gc.getJoinMessageTitle()
-                        : "Heya, {" + serverName + "} joined {" + gcName + "}!";
+                        : "Heya, {server} joined {gc_name}!";
                 } else {
                     title = gc.getLeaveMessageTitle() != null
                         ? gc.getLeaveMessageTitle()
-                        : "Awh, {" + serverName + "} left {" + gcName + "} :(";
+                        : "Awh, {server} left {gc_name} :(";
                 }
                 // Resolve placeholders
                 title = title

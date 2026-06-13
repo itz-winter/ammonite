@@ -41,6 +41,27 @@
       </div>
 
       <div class="doc-section">
+        <h2>Using Commands</h2>
+        <p>Ammonite supports both <strong>slash commands</strong> (recommended) and <strong>prefix commands</strong>.</p>
+        
+        <h3>Slash Commands (Recommended)</h3>
+        <p>Type <code>/</code> in any channel to see all available slash commands. All bot functions are accessible this way.</p>
+        
+        <h3>Prefix Commands</h3>
+        <p>You can also use prefix commands by typing the server's configured prefix (default: <code>!</code>) followed by a command name. For example:</p>
+        <ul>
+          <li><code>!help</code> — Open the help menu</li>
+          <li><code>!ping</code> — Check bot latency</li>
+          <li><code>!balance</code> — Check your economy balance</li>
+          <li><code>!avatar</code> — View your avatar</li>
+          <li><code>!autoproxy</code> — Toggle autoproxy</li>
+          <li><code>!globalchat list</code> — List your global chat channels</li>
+        </ul>
+        <p>Prefix commands silently ignore unknown commands — no error messages shown. Configure the prefix with <code>/prefix</code> slash command.</p>
+        <p>Use <code>px;</code> to access proxy-related commands (e.g. <code>px; list</code>, <code>px; autoproxy</code>).</p>
+      </div>
+
+      <div class="doc-section">
         <h2>First Steps After Setup</h2>
         <h3>Auto-Config Wizard</h3>
         <p>The fastest way to configure your server is the <strong>auto-config wizard</strong>. Run <code>/autoconfig</code> and it will walk you through setting up:</p>

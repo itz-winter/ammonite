@@ -93,7 +93,11 @@ public class GlobalChatCommand implements SlashCommand {
                                 "New message suffix — 'reset' for default, {} for empty", false)
                         .addOption(OptionType.STRING, "nameformat",
                                 "Full display name template — 'reset' to clear, {} for empty", false)
-                        .addOption(OptionType.STRING, "webhookmode", "'webhook' or 'text'", false))
+                        .addOption(OptionType.STRING, "webhookmode", "'webhook' or 'text'", false)
+                        .addOption(OptionType.STRING, "joinmessage",
+                                "Custom join message title — 'text:...' for plaintext, 'reset' for default", false)
+                        .addOption(OptionType.STRING, "leavemessage",
+                                "Custom leave message title — 'text:...' for plaintext, 'reset' for default", false))
                 // delete
                 .addSubcommands(new SubcommandData("delete", "Delete your global chat channel")
                         .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true)
@@ -181,10 +185,36 @@ public class GlobalChatCommand implements SlashCommand {
                         .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true)
                                 .setAutoComplete(true))
                         .addOption(OptionType.USER, "user", "User to add as co-owner", true))
+                // removecoowner
+                .addSubcommands(new SubcommandData("removecoowner", "Remove a co-owner from your global chat channel")
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                                .setAutoComplete(true))
+                        .addOption(OptionType.USER, "user", "User to remove as co-owner", true))
+                // transferowner
+                .addSubcommands(new SubcommandData("transferowner", "Transfer ownership of your global chat channel")
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                                .setAutoComplete(true))
+                        .addOption(OptionType.USER, "user", "User to transfer ownership to", true))
                 // servers
                 .addSubcommands(new SubcommandData("servers", "List servers linked to a global chat channel")
                         .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true)
-                                .setAutoComplete(true)));
+                                .setAutoComplete(true)))
+                // editjoin
+                .addSubcommands(new SubcommandData("editjoin", "Configure join messages for a global chat channel")
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                                .setAutoComplete(true))
+                        .addOption(OptionType.BOOLEAN, "enabled", "Enable or disable join messages", false)
+                        .addOption(OptionType.STRING, "type", "Message type: embed or plaintext", false)
+                        .addOption(OptionType.STRING, "title", "Custom embed title (or 'reset' for default)", false)
+                        .addOption(OptionType.STRING, "plaintext", "Custom plaintext (or 'reset' for default)", false))
+                // editleave
+                .addSubcommands(new SubcommandData("editleave", "Configure leave messages for a global chat channel")
+                        .addOptions(new OptionData(OptionType.STRING, "channelid", "Global chat channel ID", true)
+                                .setAutoComplete(true))
+                        .addOption(OptionType.BOOLEAN, "enabled", "Enable or disable leave messages", false)
+                        .addOption(OptionType.STRING, "type", "Message type: embed or plaintext", false)
+                        .addOption(OptionType.STRING, "title", "Custom embed title (or 'reset' for default)", false)
+                        .addOption(OptionType.STRING, "plaintext", "Custom plaintext (or 'reset' for default)", false));
     }
 
     @Override
@@ -217,7 +247,11 @@ public class GlobalChatCommand implements SlashCommand {
             case "addmod" -> handleAddMod(event, service);
             case "removemod" -> handleRemoveMod(event, service);
             case "addcoowner" -> handleAddCoOwner(event, service);
+            case "removecoowner" -> handleRemoveCoOwner(event, service);
+            case "transferowner" -> handleTransferOwner(event, service);
             case "servers" -> handleServers(event, service);
+            case "editjoin" -> handleEditJoin(event, service);
+            case "editleave" -> handleEditLeave(event, service);
             default -> event.reply("Unknown subcommand.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
@@ -340,6 +374,8 @@ public class GlobalChatCommand implements SlashCommand {
         String newSuffix = event.getOption("suffix", (String) null, OptionMapping::getAsString);
         String newNameFormat = event.getOption("nameformat", (String) null, OptionMapping::getAsString);
         String newWebhookMode = event.getOption("webhookmode", (String) null, OptionMapping::getAsString);
+        String newJoinMsg = event.getOption("joinmessage", (String) null, OptionMapping::getAsString);
+        String newLeaveMsg = event.getOption("leavemessage", (String) null, OptionMapping::getAsString);
 
         if (newName != null)
             gc.setName(newName);
@@ -389,6 +425,34 @@ public class GlobalChatCommand implements SlashCommand {
         }
         if (newWebhookMode != null) {
             gc.setWebhookEnabled(!newWebhookMode.equalsIgnoreCase("text"));
+        }
+        if (newJoinMsg != null) {
+            if (newJoinMsg.equalsIgnoreCase("none") || newJoinMsg.equalsIgnoreCase("default")
+                    || newJoinMsg.equalsIgnoreCase("reset")) {
+                gc.setJoinMessageTitle(null);
+                gc.setJoinMessagePlaintext(null);
+                gc.setJoinMessageType("embed");
+            } else if (newJoinMsg.startsWith("text:")) {
+                gc.setJoinMessageType("plaintext");
+                gc.setJoinMessagePlaintext(newJoinMsg.substring(5));
+            } else {
+                gc.setJoinMessageType("embed");
+                gc.setJoinMessageTitle(newJoinMsg);
+            }
+        }
+        if (newLeaveMsg != null) {
+            if (newLeaveMsg.equalsIgnoreCase("none") || newLeaveMsg.equalsIgnoreCase("default")
+                    || newLeaveMsg.equalsIgnoreCase("reset")) {
+                gc.setLeaveMessageTitle(null);
+                gc.setLeaveMessagePlaintext(null);
+                gc.setLeaveMessageType("embed");
+            } else if (newLeaveMsg.startsWith("text:")) {
+                gc.setLeaveMessageType("plaintext");
+                gc.setLeaveMessagePlaintext(newLeaveMsg.substring(5));
+            } else {
+                gc.setLeaveMessageType("embed");
+                gc.setLeaveMessageTitle(newLeaveMsg);
+            }
         }
 
         service.saveChannels();
@@ -683,6 +747,15 @@ public class GlobalChatCommand implements SlashCommand {
 
         boolean isOwnerOrCoOwner = gc.hasManageAccess(event.getUser().getId());
 
+        // Build staff info strings
+        String ownerInfo = gc.getOwnerId() != null ? "<@" + gc.getOwnerId() + ">" : "None";
+        String coOwnerInfo = gc.getCoOwnerIds().isEmpty()
+            ? "None"
+            : gc.getCoOwnerIds().stream().map(id -> "<@" + id + ">").collect(Collectors.joining(", "));
+        String modInfo = gc.getModeratorIds().isEmpty()
+            ? "None"
+            : gc.getModeratorIds().stream().map(id -> "<@" + id + ">").collect(Collectors.joining(", "));
+
         EmbedBuilder eb = new EmbedBuilder()
                 .setTitle(CustomEmojis.SETTING + " Manage: " + gc.getName())
                 .setDescription(
@@ -690,6 +763,9 @@ public class GlobalChatCommand implements SlashCommand {
                                 "**ID:** `" + gc.getChannelId() + "`\n" +
                                 "**Linked Servers:** " + gc.getLinkedChannels().size() + "\n" +
                                 "**Visibility:** " + gc.getVisibility() + "\n\n" +
+                                "**Owner:** " + ownerInfo + "\n" +
+                                "**Co-Owners:** " + coOwnerInfo + "\n" +
+                                "**Moderators:** " + modInfo + "\n\n" +
                                 "*All actions open a form — no need to type in chat.*")
                 .setColor(EmbedUtils.INFO_COLOR)
                 .setTimestamp(Instant.now());
@@ -972,6 +1048,118 @@ public class GlobalChatCommand implements SlashCommand {
         event.replyEmbeds(
                 EmbedUtils.createSuccessEmbed("Co-Owner Added", "<@" + userId + "> has been added as a co-owner."))
                 .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+    }
+
+    private void handleRemoveCoOwner(SlashCommandInteractionEvent event, GlobalChatService service) {
+        String channelId = event.getOption("channelid", OptionMapping::getAsString);
+        GlobalChatChannel gc = service.getChannel(channelId);
+        if (gc == null) {
+            replyNotFound(event);
+            return;
+        }
+        if (!gc.isOwner(event.getUser().getId())) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("No Access", "Only the channel owner can remove co-owners."))
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+            return;
+        }
+        String userId = event.getOption("user", OptionMapping::getAsUser).getId();
+        if (userId.equals(gc.getOwnerId())) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("Error", "You cannot remove yourself as owner."))
+                    .setEphemeral(true).queue();
+            return;
+        }
+        gc.getCoOwnerIds().remove(userId);
+        service.saveChannels();
+        event.replyEmbeds(EmbedUtils.createSuccessEmbed("Co-Owner Removed",
+                "<@" + userId + "> has been removed as a co-owner."))
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+    }
+
+    private void handleTransferOwner(SlashCommandInteractionEvent event, GlobalChatService service) {
+        String channelId = event.getOption("channelid", OptionMapping::getAsString);
+        GlobalChatChannel gc = service.getChannel(channelId);
+        if (gc == null) {
+            replyNotFound(event);
+            return;
+        }
+        if (!gc.isOwner(event.getUser().getId())) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed("No Access", "Only the channel owner can transfer ownership."))
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+            return;
+        }
+        String newOwnerId = event.getOption("user", OptionMapping::getAsUser).getId();
+        gc.getCoOwnerIds().add(gc.getOwnerId()); // Old owner becomes co-owner
+        gc.setOwnerId(newOwnerId);
+        service.saveChannels();
+        event.replyEmbeds(EmbedUtils.createSuccessEmbed("Ownership Transferred",
+                "Ownership has been transferred to <@" + newOwnerId + ">."))
+                .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+    }
+
+    private void handleEditJoin(SlashCommandInteractionEvent event, GlobalChatService service) {
+        String channelId = event.getOption("channelid", OptionMapping::getAsString);
+        GlobalChatChannel gc = service.getChannel(channelId);
+        if (gc == null) { replyNotFound(event); return; }
+        if (!gc.hasManageAccess(event.getUser().getId())) { replyNoAccess(event); return; }
+
+        Boolean enabled = event.getOption("enabled", (Boolean) null, OptionMapping::getAsBoolean);
+        String messageType = event.getOption("type", (String) null, OptionMapping::getAsString);
+        String title = event.getOption("title", (String) null, OptionMapping::getAsString);
+        String plaintext = event.getOption("plaintext", (String) null, OptionMapping::getAsString);
+
+        if (enabled != null) gc.setJoinMessagesEnabled(enabled);
+        if (messageType != null) gc.setJoinMessageType(messageType);
+        if (title != null) {
+            if (title.equalsIgnoreCase("reset") || title.equalsIgnoreCase("default")) {
+                gc.setJoinMessageTitle(null);
+            } else {
+                gc.setJoinMessageTitle(title);
+            }
+        }
+        if (plaintext != null) {
+            if (plaintext.equalsIgnoreCase("reset") || plaintext.equalsIgnoreCase("default")) {
+                gc.setJoinMessagePlaintext(null);
+            } else {
+                gc.setJoinMessagePlaintext(plaintext);
+            }
+        }
+        service.saveChannels();
+        event.replyEmbeds(EmbedUtils.createSuccessEmbed("Join Message Updated",
+                "Join message settings have been updated for **" + gc.getName() + "**."))
+                .setEphemeral(true).queue();
+    }
+
+    private void handleEditLeave(SlashCommandInteractionEvent event, GlobalChatService service) {
+        String channelId = event.getOption("channelid", OptionMapping::getAsString);
+        GlobalChatChannel gc = service.getChannel(channelId);
+        if (gc == null) { replyNotFound(event); return; }
+        if (!gc.hasManageAccess(event.getUser().getId())) { replyNoAccess(event); return; }
+
+        Boolean enabled = event.getOption("enabled", (Boolean) null, OptionMapping::getAsBoolean);
+        String messageType = event.getOption("type", (String) null, OptionMapping::getAsString);
+        String title = event.getOption("title", (String) null, OptionMapping::getAsString);
+        String plaintext = event.getOption("plaintext", (String) null, OptionMapping::getAsString);
+
+        if (enabled != null) gc.setLeaveMessagesEnabled(enabled);
+        if (messageType != null) gc.setLeaveMessageType(messageType);
+        if (title != null) {
+            if (title.equalsIgnoreCase("reset") || title.equalsIgnoreCase("default")) {
+                gc.setLeaveMessageTitle(null);
+            } else {
+                gc.setLeaveMessageTitle(title);
+            }
+        }
+        if (plaintext != null) {
+            if (plaintext.equalsIgnoreCase("reset") || plaintext.equalsIgnoreCase("default")) {
+                gc.setLeaveMessagePlaintext(null);
+            } else {
+                gc.setLeaveMessagePlaintext(plaintext);
+            }
+        }
+        service.saveChannels();
+        event.replyEmbeds(EmbedUtils.createSuccessEmbed("Leave Message Updated",
+                "Leave message settings have been updated for **" + gc.getName() + "**."))
+                .setEphemeral(true).queue();
     }
 
     private void handleServers(SlashCommandInteractionEvent event, GlobalChatService service) {
