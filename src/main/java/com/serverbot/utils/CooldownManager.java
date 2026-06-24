@@ -4,7 +4,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Manages command cooldowns to prevent spam
+ * Manages command cooldowns to prevent spam.
+ * Used by both slash and prefix commands so they share the same cooldown state.
  */
 public class CooldownManager {
 

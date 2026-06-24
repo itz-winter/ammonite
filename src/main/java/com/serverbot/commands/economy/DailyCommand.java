@@ -47,8 +47,7 @@ public class DailyCommand implements SlashCommand {
             Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
 
             // Check if economy is enabled
-            Boolean economyEnabled = (Boolean) guildSettings.get("enableEconomy");
-            if (economyEnabled != null && !economyEnabled) {
+            if (!ServerBot.getStorageManager().isEconomyEnabled(guildId)) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Economy Disabled",
                         "The economy system is disabled on this server.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
@@ -114,12 +113,15 @@ public class DailyCommand implements SlashCommand {
             // Update last daily claim
             ServerBot.getStorageManager().updateGuildSettings(guildId, "lastDaily_" + userId, today);
 
-            String description = "**Daily Reward:** " + (rewardAmount - streakBonus) + " points\n";
+            String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
+            String currencyIcon = ServerBot.getStorageManager().getCurrencyIcon(guildId);
+
+            String description = "**Daily Reward:** " + (rewardAmount - streakBonus) + " " + currencyName + "\n";
             if (hasStreak) {
-                description += "**Streak Bonus:** " + streakBonus + " points 🔥\n";
+                description += "**Streak Bonus:** " + streakBonus + " " + currencyName + " 🔥\n";
             }
-            description += "**Total Earned:** " + rewardAmount + " points\n" +
-                    "**New Balance:** " + newBalance + " points\n";
+            description += "**Total Earned:** " + rewardAmount + " " + currencyName + "\n" +
+                    "**New Balance:** " + newBalance + " " + currencyName + "\n";
 
             if (!hasStreak && lastDaily != null) {
                 description += "\n*Your streak was broken! Claim daily to build up streak bonuses.*";
@@ -130,7 +132,7 @@ public class DailyCommand implements SlashCommand {
             }
 
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                    "💰 Daily Reward Claimed!",
+                    currencyIcon + " Daily Reward Claimed!",
                     description)).queue();
 
         } catch (Exception e) {

@@ -233,10 +233,14 @@ public class GlobalChatService {
     public String linkChannel(String globalChannelId, String guildId, String textChannelId, String providedKey, String serverName, JDA jda) {
         String error = linkChannel(globalChannelId, guildId, textChannelId, providedKey);
         if (error == null && jda != null) {
-            // Send join message to all linked channels
-            sendJoinLeaveMessage(globalChannelId, guildId, serverName, true, jda);
-            // Update channel topics
-            updateLinkedChannelTopics(globalChannelId, jda);
+            try {
+                // Send join message to all linked channels
+                sendJoinLeaveMessage(globalChannelId, guildId, serverName, true, jda);
+                // Update channel topics
+                updateLinkedChannelTopics(globalChannelId, jda);
+            } catch (Exception ex) {
+                logger.trace("Failed to send join notification: {}", ex.getMessage());
+            }
         }
         return error;
     }
@@ -268,10 +272,14 @@ public class GlobalChatService {
 
         String error = unlinkChannel(guildId, textChannelId);
         if (error == null && jda != null) {
-            // Send leave message to all remaining linked channels
-            sendJoinLeaveMessage(globalId, guildId, serverName, false, jda);
-            // Update channel topics
-            updateLinkedChannelTopics(globalId, jda);
+            try {
+                // Send leave message to all remaining linked channels
+                sendJoinLeaveMessage(globalId, guildId, serverName, false, jda);
+                // Update channel topics
+                updateLinkedChannelTopics(globalId, jda);
+            } catch (Exception ex) {
+                logger.trace("Failed to send leave notification: {}", ex.getMessage());
+            }
         }
         return error;
     }
@@ -966,74 +974,82 @@ public class GlobalChatService {
      * Send a join/leave message to all linked channels of a global chat.
      */
     public void sendJoinLeaveMessage(String globalChannelId, String guildId, String serverName, boolean isJoin, JDA jda) {
-        GlobalChatChannel gc = channels.get(globalChannelId);
-        if (gc == null) return;
+        try {
+            GlobalChatChannel gc = channels.get(globalChannelId);
+            if (gc == null) return;
 
-        // Check if join/leave messages are enabled
-        if (isJoin && !gc.isJoinMessagesEnabled()) return;
-        if (!isJoin && !gc.isLeaveMessagesEnabled()) return;
+            // Check if join/leave messages are enabled
+            if (isJoin && !gc.isJoinMessagesEnabled()) return;
+            if (!isJoin && !gc.isLeaveMessagesEnabled()) return;
 
-        int linkedCount = gc.getLinkedChannels().size();
+            int linkedCount = gc.getLinkedChannels().size();
 
-        for (Map.Entry<String, String> entry : gc.getLinkedChannels().entrySet()) {
-            String linkedGuildId = entry.getKey();
-            String textChId = entry.getValue();
-            Guild linkedGuild = jda.getGuildById(linkedGuildId);
-            if (linkedGuild == null) continue;
-            TextChannel tc = linkedGuild.getTextChannelById(textChId);
-            if (tc == null) continue;
+            for (Map.Entry<String, String> entry : gc.getLinkedChannels().entrySet()) {
+                String linkedGuildId = entry.getKey();
+                String textChId = entry.getValue();
+                Guild linkedGuild = jda.getGuildById(linkedGuildId);
+                if (linkedGuild == null) continue;
+                TextChannel tc = linkedGuild.getTextChannelById(textChId);
+                if (tc == null) continue;
 
-            String messageType = isJoin ? gc.getJoinMessageType() : gc.getLeaveMessageType();
-            String gcName = gc.getName();
+                String messageType = isJoin ? gc.getJoinMessageType() : gc.getLeaveMessageType();
+                String gcName = gc.getName();
 
-            if ("plaintext".equalsIgnoreCase(messageType)) {
-                String plaintext;
-                if (isJoin) {
-                    plaintext = gc.getJoinMessagePlaintext() != null
-                        ? gc.getJoinMessagePlaintext()
-                        : "Heya, {server} joined {gc_name}! ({servers} servers currently linked)";
-                } else {
-                    plaintext = gc.getLeaveMessagePlaintext() != null
-                        ? gc.getLeaveMessagePlaintext()
-                        : "Awh, {server} left {gc_name} :(";
+                try {
+                    if ("plaintext".equalsIgnoreCase(messageType)) {
+                        String plaintext;
+                        if (isJoin) {
+                            plaintext = gc.getJoinMessagePlaintext() != null
+                                ? gc.getJoinMessagePlaintext()
+                                : "Heya, {server} joined {gc_name}! ({servers} servers currently linked)";
+                        } else {
+                            plaintext = gc.getLeaveMessagePlaintext() != null
+                                ? gc.getLeaveMessagePlaintext()
+                                : "Awh, {server} left {gc_name} :(";
+                        }
+                        // Resolve placeholders
+                        plaintext = plaintext
+                            .replace("{server}", serverName)
+                            .replace("{gc_name}", gcName)
+                            .replace("{servers}", String.valueOf(linkedCount));
+                        tc.sendMessage(plaintext).queue(null, err -> {});
+                    } else {
+                        // Embed message (default)
+                        String title;
+                        if (isJoin) {
+                            title = gc.getJoinMessageTitle() != null
+                                ? gc.getJoinMessageTitle()
+                                : "Heya, {server} joined {gc_name}!";
+                        } else {
+                            title = gc.getLeaveMessageTitle() != null
+                                ? gc.getLeaveMessageTitle()
+                                : "Awh, {server} left {gc_name} :(";
+                        }
+                        // Resolve placeholders
+                        title = title
+                            .replace("{server}", serverName)
+                            .replace("{gc_name}", gcName)
+                            .replace("{servers}", String.valueOf(linkedCount));
+
+                        net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                            .setTitle(title)
+                            .setFooter(linkedCount + " servers currently linked")
+                            .setTimestamp(java.time.Instant.now());
+
+                        // Try to get server icon
+                        Guild joiningGuild = jda.getGuildById(guildId);
+                        if (joiningGuild != null && joiningGuild.getIconUrl() != null) {
+                            embed.setThumbnail(joiningGuild.getIconUrl());
+                        }
+
+                        tc.sendMessageEmbeds(embed.build()).queue(null, err -> {});
+                    }
+                } catch (Exception ex) {
+                    logger.trace("Failed to send join/leave message to channel {}: {}", textChId, ex.getMessage());
                 }
-                // Resolve placeholders
-                plaintext = plaintext
-                    .replace("{server}", serverName)
-                    .replace("{gc_name}", gcName)
-                    .replace("{servers}", String.valueOf(linkedCount));
-                tc.sendMessage(plaintext).queue(null, err -> {});
-            } else {
-                // Embed message (default)
-                String title;
-                if (isJoin) {
-                    title = gc.getJoinMessageTitle() != null
-                        ? gc.getJoinMessageTitle()
-                        : "Heya, {server} joined {gc_name}!";
-                } else {
-                    title = gc.getLeaveMessageTitle() != null
-                        ? gc.getLeaveMessageTitle()
-                        : "Awh, {server} left {gc_name} :(";
-                }
-                // Resolve placeholders
-                title = title
-                    .replace("{server}", serverName)
-                    .replace("{gc_name}", gcName)
-                    .replace("{servers}", String.valueOf(linkedCount));
-
-                net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
-                    .setTitle(title)
-                    .setFooter(linkedCount + " servers currently linked")
-                    .setTimestamp(java.time.Instant.now());
-
-                // Try to get server icon
-                Guild joiningGuild = jda.getGuildById(guildId);
-                if (joiningGuild != null && joiningGuild.getIconUrl() != null) {
-                    embed.setThumbnail(joiningGuild.getIconUrl());
-                }
-
-                tc.sendMessageEmbeds(embed.build()).queue(null, err -> {});
             }
+        } catch (Exception ex) {
+            logger.trace("Error in sendJoinLeaveMessage: {}", ex.getMessage());
         }
     }
 
@@ -1072,7 +1088,17 @@ public class GlobalChatService {
                     newTopic = prefix + serverInfo;
                 }
 
-                tc.getManager().setTopic(newTopic).queue(null, err -> {});
+                try {
+                    tc.getManager().setTopic(newTopic).queue(null, err -> {
+                        // Silently ignore — topic update is optional (requires MANAGE_CHANNEL)
+                        if (err != null) {
+                            logger.trace("Failed to update topic for channel {}: {}", textChId, err.getMessage());
+                        }
+                    });
+                } catch (Exception ex) {
+                    // Silently ignore — topic update is optional
+                    logger.trace("Could not update topic for channel {}: {}", textChId, ex.getMessage());
+                }
             }
         }
     }

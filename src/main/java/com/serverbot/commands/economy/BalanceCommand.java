@@ -37,10 +37,12 @@ public class BalanceCommand implements SlashCommand {
         String userId = targetUser.getId();
 
         long balance = storage.getBalance(guildId, userId);
+        String currencyIcon = ServerBot.getStorageManager().getCurrencyIcon(guildId);
+        String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
 
-        String title = targetUser.equals(event.getUser()) ? "Your Balance" : targetUser.getName() + "'s Balance";
+        String title = targetUser.equals(event.getUser()) ? currencyIcon + " Your Balance" : currencyIcon + " " + targetUser.getName() + "'s Balance";
 
-        String description = String.format("**Balance:** %,d coins", balance);
+        String description = String.format("**Balance:** %,d %s", balance, currencyName);
 
         event.replyEmbeds(EmbedUtils.createSuccessEmbed(title, description)).queue();
     }

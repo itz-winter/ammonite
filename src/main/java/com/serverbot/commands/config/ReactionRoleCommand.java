@@ -50,24 +50,37 @@ public class ReactionRoleCommand implements SlashCommand {
             case "remove" -> handleRemove(event);
             case "list" -> handleList(event);
             case "delete" -> handleDelete(event);
+            case "gui" -> handleGui(event);
             default -> event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Unknown Subcommand", "Unknown subcommand: `" + subcommand + "`.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
 
     private void handleCreate(SlashCommandInteractionEvent event) {
-        OptionMapping channelOption = event.getOption("channel");
+        // Channel is optional — if not provided, use the current channel
+        TextChannel channel;
+        if (event.getOption("channel") != null) {
+            channel = event.getOption("channel").getAsChannel().asTextChannel();
+        } else if (event.getChannelType() == net.dv8tion.jda.api.entities.channel.ChannelType.TEXT) {
+            channel = event.getChannel().asTextChannel();
+        } else if (event.getChannelType() == net.dv8tion.jda.api.entities.channel.ChannelType.GUILD_PUBLIC_THREAD ||
+                   event.getChannelType() == net.dv8tion.jda.api.entities.channel.ChannelType.GUILD_PRIVATE_THREAD) {
+            channel = ((net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel) event.getChannel()).getParentChannel().asTextChannel();
+        } else {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                    "Unsupported Channel", "This command must be used in a text channel.")).setEphemeral(true).queue();
+            return;
+        }
         OptionMapping titleOption = event.getOption("title");
         OptionMapping descOption = event.getOption("description");
 
-        if (channelOption == null || titleOption == null) {
+        if (titleOption == null) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Missing Options", "Please provide both a **channel** and a **title**.")).setEphemeral(true)
+                    "Missing Options", "Please provide a **title**.")).setEphemeral(true)
                     .queue();
             return;
         }
 
-        TextChannel channel = channelOption.getAsChannel().asTextChannel();
         String title = titleOption.getAsString();
         String description = descOption != null ? descOption.getAsString()
                 : "React with an emoji below to receive the corresponding role!";
@@ -306,12 +319,57 @@ public class ReactionRoleCommand implements SlashCommand {
         }
     }
 
+    /**
+     * Open a GUI management panel for reaction roles.
+     */
+    private void handleGui(SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
+        try {
+            String guildId = event.getGuild().getId();
+            String listInfo = ReactionRoleService.getInstance()
+                    .getReactionRolesList(guildId);
+
+            net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                    .setTitle("🎨 Reaction Role Manager")
+                    .setDescription("Manage your reaction roles using the buttons below.")
+                    .addField("Current Reaction Roles", listInfo.isEmpty() ? "None yet" : listInfo, false)
+                    .setColor(new java.awt.Color(100, 149, 237))
+                    .setFooter("Reaction Role Manager");
+
+            java.util.List<net.dv8tion.jda.api.components.buttons.Button> buttons = new java.util.ArrayList<>();
+            buttons.add(net.dv8tion.jda.api.components.buttons.Button.primary("rr_create:" + event.getUser().getId(), "Create")
+                    .withEmoji(net.dv8tion.jda.api.entities.emoji.Emoji.fromFormatted("➕")));
+            buttons.add(net.dv8tion.jda.api.components.buttons.Button.secondary("rr_list:" + event.getUser().getId(), "List")
+                    .withEmoji(net.dv8tion.jda.api.entities.emoji.Emoji.fromFormatted("📋")));
+            buttons.add(net.dv8tion.jda.api.components.buttons.Button.danger("rr_delete:" + event.getUser().getId(), "Delete")
+                    .withEmoji(net.dv8tion.jda.api.entities.emoji.Emoji.fromFormatted("🗑️")));
+
+            event.getHook().sendMessageEmbeds(embed.build())
+                    .addComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(buttons))
+                    .queue();
+
+        } catch (Exception e) {
+            event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "GUI Error", "Failed to open reaction role manager: " + e.getMessage()))
+                    .setEphemeral(true).queue();
+        }
+    }
+
+    /**
+     * Helper to check if this guild wants ephemeral responses.
+     * Defaults to true when not configured.
+     */
+    private boolean isEphemeral(String guildId) {
+        return com.serverbot.ServerBot.getStorageManager().areReactionRoleResponsesEphemeral(guildId);
+    }
+
     public static CommandData getCommandData() {
         return Commands.slash("reactionrole", "Manage reaction role systems")
                 .addSubcommands(
                         new SubcommandData("create", "Create a new reaction role message in a channel")
-                                .addOption(OptionType.CHANNEL, "channel", "Channel to post the message in", true)
                                 .addOption(OptionType.STRING, "title", "Title for the embed", true)
+                                .addOption(OptionType.CHANNEL, "channel", "Channel to post the message in (defaults to current channel)", false)
                                 .addOption(OptionType.STRING, "description", "Description for the embed (optional)",
                                         false),
 
@@ -330,7 +388,9 @@ public class ReactionRoleCommand implements SlashCommand {
 
                         new SubcommandData("delete", "Delete a reaction role message and all its entries")
                                 .addOption(OptionType.STRING, "message-id", "ID of the reaction role message to delete",
-                                        true));
+                                        true),
+
+                        new SubcommandData("gui", "Open the reaction role management GUI panel"));
     }
 
     @Override

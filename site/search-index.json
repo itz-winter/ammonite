@@ -68,7 +68,7 @@
   {
     "title": "Owner Only",
     "section": "Commands",
-    "snippet": "/statusmsg Set bot custom status message Owner only Syntax /statusmsg [message] /rpc Set the bot's rich presence (activity) Owner only Syntax /rpc <activity> /appearance Set bot online appearance (onl",
+    "snippet": "/statusmsg Set bot custom status message Owner only Syntax /statusmsg [message] /announce Send a bot update announcement to all configured channels Owner only Syntax /announce <title> <message> [color] /rpc Set the bot's rich presence (activity) Owner only Syntax /rpc <activity> /appearance Set bot online appearance (onl",
     "href": "commands.html#owner-only"
   },
   {
@@ -224,7 +224,7 @@
   {
     "title": "Pride & Inclusivity",
     "section": "Features",
-    "snippet": "/pride <flag> — apply pride flag overlays to your avatar /flags — list all available pride flags /pronouns — set pronoun roles for yourself",
+    "snippet": "/pride <flag> — apply pride flag borders/overlays to avatars or images /pride custom_flag:<upload> — use your own flag image /flags — list all available pride flags /pronouns — set pronoun roles for yourself",
     "href": "features.html#pride-inclusivity"
   },
   {

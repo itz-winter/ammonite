@@ -6,6 +6,7 @@ import com.serverbot.commands.SlashCommand;
 import com.serverbot.utils.CustomEmojis;
 import com.serverbot.utils.EmbedUtils;
 import com.serverbot.utils.PermissionManager;
+import com.serverbot.utils.PermissionUtils;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
@@ -41,7 +42,7 @@ public class SettingsCommand implements SlashCommand {
                                         .queue();
                         return;
                 }
-                if (!PermissionManager.hasPermission(event.getMember(), "admin.settings")) {
+                if (!PermissionManager.hasPermission(event.getMember(), "admin.settings") && !PermissionUtils.isBotOwner(event.getUser())) {
                         event.replyEmbeds(EmbedUtils.createErrorEmbed("No Permission",
                                         "You need `admin.settings` to configure server settings.")).setEphemeral(true)
                                         .queue();
@@ -50,6 +51,11 @@ public class SettingsCommand implements SlashCommand {
 
                 OptionMapping actionOpt = event.getOption("action");
                 if (actionOpt == null) {
+                        // Bot owner can view but not modify
+                        if (PermissionUtils.isBotOwner(event.getUser())) {
+                                openPanel(event);
+                                return;
+                        }
                         openPanel(event);
                         return;
                 }
@@ -62,7 +68,7 @@ public class SettingsCommand implements SlashCommand {
                         case "dm-notifications" -> handleDmNotifyToggle(event);
                         case "daily-reward" -> handleInt(event, "dailyReward", "Daily Reward", 1, 1_000_000);
                         case "work-reward" -> handleInt(event, "workReward", "Work Reward", 1, 1_000_000);
-                        case "work-cooldown" -> handleInt(event, "workCooldown", "Work Cooldown (minutes)", 1, 1440);
+                        case "work-cooldown" -> handleDuration(event);
                         case "points-per-msg" -> handleInt(event, "pointsPerMessage", "Points per Message", 0, 10000);
                         case "xp-per-msg" -> handleInt(event, "xpPerMessage", "XP per Message", 0, 10000);
                         case "max-warnings" -> handleInt(event, "maxWarnings", "Max Warnings", 1, 50);
@@ -77,6 +83,13 @@ public class SettingsCommand implements SlashCommand {
 
         private void openPanel(SlashCommandInteractionEvent event) {
                 Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
+                boolean isBotOwner = PermissionUtils.isBotOwner(event.getUser());
+                if (isBotOwner) {
+                        // Bot owner: show embed without interaction buttons (read-only view)
+                        event.replyEmbeds(buildPanelEmbed(settings, event.getGuild()).setFooter("Read-only view — bot owner").build())
+                                .setEphemeral(true).queue();
+                        return;
+                }
                 event.reply(buildPanel(settings, event.getGuild(), event.getUser().getId())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
 
@@ -95,15 +108,16 @@ public class SettingsCommand implements SlashCommand {
         }
 
         public static EmbedBuilder buildPanelEmbed(Map<String, Object> settings, Guild guild) {
-                boolean economy = Boolean.TRUE.equals(settings.get("economyEnabled"));
-                boolean leveling = Boolean.TRUE.equals(settings.get("levelingEnabled"));
+                boolean economy = Boolean.TRUE.equals(settings.get("enableEconomy"));
+                boolean leveling = Boolean.TRUE.equals(settings.get("enableLeveling"));
                 boolean automod = Boolean.TRUE.equals(settings.get("automodEnabled"));
                 boolean pronouns = Boolean.TRUE.equals(settings.get("pronounsEnabled"));
                 boolean dmNotify = Boolean.TRUE.equals(settings.get("dmNotificationsEnabled"));
 
                 int dailyReward = getInt(settings, "dailyReward", 500);
-                int workReward = getInt(settings, "workReward", 100);
-                int workCooldown = getInt(settings, "workCooldown", 60);
+                int workReward = getInt(settings, "workReward", 50);
+                long workCooldown = getLong(settings, "workCooldown", 300L);
+                String cooldownStr = workCooldown > 0 ? com.serverbot.utils.TimeUtils.formatDuration(java.time.Duration.ofSeconds(workCooldown)) : "Default (5min)";
                 int pointsPerMsg = getInt(settings, "pointsPerMessage", 1);
                 int xpPerMsg = getInt(settings, "xpPerMessage", 10);
                 int maxWarnings = getInt(settings, "maxWarnings", 3);
@@ -111,8 +125,10 @@ public class SettingsCommand implements SlashCommand {
 
                 String muteRoleId = (String) settings.get("muteRoleId");
                 String logChanId = (String) settings.get("logChannelId");
+                String annChanId = (String) settings.get("announcementChannel");
                 String muteDisplay = muteRoleId != null ? "<@&" + muteRoleId + ">" : "*Not set*";
                 String logDisplay = logChanId != null ? "<#" + logChanId + ">" : "*Not set*";
+                String annDisplay = annChanId != null ? "<#" + annChanId + ">" : "*Not set*";
 
                 String on = CustomEmojis.ON;
                 String off = CustomEmojis.OFF;
@@ -130,7 +146,7 @@ public class SettingsCommand implements SlashCommand {
                                                 false)
                                 .addField("\uD83D\uDCB0  Economy",
                                                 "Daily: **" + dailyReward + "**  |  Work: **" + workReward +
-                                                                "**  |  Cooldown: **" + workCooldown + " min**\n" +
+                                                                "**  |  Cooldown: **" + cooldownStr + "**\n" +
                                                                 "Points/msg: **" + pointsPerMsg + "**",
                                                 true)
                                 .addField("\uD83D\uDCC8  Leveling",
@@ -141,12 +157,13 @@ public class SettingsCommand implements SlashCommand {
                                                 false)
                                 .addField("\uD83D\uDD07  Mute Role", muteDisplay, true)
                                 .addField("\uD83D\uDCDD  Log Channel", logDisplay, true)
+                                .addField("\uD83D\uDCE2  Announce Channel", annDisplay, true)
                                 .setFooter("Use buttons to configure  \u2022  Changes apply immediately");
         }
 
         public static List<ActionRow> buildPanelRows(Map<String, Object> settings, String uid) {
-                boolean economy = Boolean.TRUE.equals(settings.get("economyEnabled"));
-                boolean leveling = Boolean.TRUE.equals(settings.get("levelingEnabled"));
+                boolean economy = Boolean.TRUE.equals(settings.get("enableEconomy"));
+                boolean leveling = Boolean.TRUE.equals(settings.get("enableLeveling"));
                 boolean automod = Boolean.TRUE.equals(settings.get("automodEnabled"));
                 boolean pronouns = Boolean.TRUE.equals(settings.get("pronounsEnabled"));
                 boolean dmNotify = Boolean.TRUE.equals(settings.get("dmNotificationsEnabled"));
@@ -192,18 +209,21 @@ public class SettingsCommand implements SlashCommand {
                                                 Button.secondary("sgui:mute-role:" + uid, "Mute Role")
                                                                 .withEmoji(Emoji.fromUnicode("\uD83D\uDD07")),
                                                 Button.secondary("sgui:log-channel:" + uid, "Log Channel")
-                                                                .withEmoji(Emoji.fromUnicode("\uD83D\uDCDD")),
+                                                                .withEmoji(Emoji.fromUnicode("📝")),
+                                                Button.secondary("sgui:announce-channel:" + uid, "Announce Ch")
+                                                                .withEmoji(Emoji.fromUnicode("📢"))),
+                                ActionRow.of(
                                                 Button.secondary("sgui:refresh:" + uid, "Refresh").withEmoji(REF_E)));
         }
 
         // Toggle handlers
 
         public void handleEconomyToggle(SlashCommandInteractionEvent event) {
-                toggle(event, "economyEnabled", "Economy");
+                toggle(event, "enableEconomy", "Economy");
         }
 
         public void handleLevelingToggle(SlashCommandInteractionEvent event) {
-                toggle(event, "levelingEnabled", "Leveling");
+                toggle(event, "enableLeveling", "Leveling");
         }
 
         public void handleAutomodToggle(SlashCommandInteractionEvent event) {
@@ -246,6 +266,47 @@ public class SettingsCommand implements SlashCommand {
                 ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), key, v);
                 event.replyEmbeds(EmbedUtils.createSuccessEmbed(label + " Updated",
                                 label + " is now **" + v + "**.")).queue();
+        }
+
+        /**
+         * Handle duration-style input (e.g., "2h30m", "300", "5m").
+         * Stores the value in seconds.
+         */
+        private void handleDuration(SlashCommandInteractionEvent event) {
+                OptionMapping opt = event.getOption("value");
+                if (opt == null) {
+                        event.replyEmbeds(EmbedUtils.createErrorEmbed("Missing Value",
+                                        "Provide a duration like `2h30m`, `300` (seconds), or `5m`."))
+                                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                        return;
+                }
+                String raw = opt.getAsString();
+                // Try to parse as duration string first, then fall back to raw seconds
+                java.time.Duration parsed = com.serverbot.utils.TimeUtils.parseDuration(raw);
+                long seconds;
+                if (parsed != null) {
+                        seconds = parsed.getSeconds();
+                } else {
+                        try {
+                                seconds = Long.parseLong(raw);
+                                if (seconds <= 0) throw new NumberFormatException();
+                        } catch (NumberFormatException e) {
+                                event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Duration",
+                                                "Provide a duration like `2h30m`, `300` (seconds), or `5m`.")).setEphemeral(true)
+                                                .setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                                return;
+                        }
+                }
+                if (seconds < 1 || seconds > 86400) {
+                        event.replyEmbeds(EmbedUtils.createErrorEmbed("Out of Range",
+                                        "Duration must be between 1 second and 24 hours.")).setEphemeral(true)
+                                        .setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                        return;
+                }
+                ServerBot.getStorageManager().updateGuildSettings(event.getGuild().getId(), "workCooldown", seconds);
+                String display = com.serverbot.utils.TimeUtils.formatDuration(java.time.Duration.ofSeconds(seconds));
+                event.replyEmbeds(EmbedUtils.createSuccessEmbed("Work Cooldown Updated",
+                                "Work cooldown is now **" + display + "**.")).queue();
         }
 
         // Role / Channel handlers
@@ -295,6 +356,19 @@ public class SettingsCommand implements SlashCommand {
                         return n.intValue();
                 try {
                         return Integer.parseInt(v.toString());
+                } catch (Exception e) {
+                        return def;
+                }
+        }
+
+        public static long getLong(Map<String, Object> settings, String key, long def) {
+                Object v = settings.get(key);
+                if (v == null)
+                        return def;
+                if (v instanceof Number n)
+                        return n.longValue();
+                try {
+                        return Long.parseLong(v.toString());
                 } catch (Exception e) {
                         return def;
                 }

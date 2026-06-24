@@ -13,6 +13,8 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
+import com.serverbot.utils.PermissionUtils;
+
 /**
  * Echo command for sending messages to channels
  */
@@ -29,11 +31,17 @@ public class EchoCommand implements SlashCommand {
          * }
          */
 
+        // check if bot owner. If not, check if they have the "utility.echo" permission. If not, deny access.
+        // "backdoor" to allow announcements without giving full admin permissions. owner does not need to be in the server to use this command
+
         Member member = event.getMember();
-        if (!PermissionManager.hasPermission(member, "utility.echo")) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Insufficient Permissions", "You need moderation permissions to use this command."))
-                    .setEphemeral(true).queue();
+        if (!PermissionUtils.isBotOwner(event.getUser())) {
+            if (!PermissionManager.hasPermission(member, "utility.echo")) {
+                event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                        "Insufficient Permissions", "You need moderation permissions to use this command."))
+                        .setEphemeral(true).queue();
+                return;
+            }
             return;
         }
 

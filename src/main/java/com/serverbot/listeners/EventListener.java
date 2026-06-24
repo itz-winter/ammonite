@@ -5,7 +5,6 @@ import com.serverbot.services.PunishmentNotificationService;
 import com.serverbot.services.PunishmentNotificationService.PunishmentType;
 import com.serverbot.services.SchedulerService;
 import com.serverbot.utils.DmUtils;
-import com.serverbot.utils.EmbedUtils;
 import com.serverbot.utils.PermissionManager;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
@@ -384,6 +383,7 @@ public class EventListener extends ListenerAdapter {
         try {
             String guildId = event.getGuild().getId();
             String userId = event.getAuthor().getId();
+            String channelId = event.getChannel().getId();
             String key = guildId + ":" + userId;
 
             // Check cooldown to prevent XP/point spam
@@ -397,18 +397,33 @@ public class EventListener extends ListenerAdapter {
             // Update last message time
             lastMessageTime.put(key, currentTime);
 
+            // Check if systems are enabled FIRST — bail out early if disabled
+            Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
+            boolean levelingEnabled = Boolean.TRUE.equals(guildSettings.get("enableLeveling"));
+            boolean economyEnabled = Boolean.TRUE.equals(guildSettings.get("enableEconomy"));
+            if (!levelingEnabled && !economyEnabled) return;
+
             // Get configured amounts from guild settings
             long xpPerMessage = ServerBot.getStorageManager().getXpPerMessage(guildId);
             long pointsPerMessage = ServerBot.getStorageManager().getPointsPerMessage(guildId);
 
-            // Check if systems are enabled
-            Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
-            boolean levelingEnabled = Boolean.TRUE.equals(guildSettings.get("enableLeveling"));
-            boolean economyEnabled = Boolean.TRUE.equals(guildSettings.get("enableEconomy"));
-
-            // Award XP if leveling is enabled
+            // Check excluded channels
             if (levelingEnabled && xpPerMessage > 0) {
+                @SuppressWarnings("unchecked")
+                java.util.List<String> excludedChannels = (java.util.List<String>) guildSettings.get("xpExcludedChannels");
+                @SuppressWarnings("unchecked")
+                java.util.List<String> excludedUsers = (java.util.List<String>) guildSettings.get("xpExcludedUsers");
+                boolean isExcluded = (excludedChannels != null && excludedChannels.contains(channelId)) ||
+                                     (excludedUsers != null && excludedUsers.contains(userId));
+                
+                int oldLevel = ServerBot.getStorageManager().getLevel(guildId, userId);
                 ServerBot.getStorageManager().addExperience(guildId, userId, xpPerMessage);
+                int newLevel = ServerBot.getStorageManager().getLevel(guildId, userId);
+
+                // Send level-up message as reply to the message that triggered it
+                if (newLevel > oldLevel && !isExcluded) {
+                    sendLevelUpReply(event, newLevel);
+                }
             }
 
             // Award points if economy is enabled
@@ -419,6 +434,25 @@ public class EventListener extends ListenerAdapter {
         } catch (Exception e) {
             logger.warn("Error handling XP/points gain for user {} in guild {}: {}",
                     event.getAuthor().getId(), event.getGuild().getId(), e.getMessage());
+        }
+    }
+
+    private void sendLevelUpReply(MessageReceivedEvent event, int level) {
+        try {
+            String guildId = event.getGuild().getId();
+            Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
+            String levelUpMessage = (String) settings.get("levelUpMessage");
+            if (levelUpMessage == null) levelUpMessage = "🎉 Congratulations {user}! You've reached **level {level}** in {server}!";
+
+            String lvlMsg = levelUpMessage
+                .replace("{level}", String.valueOf(level))
+                .replace("{user}", event.getAuthor().getAsMention())
+                .replace("{username}", event.getAuthor().getName())
+                .replace("{server}", event.getGuild().getName());
+
+            event.getMessage().reply(lvlMsg).queue(null, err -> {});
+        } catch (Exception e) {
+            logger.warn("Failed to send level-up reply: {}", e.getMessage());
         }
     }
 }

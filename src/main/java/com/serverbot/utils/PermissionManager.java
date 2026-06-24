@@ -261,10 +261,21 @@ public class PermissionManager {
             }
 
             // Fall back to default permission
-            return getDefaultPermission(permissionNode);
+            if (getDefaultPermission(permissionNode)) {
+                return true;
+            }
+
+            // Last resort: check if the user is the bot owner. This ensures bot owners
+            // can use any command in any server they have access to without needing
+            // explicit permission assignments.
+            return PermissionUtils.isBotOwner(member.getUser(), getBotOwnerId());
 
         } catch (Exception e) {
             logger.warn("Error checking permission {} for user {}: {}", permissionNode, member.getId(), e.getMessage());
+            // If an error occurs during guild permission check, allow bot owners as fallback
+            if (PermissionUtils.isBotOwner(member.getUser(), getBotOwnerId())) {
+                return true;
+            }
             return getDefaultPermission(permissionNode);
         }
     }

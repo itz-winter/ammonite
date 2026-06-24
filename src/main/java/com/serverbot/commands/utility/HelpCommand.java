@@ -122,7 +122,9 @@ public class HelpCommand implements SlashCommand {
             case "status" ->
                 "`/status action:<set/clear/online> [type:<playing/watching/listening>] [text:<status-text>]`\nExample: `/status action:set type:playing text:Minecraft`";
             case "pride" ->
-                "`/pride type:<avatar/url/custom> flag:<flag-name> [url:<image-url>]`\nExample: `/pride type:avatar flag:rainbow`";
+                "`/pride flag:<flag> [user:@user] [image_url:<url>] [image:<file>] [custom_flag:<file>] [style:border/overlay]`\nExample: `/pride flag:trans` — apply trans flag to your avatar";
+            case "announce" ->
+                "`/announce title:<title> message:<message> [color:<hex>]`\nExample: `/announce title:Update message:New features! color:#FF69B4`\nSends to all servers with an announcement channel configured (owner only).";
             case "error" -> "`/error [category:<A-W>]`\nExample: `/error category:S` (Settings errors)";
             default -> null;
         };

@@ -1401,9 +1401,31 @@
             </div>
             <div class="cmd-detail">
                 <h4>Syntax</h4>
-                <div class="syntax-block">/pride <span class="required">&lt;type&gt;</span> <span class="required">&lt;flag&gt;</span> <span class="optional">[url]</span></div>
+                <div class="syntax-block">/pride <span class="required">&lt;flag&gt;</span> <span class="optional">[user]</span> <span class="optional">[image_url]</span> <span class="optional">[image]</span> <span class="optional">[custom_flag]</span> <span class="optional">[style]</span> <span class="optional">[border_style]</span> <span class="optional">[border_thickness]</span> <span class="optional">[opacity]</span></div>
+                <h4>Options</h4>
+                <table class="param-table">
+                    <tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+                    <tr><td><code>flag</code></td><td>String</td><td><span class="param-required">Yes*</span></td><td>Pride flag to apply (not needed if <code>custom_flag</code> is used). Has autocomplete.</td></tr>
+                    <tr><td><code>user</code></td><td>User</td><td><span class="param-optional">No</span></td><td>User for avatar overlay (default: you)</td></tr>
+                    <tr><td><code>image_url</code></td><td>String</td><td><span class="param-optional">No</span></td><td>URL of an image to overlay</td></tr>
+                    <tr><td><code>image</code></td><td>Attachment</td><td><span class="param-optional">No</span></td><td>Upload an image file to overlay</td></tr>
+                    <tr><td><code>custom_flag</code></td><td>Attachment</td><td><span class="param-optional">No</span></td><td>Upload a custom flag image (replaces built-in flag)</td></tr>
+                    <tr><td><code>style</code></td><td>String</td><td><span class="param-optional">No</span></td><td>How to apply: <code>border</code> (default) or <code>overlay</code></td></tr>
+                    <tr><td><code>border_style</code></td><td>String</td><td><span class="param-optional">No</span></td><td>Shape when style=border: <code>circular</code> (default) or <code>frame</code></td></tr>
+                    <tr><td><code>border_thickness</code></td><td>Integer</td><td><span class="param-optional">No</span></td><td>Border thickness in pixels (5–512, default: 50)</td></tr>
+                    <tr><td><code>opacity</code></td><td>Integer</td><td><span class="param-optional">No</span></td><td>Overlay opacity in percent (1–100, default: 40, overlay only)</td></tr>
+                </table>
                 <h4>Examples</h4>
-                <div class="example-block"><code>/pride type:avatar flag:rainbow</code></div>
+                <div class="example-block"><code>/pride flag:trans</code> — Apply trans flag border to your avatar</div>
+                <div class="example-block"><code>/pride flag:pride user:@friend style:overlay opacity:60</code> — Pride flag overlay on a friend's avatar</div>
+                <div class="example-block"><code>/pride flag:lesbian image_url:https://example.com/img.png style:border border_style:frame border_thickness:30</code></div>
+                <div class="example-block"><code>/pride custom_flag:<upload> image:<upload> style:overlay</code> — Use a custom flag design on an uploaded image</div>
+                <h4>Details</h4>
+                <ul>
+                    <li>If no user/image/image_url is specified, applies to your own avatar.</li>
+                    <li>Built-in flags are loaded from the bot's assets — use <code>/flags</code> to see all available.</li>
+                    <li>Upload a <code>custom_flag</code> to use any image as the flag pattern instead of built-in flags.</li>
+                </ul>
             </div>
         </div>
 
@@ -1516,6 +1538,31 @@
             <div class="cmd-detail">
                 <h4>Syntax</h4>
                 <div class="syntax-block">/statusmsg <span class="optional">[message]</span></div>
+            </div>
+        </div>
+
+        <div class="cmd-row" data-cmd="announce">
+            <div class="cmd-summary" onclick="toggleCmd(this)">
+                <span class="cmd-name">/announce<span class="cmd-expand-icon">&#9654;</span></span>
+                <span class="cmd-desc">Send a bot update announcement to all configured channels</span>
+                <span class="cmd-perm">Owner only</span>
+            </div>
+            <div class="cmd-detail">
+                <h4>Syntax</h4>
+                <div class="syntax-block">/announce <span class="required">&lt;title&gt;</span> <span class="required">&lt;message&gt;</span> <span class="optional">[color]</span></div>
+                <h4>Parameters</h4>
+                <table class="param-table">
+                    <tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+                    <tr><td><code>title</code></td><td>String</td><td><span class="param-required">Yes</span></td><td>Announcement title</td></tr>
+                    <tr><td><code>message</code></td><td>String</td><td><span class="param-required">Yes</span></td><td>Announcement message content</td></tr>
+                    <tr><td><code>color</code></td><td>String</td><td><span class="param-optional">No</span></td><td>Embed color in hex (e.g. <code>#FF69B4</code>)</td></tr>
+                </table>
+                <h4>Details</h4>
+                <ul>
+                    <li>Sends to all servers that have an announcement channel configured (via <code>/settings</code> panel).</li>
+                    <li>Also available as <code>!announce &lt;message&gt;</code> prefix command (sends plain text to all configured channels).</li>
+                    <li>Hidden from the slash command list when <code>hide_owner_commands</code> is enabled, but still accessible via prefix.</li>
+                </ul>
             </div>
         </div>
 

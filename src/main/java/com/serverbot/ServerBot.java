@@ -21,6 +21,7 @@ import com.serverbot.listeners.GlobalChatListener;
 import com.serverbot.listeners.GlobalChatButtonListener;
 import com.serverbot.listeners.AutoConfigListener;
 import com.serverbot.listeners.MusicSearchSelectionListener;
+import com.serverbot.listeners.LeaderboardButtonListener;
 import com.serverbot.services.CommandManager;
 import com.serverbot.services.ConfigManager;
 import com.serverbot.services.SchedulerService;
@@ -193,7 +194,8 @@ public class ServerBot {
                             new com.serverbot.listeners.EmbedGuiListener(),
                             new com.serverbot.listeners.WelcomeGuiListener(),
                             new com.serverbot.listeners.AntiSpamGuiListener(),
-                            new com.serverbot.listeners.SettingsGuiListener())
+                            new com.serverbot.listeners.SettingsGuiListener(),
+                            new com.serverbot.listeners.LeaderboardButtonListener())
                     .build();
 
             // Wait for JDA to be ready

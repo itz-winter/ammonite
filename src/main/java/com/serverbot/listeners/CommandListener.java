@@ -1,5 +1,6 @@
 package com.serverbot.listeners;
 
+import com.serverbot.commands.CommandCategory;
 import com.serverbot.services.CommandManager;
 import com.serverbot.commands.SlashCommand;
 import com.serverbot.utils.EmbedUtils;
@@ -9,6 +10,8 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * Handles slash command interactions
@@ -44,6 +47,34 @@ public class CommandListener extends ListenerAdapter {
                             "This command can only be used in servers.")).setEphemeral(true),
                     "reply with guild only error");
             return;
+        }
+
+        // Check if economy commands are allowed in this guild
+        if (event.isFromGuild() && isEconomyCommand(command)) {
+            Map<String, Object> settings = com.serverbot.ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
+            boolean economyEnabled = Boolean.TRUE.equals(settings.get("enableEconomy"));
+            if (!economyEnabled) {
+                SafeRestAction.queue(
+                        event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                                "Economy Disabled",
+                                "The economy system is disabled in this server.\nAn admin can enable it using `/settings`.")).setEphemeral(true),
+                        "reply with economy disabled error");
+                return;
+            }
+        }
+
+        // Check if leveling commands are allowed in this guild
+        if (event.isFromGuild() && isLevelingCommand(command)) {
+            Map<String, Object> settings = com.serverbot.ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
+            boolean levelingEnabled = Boolean.TRUE.equals(settings.get("enableLeveling"));
+            if (!levelingEnabled) {
+                SafeRestAction.queue(
+                        event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                                "Leveling Disabled",
+                                "The leveling system is disabled in this server.\nAn admin can enable it using `/settings`.")).setEphemeral(true),
+                        "reply with leveling disabled error");
+                return;
+            }
         }
 
         try {
@@ -114,5 +145,22 @@ public class CommandListener extends ListenerAdapter {
         if (command != null) {
             command.handleAutoComplete(event);
         }
+    }
+
+    /**
+     * Check if a command is an economy-related command.
+     */
+    private boolean isEconomyCommand(SlashCommand command) {
+        CommandCategory category = command.getCategory();
+        return category == CommandCategory.ECONOMY
+            || category == CommandCategory.GAMBLING
+            || category == CommandCategory.BANKING;
+    }
+
+    /**
+     * Check if a command is a leveling-related command.
+     */
+    private boolean isLevelingCommand(SlashCommand command) {
+        return command.getCategory() == CommandCategory.LEVELING;
     }
 }

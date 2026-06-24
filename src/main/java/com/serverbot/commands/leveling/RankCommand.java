@@ -77,8 +77,7 @@ public class RankCommand implements SlashCommand {
     }
 
     private long calculateExpForLevel(int level) {
-        // Simple XP calculation: level^2 * 100 + level * 50
-        return (long) (Math.pow(level, 2) * 100 + level * 50);
+        return com.serverbot.ServerBot.getStorageManager().calculateXpForLevel(level);
     }
 
     private String createProgressBar(double percent) {

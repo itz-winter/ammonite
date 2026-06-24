@@ -123,25 +123,24 @@ public class PrideCommand implements SlashCommand {
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
-        if (event.getOption("flag") == null) {
+        boolean hasFlag = event.getOption("flag") != null;
+        boolean hasCustomFlag = event.getOption("custom_flag") != null;
+        
+        if (!hasFlag && !hasCustomFlag) {
             showPrideHelp(event);
             return;
         }
 
-        String actionType = event.getOption("type") != null ? event.getOption("type").getAsString() : "avatar";
+        // Auto-detect type based on which options are provided
+        boolean hasUrl = event.getOption("image_url") != null;
+        boolean hasImage = event.getOption("image") != null;
 
-        switch (actionType) {
-            case "avatar" -> handleAvatar(event);
-            case "url" -> handleUrl(event);
-            case "custom" -> handleCustom(event);
-            default -> {
-                event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                        "Invalid Type",
-                        "Invalid type: `" + actionType + "`\n" +
-                                "Valid types: `avatar`, `url`, `custom`\n\n" +
-                                "Use `/pride` without arguments to see the help guide."))
-                        .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
-            }
+        if (hasUrl) {
+            handleUrl(event);
+        } else if (hasImage) {
+            handleCustom(event);
+        } else {
+            handleAvatar(event);
         }
     }
 
@@ -151,30 +150,31 @@ public class PrideCommand implements SlashCommand {
                 .setDescription("Apply pride flag overlays to avatars or images")
                 .setColor(0xFF69B4)
                 .addField("**Basic Usage**",
-                        "`/pride flag:<flag> [type:avatar] [user:@user] [style:border]`\n" +
-                                "`/pride flag:<flag> type:url image_url:<url> [style:border]`\n" +
-                                "`/pride flag:<flag> type:custom image:<file> [style:border]`",
+                        "`/pride flag:<flag> [user:@user] [style:border]`\n" +
+                                "`/pride flag:<flag> image_url:<url> [style:border]`\n" +
+                                "`/pride flag:<flag> image:<file> [style:border]`",
                         false)
                 .addField("**Parameters**",
                         "• `flag` - Pride flag to apply (required)\n" +
-                                "• `type` - Type of image (avatar/url/custom, default: avatar)\n" +
-                                "• `user` - User for avatar type (default: you)\n" +
-                                "• `image_url` - URL for url type\n" +
-                                "• `image` - File upload for custom type\n" +
+                                "• `user` - User for avatar (default: you)\n" +
+                                "• `image_url` - URL for image\n" +
+                                "• `image` - File upload\n" +
+                                "• `custom_flag` - Upload a custom flag image\n" +
                                 "• `style` - How to apply flag (overlay/border, default: border)\n" +
                                 "• `border_style` - Shape of border when style=border (circular/frame, default: circular)\n" +
-                                "• `border_thickness` - Border thickness in pixels (5–100, default: 20)",
+                                "• `border_thickness` - Border thickness in pixels (5–512, default: 50)\n" +
+                                "• `opacity` - Overlay opacity in percent (1–100, default: 40)",
                         false)
                 .addField("**Available Flags**",
-                        "Traditional Pride, Progress Pride, Transgender, Bisexual, Pansexual, Lesbian, " +
-                                "Asexual, Aromantic, Non-binary, Genderfluid, Agender, Demisexual, MLM, Aroace, " +
+                        "Traditional Pride, Transgender, Bisexual, Pansexual, Lesbian, " +
+                                "Asexual, Aromantic, Non-binary, Genderfluid, Agender, " +
                                 "and many more...",
                         false)
                 .addField("**Examples**",
                         "`/pride flag:trans` - Apply trans flag border to your avatar\n" +
                                 "`/pride flag:pride user:@friend` - Apply pride flag border to friend's avatar\n"
                                 +
-                                "`/pride flag:lesbian type:url image_url:https://example.com/image.png style:overlay`",
+                                "`/pride flag:lesbian image_url:https://example.com/image.png style:overlay opacity:60`",
                         false)
                 .setFooter("Use -!help to dismiss future help messages");
 
@@ -200,12 +200,19 @@ public class PrideCommand implements SlashCommand {
 
     private void handleAvatar(SlashCommandInteractionEvent event) {
         User targetUser = event.getOption("user") != null ? event.getOption("user").getAsUser() : event.getUser();
-        String flagName = event.getOption("flag").getAsString().toLowerCase();
+        String flagName = event.getOption("flag") != null ? event.getOption("flag").getAsString().toLowerCase() : null;
         String style = event.getOption("style") != null ? event.getOption("style").getAsString() : "border";
         String borderStyle = event.getOption("border_style") != null ? event.getOption("border_style").getAsString() : "circular";
-        int borderThickness = event.getOption("border_thickness") != null ? (int) event.getOption("border_thickness").getAsLong() : 20;
+        int borderThickness = event.getOption("border_thickness") != null ? (int) event.getOption("border_thickness").getAsLong() : 50;
+        int opacity = event.getOption("opacity") != null ? (int) event.getOption("opacity").getAsLong() : 40;
 
-        if (!FLAG_FILENAMES.containsKey(flagName)) {
+        // If no flag name is provided, require a custom_flag upload
+        boolean hasCustomFlag = event.getOption("custom_flag") != null;
+        if (flagName == null && !hasCustomFlag) {
+            showPrideHelp(event);
+            return;
+        }
+        if (flagName != null && !FLAG_FILENAMES.containsKey(flagName) && !hasCustomFlag) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Unknown Flag",
                     "Unknown flag: `" + flagName + "`\n" +
@@ -214,6 +221,9 @@ public class PrideCommand implements SlashCommand {
             return;
         }
 
+        // Extract custom flag URL if provided
+        String customFlagUrl = hasCustomFlag ? event.getOption("custom_flag").getAsAttachment().getUrl() : null;
+
         event.deferReply().queue();
 
         try {
@@ -221,16 +231,17 @@ public class PrideCommand implements SlashCommand {
             String avatarUrl = targetUser.getEffectiveAvatarUrl() + "?size=4096";
             avatarUrl = com.serverbot.utils.AvatarCacheManager.cacheAvatar(avatarUrl);
 
-            BufferedImage result = applyPrideFlag(avatarUrl, flagName, style, borderStyle, borderThickness);
+            BufferedImage result = applyPrideFlag(avatarUrl, flagName, style, borderStyle, borderThickness, opacity, customFlagUrl);
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ImageIO.write(result, "PNG", baos);
             byte[] imageData = baos.toByteArray();
 
+            String flagDisplay = flagName != null ? capitalize(flagName) : "Custom Flag";
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle("🏳️‍🌈 Pride Avatar")
                     .setDescription("**User:** " + targetUser.getAsMention() + "\n" +
-                            "**Flag:** " + capitalize(flagName) + "\n" +
+                            "**Flag:** " + flagDisplay + "\n" +
                             "**Style:** " + capitalize(style) +
                             (style.equals("border") ? "\n**Border:** " + capitalize(borderStyle) + " · " + borderThickness + "px" : ""))
                     .setColor(EMBED_COLOR)
@@ -249,12 +260,18 @@ public class PrideCommand implements SlashCommand {
 
     private void handleUrl(SlashCommandInteractionEvent event) {
         String imageUrl = event.getOption("image_url").getAsString();
-        String flagName = event.getOption("flag").getAsString().toLowerCase();
+        String flagName = event.getOption("flag") != null ? event.getOption("flag").getAsString().toLowerCase() : null;
         String style = event.getOption("style") != null ? event.getOption("style").getAsString() : "border";
         String borderStyle = event.getOption("border_style") != null ? event.getOption("border_style").getAsString() : "circular";
-        int borderThickness = event.getOption("border_thickness") != null ? (int) event.getOption("border_thickness").getAsLong() : 20;
+        int borderThickness = event.getOption("border_thickness") != null ? (int) event.getOption("border_thickness").getAsLong() : 50;
+        int opacity = event.getOption("opacity") != null ? (int) event.getOption("opacity").getAsLong() : 40;
 
-        if (!FLAG_FILENAMES.containsKey(flagName)) {
+        boolean hasCustomFlag = event.getOption("custom_flag") != null;
+        if (flagName == null && !hasCustomFlag) {
+            showPrideHelp(event);
+            return;
+        }
+        if (flagName != null && !FLAG_FILENAMES.containsKey(flagName) && !hasCustomFlag) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Unknown Flag",
                     "Unknown flag: `" + flagName + "`\n" +
@@ -263,18 +280,22 @@ public class PrideCommand implements SlashCommand {
             return;
         }
 
+        // Extract custom flag URL if provided
+        String customFlagUrl = hasCustomFlag ? event.getOption("custom_flag").getAsAttachment().getUrl() : null;
+
         event.deferReply().queue();
 
         try {
-            BufferedImage result = applyPrideFlag(imageUrl, flagName, style, borderStyle, borderThickness);
+            BufferedImage result = applyPrideFlag(imageUrl, flagName, style, borderStyle, borderThickness, opacity, customFlagUrl);
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ImageIO.write(result, "PNG", baos);
             byte[] imageData = baos.toByteArray();
 
+            String flagDisplay = flagName != null ? capitalize(flagName) : "Custom Flag";
             EmbedBuilder embed = new EmbedBuilder()
-                    .setTitle("🏳️‍🌈 Pride Image")
-                    .setDescription("**Flag:** " + capitalize(flagName) + "\n" +
+                    .setTitle("🏳️\u200D🌈 Pride Image")
+                    .setDescription("**Flag:** " + flagDisplay + "\n" +
                             "**Style:** " + capitalize(style) +
                             (style.equals("border") ? "\n**Border:** " + capitalize(borderStyle) + " · " + borderThickness + "px" : ""))
                     .setColor(EMBED_COLOR)
@@ -293,12 +314,18 @@ public class PrideCommand implements SlashCommand {
 
     private void handleCustom(SlashCommandInteractionEvent event) {
         net.dv8tion.jda.api.entities.Message.Attachment attachment = event.getOption("image").getAsAttachment();
-        String flagName = event.getOption("flag").getAsString().toLowerCase();
+        String flagName = event.getOption("flag") != null ? event.getOption("flag").getAsString().toLowerCase() : null;
         String style = event.getOption("style") != null ? event.getOption("style").getAsString() : "border";
         String borderStyle = event.getOption("border_style") != null ? event.getOption("border_style").getAsString() : "circular";
-        int borderThickness = event.getOption("border_thickness") != null ? (int) event.getOption("border_thickness").getAsLong() : 20;
+        int borderThickness = event.getOption("border_thickness") != null ? (int) event.getOption("border_thickness").getAsLong() : 50;
+        int opacity = event.getOption("opacity") != null ? (int) event.getOption("opacity").getAsLong() : 40;
 
-        if (!FLAG_FILENAMES.containsKey(flagName)) {
+        boolean hasCustomFlag = event.getOption("custom_flag") != null;
+        if (flagName == null && !hasCustomFlag) {
+            showPrideHelp(event);
+            return;
+        }
+        if (flagName != null && !FLAG_FILENAMES.containsKey(flagName) && !hasCustomFlag) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Unknown Flag",
                     "Unknown flag: `" + flagName + "`\n" +
@@ -314,19 +341,23 @@ public class PrideCommand implements SlashCommand {
             return;
         }
 
+        // Extract custom flag URL if provided
+        String customFlagUrl = hasCustomFlag ? event.getOption("custom_flag").getAsAttachment().getUrl() : null;
+
         event.deferReply().queue();
 
         try {
             String imageUrl = attachment.getUrl();
-            BufferedImage result = applyPrideFlag(imageUrl, flagName, style, borderStyle, borderThickness);
+            BufferedImage result = applyPrideFlag(imageUrl, flagName, style, borderStyle, borderThickness, opacity, customFlagUrl);
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ImageIO.write(result, "PNG", baos);
             byte[] imageData = baos.toByteArray();
 
+            String flagDisplay = flagName != null ? capitalize(flagName) : "Custom Flag";
             EmbedBuilder embed = new EmbedBuilder()
-                    .setTitle("🏳️‍🌈 Pride Custom Image")
-                    .setDescription("**Flag:** " + capitalize(flagName) + "\n" +
+                    .setTitle("🏳️\u200D🌈 Pride Custom Image")
+                    .setDescription("**Flag:** " + flagDisplay + "\n" +
                             "**Style:** " + capitalize(style) +
                             (style.equals("border") ? "\n**Border:** " + capitalize(borderStyle) + " · " + borderThickness + "px" : "") + "\n" +
                             "**Original:** " + attachment.getFileName())
@@ -348,7 +379,7 @@ public class PrideCommand implements SlashCommand {
     // Image processing - translated from pride-bee reference algorithm
     // ========================================================================
 
-    private BufferedImage applyPrideFlag(String imageUrl, String flagName, String arrangement, String borderStyle, int borderThickness) throws IOException {
+    private BufferedImage applyPrideFlag(String imageUrl, String flagName, String arrangement, String borderStyle, int borderThickness, int overlayOpacity, String customFlagUrl) throws IOException {
         // Download the source image
         URL url = new URL(imageUrl);
         BufferedImage sourceImage = ImageIO.read(url);
@@ -359,17 +390,28 @@ public class PrideCommand implements SlashCommand {
         // Resize source to 1024x1024 (same as reference: IMAGE_SIZE=1024)
         BufferedImage sourceResized = resizeImage(sourceImage, IMAGE_SIZE, IMAGE_SIZE);
 
-        // Load the flag image
-        BufferedImage flagImage = loadFlagImage(flagName);
+        // Load the flag image - try custom flag first if provided, then fall back to built-in
+        BufferedImage flagImage = null;
+        if (customFlagUrl != null && !customFlagUrl.isEmpty()) {
+            try (InputStream is = new URL(customFlagUrl).openStream()) {
+                flagImage = ImageIO.read(is);
+            }
+        }
         if (flagImage == null) {
-            throw new IOException("Could not load flag image: " + flagName);
+            flagImage = loadFlagImage(flagName);
+        }
+        if (flagImage == null) {
+            if (flagName != null) {
+                throw new IOException("Could not load flag image: " + flagName);
+            }
+            throw new IOException("No flag specified. Use the flag option or custom_flag option.");
         }
         // Resize flag to 1024x1024
         BufferedImage flagResized = resizeImage(flagImage, IMAGE_SIZE, IMAGE_SIZE);
 
         BufferedImage result;
         switch (arrangement.toLowerCase()) {
-            case "overlay" -> result = renderOverlay(flagResized, sourceResized);
+            case "overlay" -> result = renderOverlay(flagResized, sourceResized, overlayOpacity);
             case "border" -> {
                 if ("frame".equals(borderStyle)) {
                     result = renderFrame(flagResized, sourceResized, borderThickness);
@@ -421,12 +463,9 @@ public class PrideCommand implements SlashCommand {
     }
 
     /**
-     * Renders the flag as an overlay blended over the full avatar (multiply blend).
-     * Algorithm (from reference with mask=true):
-     * 1. Composite flag over avatar with multiply blend
-     * 2. Clip to circle
+     * Renders the flag as an overlay blended over the full avatar with configurable opacity.
      */
-    private BufferedImage renderOverlay(BufferedImage flagImage, BufferedImage avatarImage) {
+    private BufferedImage renderOverlay(BufferedImage flagImage, BufferedImage avatarImage, int overlayOpacity) {
         BufferedImage result = new BufferedImage(IMAGE_SIZE, IMAGE_SIZE, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = result.createGraphics();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -435,8 +474,9 @@ public class PrideCommand implements SlashCommand {
         // Draw the avatar as base
         g2d.drawImage(avatarImage, 0, 0, IMAGE_SIZE, IMAGE_SIZE, null);
 
-        // Multiply blend the flag over the avatar
-        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f));
+        // Blend the flag over the avatar with user-configurable opacity
+        float alpha = Math.max(0.05f, Math.min(1.0f, overlayOpacity / 100.0f));
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
         g2d.drawImage(flagImage, 0, 0, IMAGE_SIZE, IMAGE_SIZE, null);
         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
 
@@ -533,13 +573,12 @@ public class PrideCommand implements SlashCommand {
     }
 
     public static CommandData getCommandData() {
-        OptionData flagOption = new OptionData(OptionType.STRING, "flag", "Pride flag to apply", true)
+        OptionData flagOption = new OptionData(OptionType.STRING, "flag", "Pride flag to apply (not needed if custom_flag is used)", false)
                 .setAutoComplete(true);
 
-        OptionData typeOption = new OptionData(OptionType.STRING, "type", "Type of image to process", false);
-        typeOption.addChoice("Avatar (default)", "avatar");
-        typeOption.addChoice("Image URL", "url");
-        typeOption.addChoice("Upload File", "custom");
+        OptionData opacityOption = new OptionData(OptionType.INTEGER, "opacity", "Overlay opacity in percent (overlay only, 1-100, default: 40)", false)
+                .setMinValue(1)
+                .setMaxValue(100);
 
         OptionData styleOption = new OptionData(OptionType.STRING, "style", "How to apply the flag", false);
         styleOption.addChoice("Overlay", "overlay");
@@ -549,20 +588,21 @@ public class PrideCommand implements SlashCommand {
         borderStyleOption.addChoice("Circular (default)", "circular");
         borderStyleOption.addChoice("Frame", "frame");
 
-        OptionData borderThicknessOption = new OptionData(OptionType.INTEGER, "border_thickness", "Border thickness in pixels (when style is border, default: 20)", false)
+        OptionData borderThicknessOption = new OptionData(OptionType.INTEGER, "border_thickness", "Border thickness in pixels (when style is border, default: 50)", false)
                 .setMinValue(5)
-                .setMaxValue(100);
+                .setMaxValue(512);
 
         return Commands.slash("pride", "Apply pride flag overlays to avatars or images")
                 .addOptions(
                         flagOption,
-                        typeOption,
-                        new OptionData(OptionType.USER, "user", "User whose avatar to use (for avatar type)", false),
-                        new OptionData(OptionType.STRING, "image_url", "Image URL (for url type)", false),
-                        new OptionData(OptionType.ATTACHMENT, "image", "Image file (for custom type)", false),
+                        new OptionData(OptionType.USER, "user", "User whose avatar to use", false),
+                        new OptionData(OptionType.STRING, "image_url", "Image URL", false),
+                        new OptionData(OptionType.ATTACHMENT, "image", "Image file upload", false),
+                        new OptionData(OptionType.ATTACHMENT, "custom_flag", "Upload a custom flag image to use", false),
                         styleOption,
                         borderStyleOption,
-                        borderThicknessOption);
+                        borderThicknessOption,
+                        opacityOption);
     }
 
     @Override

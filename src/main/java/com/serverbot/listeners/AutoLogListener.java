@@ -218,6 +218,10 @@ public class AutoLogListener extends ListenerAdapter {
             messageCache.remove(messageId);
             return;
         }
+        if (isExcludedFromLogging(guildId, "message", event.getChannel().getId(), null)) {
+            messageCache.remove(messageId);
+            return;
+        }
 
         TextChannel logChannel = getLogChannel(event.getGuild(), "message");
         if (logChannel == null) {
@@ -226,6 +230,11 @@ public class AutoLogListener extends ListenerAdapter {
         }
 
         CachedMessage cached = messageCache.remove(messageId);
+
+        // If we never cached this message and bot deletions aren't configured to be logged, skip it
+        if (cached == null && !com.serverbot.ServerBot.getStorageManager().areBotDeletionsLogged(guildId)) {
+            return;
+        }
 
         EmbedBuilder embed = new EmbedBuilder()
                 .setColor(Color.RED)
@@ -319,6 +328,7 @@ public class AutoLogListener extends ListenerAdapter {
         if (!isAutoLogEnabled(guildId, "member", "joins")) {
             return;
         }
+        if (isExcludedFromLogging(guildId, "member", null, event.getUser().getId())) return;
 
         TextChannel logChannel = getLogChannel(event.getGuild(), "member");
         if (logChannel == null)
@@ -687,6 +697,31 @@ public class AutoLogListener extends ListenerAdapter {
         if (text.length() <= maxLength)
             return text;
         return text.substring(0, maxLength - 3) + "...";
+    }
+
+    /**
+     * Check if a user/channel/category/role should be excluded from logging.
+     */
+    protected static boolean isExcludedFromLogging(String guildId, String logType, String channelId, String userId) {
+        try {
+            Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
+            @SuppressWarnings("unchecked")
+            java.util.List<String> excludedChannels = (java.util.List<String>) settings.get("logExcludedChannels_" + logType);
+            if (excludedChannels != null && channelId != null && excludedChannels.contains(channelId)) return true;
+            @SuppressWarnings("unchecked")
+            java.util.List<String> excludedUsers = (java.util.List<String>) settings.get("logExcludedUsers_" + logType);
+            if (excludedUsers != null && userId != null && excludedUsers.contains(userId)) return true;
+            // Also check global exclusions across all log types
+            @SuppressWarnings("unchecked")
+            java.util.List<String> globalExcludedChannels = (java.util.List<String>) settings.get("logExcludedChannels_all");
+            if (globalExcludedChannels != null && channelId != null && globalExcludedChannels.contains(channelId)) return true;
+            @SuppressWarnings("unchecked")
+            java.util.List<String> globalExcludedUsers = (java.util.List<String>) settings.get("logExcludedUsers_all");
+            if (globalExcludedUsers != null && userId != null && globalExcludedUsers.contains(userId)) return true;
+        } catch (Exception e) {
+            logger.trace("Error checking log exclusions: {}", e.getMessage());
+        }
+        return false;
     }
 
     // Grouped delete log (shared by onMessageBulkDelete and logOldMessagePurge)

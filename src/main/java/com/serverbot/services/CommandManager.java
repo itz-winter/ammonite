@@ -34,8 +34,9 @@ public class CommandManager {
 
         // Utility commands
         registerCommand(new com.serverbot.commands.utility.HelpCommand());
-        registerCommand(new com.serverbot.commands.utility.EchoCommand());
+        registerCommand(new com.serverbot.commands.utility.RestartCommand());
         registerCommand(new com.serverbot.commands.utility.StatusCommand());
+        registerCommand(new com.serverbot.commands.owner.AnnounceCommand());
         registerCommand(new com.serverbot.commands.utility.InfoCommand());
         registerCommand(new com.serverbot.commands.utility.PingCommand());
         registerCommand(new com.serverbot.commands.utility.AvatarCommand());
@@ -54,6 +55,7 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.utility.RulesCommand());
         registerCommand(new com.serverbot.commands.utility.TalkAsCommand());
         registerCommand(new com.serverbot.commands.utility.SupportCommand());
+        registerCommand(new com.serverbot.commands.utility.EchoCommand());
 
         // Game commands
         registerCommand(new com.serverbot.commands.games.PokerCommand());
@@ -76,6 +78,7 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.economy.SetBalanceCommand());
         registerCommand(new com.serverbot.commands.economy.AddBalanceCommand());
         registerCommand(new com.serverbot.commands.economy.SubtractBalanceCommand());
+        registerCommand(new com.serverbot.commands.economy.CurrencyCommand());
 
         // Moderation commands that work with file storage
         registerCommand(new com.serverbot.commands.moderation.WarnCommand());
@@ -91,6 +94,7 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.moderation.LockdownCommand());
         registerCommand(new com.serverbot.commands.moderation.PurgeCommand());
         registerCommand(new com.serverbot.commands.moderation.TimeoutCommand());
+        registerCommand(new com.serverbot.commands.moderation.CheckCommand());
 
         // Leveling commands that work with file storage
         registerCommand(new com.serverbot.commands.leveling.XpCommand());
@@ -223,6 +227,7 @@ public class CommandManager {
             commandDataList.add(com.serverbot.commands.utility.StatusCommand.getCommandData());
             commandDataList.add(com.serverbot.commands.utility.PresenceCommand.getCommandData());
             commandDataList.add(com.serverbot.commands.utility.RestartCommand.getCommandData());
+            commandDataList.add(com.serverbot.commands.owner.AnnounceCommand.getCommandData());
             commandDataList.add(com.serverbot.commands.utility.AppearanceCommand.getCommandData());
         }
 
@@ -247,6 +252,7 @@ public class CommandManager {
         commandDataList.add(com.serverbot.commands.economy.SetBalanceCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.economy.AddBalanceCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.economy.SubtractBalanceCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.economy.CurrencyCommand.getCommandData());
 
         // Moderation commands
         commandDataList.add(com.serverbot.commands.moderation.WarnCommand.getCommandData());
@@ -262,6 +268,7 @@ public class CommandManager {
         commandDataList.add(com.serverbot.commands.moderation.LockdownCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.moderation.PurgeCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.moderation.TimeoutCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.moderation.CheckCommand.getCommandData());
 
         // Leveling commands
         commandDataList.add(com.serverbot.commands.leveling.XpCommand.getCommandData());

@@ -132,6 +132,7 @@ public class FileStorageManager {
     }
 
     public void setBalance(String guildId, String userId, long balance) {
+        if (!isEconomyEnabled(guildId)) return;
         String key = guildId + ":" + userId;
         Map<String, Object> data = userEconomyCache.computeIfAbsent(key, k -> new HashMap<>());
         data.put("balance", balance);
@@ -140,11 +141,13 @@ public class FileStorageManager {
     }
 
     public void addBalance(String guildId, String userId, long amount) {
+        if (!isEconomyEnabled(guildId)) return;
         long currentBalance = getBalance(guildId, userId);
         setBalance(guildId, userId, currentBalance + amount);
     }
 
     public boolean removeBalance(String guildId, String userId, long amount) {
+        if (!isEconomyEnabled(guildId)) return false;
         long currentBalance = getBalance(guildId, userId);
         if (currentBalance < amount)
             return false;
@@ -186,11 +189,11 @@ public class FileStorageManager {
     }
 
     public void addExperience(String guildId, String userId, long experience) {
+        if (!isLevelingEnabled(guildId)) return;
         String key = guildId + ":" + userId;
         Map<String, Object> data = userLevelsCache.computeIfAbsent(key, k -> new HashMap<>());
 
         long currentExp = ((Number) data.getOrDefault("experience", 0)).longValue();
-
         long newExp = currentExp + experience;
         int newLevel = calculateLevel(newExp);
 
@@ -199,6 +202,8 @@ public class FileStorageManager {
         data.put("lastUpdated", System.currentTimeMillis());
 
         saveLevelsData();
+
+        // Return old level for level-up detection, accessible via getLevel
     }
 
     public List<Map.Entry<String, Integer>> getTopLevels(String guildId, int limit) {
@@ -221,8 +226,30 @@ public class FileStorageManager {
         return new HashMap<>(userLevelsCache);
     }
 
-    private int calculateLevel(long experience) {
-        return (int) Math.floor(Math.sqrt(experience / 100.0));
+    public int calculateLevel(long experience) {
+        // New curve: y = floor(512 * 1.05^(floor(x / max(1, 5 - 0.05x))))
+        int level = 0;
+        long cumulativeXp = 0;
+        while (true) {
+            int divisor = Math.max(1, 5 - (int)(level * 0.05));
+            long xpForThisLevel = (long) Math.floor(512 * Math.pow(1.05, (double) level / divisor));
+            cumulativeXp += xpForThisLevel;
+            if (cumulativeXp > experience) break;
+            level++;
+        }
+        return level;
+    }
+
+    /**
+     * Calculate total XP needed to reach a specific level (cumulative).
+     */
+    public long calculateXpForLevel(int level) {
+        long totalXp = 0;
+        for (int i = 0; i < level; i++) {
+            int divisor = Math.max(1, 5 - (int)(i * 0.05));
+            totalXp += (long) Math.floor(512 * Math.pow(1.05, (double) i / divisor));
+        }
+        return totalXp;
     }
 
     // Warning methods
@@ -492,13 +519,29 @@ public class FileStorageManager {
         return 5L; // Default value
     }
 
+    /**
+     * Centralized check if economy is enabled for a guild.
+     */
+    public boolean isEconomyEnabled(String guildId) {
+        Map<String, Object> settings = getGuildSettings(guildId);
+        return Boolean.TRUE.equals(settings.get("enableEconomy"));
+    }
+
+    /**
+     * Centralized check if leveling is enabled for a guild.
+     */
+    public boolean isLevelingEnabled(String guildId) {
+        Map<String, Object> settings = getGuildSettings(guildId);
+        return Boolean.TRUE.equals(settings.get("enableLeveling"));
+    }
+
     private Map<String, Object> getDefaultGuildSettings() {
         Map<String, Object> defaultSettings = new HashMap<>();
         defaultSettings.put("prefix", "/");
         defaultSettings.put("muteRoleName", "Muted");
         defaultSettings.put("maxWarnings", 3);
-        defaultSettings.put("enableLeveling", true);
-        defaultSettings.put("enableEconomy", true);
+        defaultSettings.put("enableLeveling", false);
+        defaultSettings.put("enableEconomy", false);
         defaultSettings.put("xpPerMessage", 15L); // Default XP per message
         defaultSettings.put("pointsPerMessage", 5L); // Default points per message
         defaultSettings.put("logChannelId", null);
@@ -506,6 +549,26 @@ public class FileStorageManager {
         defaultSettings.put("autoRoleId", null);
         defaultSettings.put("dmNotifications", true); // Whether bot sends DMs (except punishment DMs to target)
         return defaultSettings;
+    }
+
+    // ===== Currency settings =====
+
+    public String getCurrencyName(String guildId) {
+        Map<String, Object> settings = getGuildSettings(guildId);
+        return (String) settings.getOrDefault("currencyName", "Points");
+    }
+
+    public void setCurrencyName(String guildId, String name) {
+        updateGuildSettings(guildId, "currencyName", name);
+    }
+
+    public String getCurrencyIcon(String guildId) {
+        Map<String, Object> settings = getGuildSettings(guildId);
+        return (String) settings.getOrDefault("currencyIcon", "🪙");
+    }
+
+    public void setCurrencyIcon(String guildId, String icon) {
+        updateGuildSettings(guildId, "currencyIcon", icon);
     }
 
     // File I/O methods
@@ -1131,6 +1194,59 @@ public class FileStorageManager {
      */
     public void disableAllPrefixCommands(String guildId) {
         setPrefixCommandsEnabled(guildId, false);
+    }
+
+    // ===== Ephemeral response settings =====
+
+    /**
+     * Check if reaction role responses should be ephemeral for a guild.
+     * Default: true
+     */
+    public boolean areReactionRoleResponsesEphemeral(String guildId) {
+        Map<String, Object> settings = getGuildSettings(guildId);
+        Object val = settings.get("reactionRoleEphemeral");
+        return val == null || Boolean.TRUE.equals(val);
+    }
+
+    /**
+     * Set whether reaction role responses are ephemeral for a guild.
+     */
+    public void setReactionRoleResponsesEphemeral(String guildId, boolean ephemeral) {
+        updateGuildSettings(guildId, "reactionRoleEphemeral", ephemeral);
+    }
+
+    /**
+     * Check if moderation command responses should be ephemeral for a guild.
+     * Default: true
+     */
+    public boolean areModerationResponsesEphemeral(String guildId) {
+        Map<String, Object> settings = getGuildSettings(guildId);
+        Object val = settings.get("moderationEphemeral");
+        return val == null || Boolean.TRUE.equals(val);
+    }
+
+    /**
+     * Set whether moderation command responses are ephemeral for a guild.
+     */
+    public void setModerationResponsesEphemeral(String guildId, boolean ephemeral) {
+        updateGuildSettings(guildId, "moderationEphemeral", ephemeral);
+    }
+
+    /**
+     * Check if bot message deletions should be logged for a guild.
+     * Default: false (bot deletions are NOT logged unless configured).
+     */
+    public boolean areBotDeletionsLogged(String guildId) {
+        Map<String, Object> settings = getGuildSettings(guildId);
+        Object val = settings.get("logBotDeletions");
+        return Boolean.TRUE.equals(val);
+    }
+
+    /**
+     * Set whether bot message deletions should be logged for a guild.
+     */
+    public void setBotDeletionsLogged(String guildId, boolean logged) {
+        updateGuildSettings(guildId, "logBotDeletions", logged);
     }
 
     // User Playlist methods

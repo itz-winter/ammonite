@@ -52,11 +52,11 @@ public class SettingsGuiListener extends ListenerAdapter {
 
         switch (action) {
             case "economy" -> {
-                toggle(guildId, "economyEnabled", settings);
+                toggle(guildId, "enableEconomy", settings);
                 refreshPanel(event, guildId, guild, userId);
             }
             case "leveling" -> {
-                toggle(guildId, "levelingEnabled", settings);
+                toggle(guildId, "enableLeveling", settings);
                 refreshPanel(event, guildId, guild, userId);
             }
             case "automod" -> {
@@ -79,7 +79,7 @@ public class SettingsGuiListener extends ListenerAdapter {
                 event.replyModal(intModal(userId, "sgm:work-reward", "Set Work Reward", "Coins (1\u20131,000,000)", 1,
                         1_000_000, SettingsCommand.getInt(settings, "workReward", 100))).queue();
             case "work-cooldown" -> event.replyModal(intModal(userId, "sgm:work-cooldown", "Set Work Cooldown",
-                    "Minutes (1\u20131440)", 1, 1440, SettingsCommand.getInt(settings, "workCooldown", 60))).queue();
+                    "Seconds (e.g. 300, 2h30m)", 1, 86400, (int)SettingsCommand.getLong(settings, "workCooldown", 300L))).queue();
             case "points-per-msg" -> event
                     .replyModal(intModal(userId, "sgm:points-per-msg", "Set Points per Message",
                             "Points (0\u201310000)", 0, 10000, SettingsCommand.getInt(settings, "pointsPerMessage", 1)))
@@ -91,7 +91,8 @@ public class SettingsGuiListener extends ListenerAdapter {
             case "warn-expiry" -> event.replyModal(intModal(userId, "sgm:warn-expiry", "Set Warning Expiry",
                     "Days (1\u2013365)", 1, 365, SettingsCommand.getInt(settings, "warnExpiry", 30))).queue();
             case "mute-role" -> event.replyModal(roleModal(userId, settings)).queue();
-            case "log-channel" -> event.replyModal(channelModal(userId, settings)).queue();
+            case "log-channel" -> event.replyModal(channelModal(userId, settings, "sgm:log-channel", "Log Channel")).queue();
+            case "announce-channel" -> event.replyModal(channelModal(userId, settings, "sgm:announce-channel", "Announce Channel")).queue();
             case "refresh" -> refreshPanel(event, guildId, guild, userId);
             default -> event.reply("Unknown action.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
@@ -166,6 +167,7 @@ public class SettingsGuiListener extends ListenerAdapter {
                 event.editMessage(SettingsCommand.buildPanelEdit(
                         ServerBot.getStorageManager().getGuildSettings(guildId), guild, userId)).queue();
             }
+            case "announce-channel" -> handleChannelSetting(event, guild, guildId, userId, "announcementChannel");
             case "log-channel" -> {
                 if (raw.isEmpty() || raw.equalsIgnoreCase("none") || raw.equalsIgnoreCase("clear")) {
                     ServerBot.getStorageManager().updateGuildSettings(guildId, "logChannelId", null);
@@ -233,16 +235,49 @@ public class SettingsGuiListener extends ListenerAdapter {
                 .build();
     }
 
-    private Modal channelModal(String uid, Map<String, Object> settings) {
-        String cur = settings.containsKey("logChannelId") ? "<#" + settings.get("logChannelId") + ">" : "";
+    private Modal channelModal(String uid, Map<String, Object> settings, String modalId, String title) {
+        String cur = "";
+        String storageKey = modalId.equals("sgm:log-channel") ? "logChannelId" : "announcementChannel";
+        if (settings.containsKey(storageKey)) {
+            cur = "<#" + settings.get(storageKey) + ">";
+        }
         TextInput.Builder input = TextInput.create("val", TextInputStyle.SHORT)
-                .setPlaceholder("#logs  or  clear")
+                .setPlaceholder("#channel  or  clear")
                 .setRequired(false)
                 .setMaxLength(100);
         if (!cur.isEmpty())
             input.setValue(cur);
-        return Modal.create("sgm:log-channel:" + uid, "Set Log Channel")
-                .addComponents(Label.of("Channel (#name, name, or ID) \u2014 type 'clear' to remove", input.build()))
+        return Modal.create(modalId + ":" + uid, "Set " + title)
+                .addComponents(Label.of("Channel (#name, name, or ID) — type 'clear' to remove", input.build()))
                 .build();
+    }
+
+    private void handleChannelSetting(ModalInteractionEvent event, Guild guild, String guildId, String userId, String storageKey) {
+        String raw = event.getValue("val").getAsString().trim();
+        if (raw.isEmpty() || raw.equalsIgnoreCase("none") || raw.equalsIgnoreCase("clear")) {
+            ServerBot.getStorageManager().updateGuildSettings(guildId, storageKey, null);
+            event.editMessage(SettingsCommand.buildPanelEdit(
+                    ServerBot.getStorageManager().getGuildSettings(guildId), guild, userId)).queue();
+            return;
+        }
+        String chanId = raw.replaceAll("[<#>]", "").trim();
+        TextChannel tc = null;
+        try {
+            tc = guild.getTextChannelById(chanId);
+        } catch (Exception ignored) { }
+        if (tc == null) {
+            String lower = chanId.toLowerCase();
+            tc = guild.getTextChannels().stream().filter(c -> c.getName().equalsIgnoreCase(lower)).findFirst()
+                    .orElse(null);
+        }
+        if (tc == null) {
+            event.reply(CustomEmojis.ERROR
+                    + " Channel not found. Use a mention, name, or ID. Type `clear` to remove.")
+                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "📤 Share"))).queue();
+            return;
+        }
+        ServerBot.getStorageManager().updateGuildSettings(guildId, storageKey, tc.getId());
+        event.editMessage(SettingsCommand.buildPanelEdit(
+                ServerBot.getStorageManager().getGuildSettings(guildId), guild, userId)).queue();
     }
 }

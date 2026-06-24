@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
@@ -14,6 +15,7 @@ import com.serverbot.utils.PermissionManager;
 import com.serverbot.utils.PermissionUtils;
 import com.serverbot.utils.AutoLogUtils;
 import com.serverbot.utils.TimeUtils;
+import com.serverbot.utils.CooldownManager;
 import com.serverbot.utils.DismissibleMessage;
 import com.serverbot.commands.SlashCommand;
 import com.serverbot.ServerBot;
@@ -23,6 +25,7 @@ import com.serverbot.services.PunishmentNotificationService;
 import com.serverbot.services.PunishmentNotificationService.PunishmentType;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.concurrent.TimeUnit;
@@ -126,6 +129,7 @@ public class PrefixCommandService {
         Map.entry("appearance", "appearance"),
         Map.entry("backup", "backup"),
         Map.entry("config", "config"),
+        Map.entry("announce", "announce"),
         // Music command aliases
         Map.entry("play", "play"),
         Map.entry("skip", "skip"),
@@ -207,14 +211,15 @@ public class PrefixCommandService {
         }
         final String prefix = matchedPrefix;
         
-        // Parse the command and arguments
-        String[] parts = content.substring(prefix.length()).split("\\s+");
-        if (parts.length == 0 || parts[0].isEmpty()) {
+        // Parse the command and arguments — using quote-aware tokenizer so
+        // e.g. !echo -m "hello world" preserves "hello world" as a single argument
+        List<String> allTokens = parseQuotedTokens(content.substring(prefix.length()));
+        if (allTokens.isEmpty() || allTokens.get(0).isEmpty()) {
             return;
         }
         
-        String commandName = parts[0].toLowerCase();
-        String[] args = Arrays.copyOfRange(parts, 1, parts.length);
+        String commandName = allTokens.get(0).toLowerCase();
+        String[] args = allTokens.subList(1, allTokens.size()).toArray(new String[0]);
         
         // Resolve aliases
         commandName = COMMAND_ALIASES.getOrDefault(commandName, commandName);
@@ -247,6 +252,36 @@ public class PrefixCommandService {
         }
         
         try {
+            // Check if economy/leveling is disabled for this guild
+            if (event.isFromGuild()) {
+                com.serverbot.commands.CommandCategory category = slashCommand.getCategory();
+                if (category == com.serverbot.commands.CommandCategory.ECONOMY ||
+                    category == com.serverbot.commands.CommandCategory.GAMBLING ||
+                    category == com.serverbot.commands.CommandCategory.BANKING) {
+                    String gId = event.getGuild().getId();
+                    Map<String, Object> gs = com.serverbot.ServerBot.getStorageManager().getGuildSettings(gId);
+                    boolean economyEnabled = Boolean.TRUE.equals(gs.get("enableEconomy"));
+                    if (!economyEnabled) {
+                        event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                            "Economy Disabled",
+                            "The economy system is disabled in this server. An admin can enable it using /settings."
+                        )).queue();
+                        return;
+                    }
+                }
+                if (category == com.serverbot.commands.CommandCategory.LEVELING) {
+                    String gId = event.getGuild().getId();
+                    Map<String, Object> gs = com.serverbot.ServerBot.getStorageManager().getGuildSettings(gId);
+                    boolean levelingEnabled = Boolean.TRUE.equals(gs.get("enableLeveling"));
+                    if (!levelingEnabled) {
+                        event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                            "Leveling Disabled",
+                            "The leveling system is disabled in this server. An admin can enable it using /settings."
+                        )).queue();
+                        return;
+                    }
+                }
+            }
             // Handle the command based on its type
             handleSpecificCommand(event, commandName, args, slashCommand);
             
@@ -472,11 +507,38 @@ public class PrefixCommandService {
                 handleAutoproxyCommand(event, joinedArgs, gId, uId);
                 break;
             }
+            case "announce":
+                handleAnnounceCommand(event, options);
+                break;
             case "globalchat":
                 handleGlobalChatCommand(event, args);
                 break;
+            case "prefix":
+                handlePrefixConfigCommand(event, options);
+                break;
+            case "settings":
+                handleSettingsCommand(event, options);
+                break;
+            case "welcome":
+                handleWelcomeCommand(event, options);
+                break;
+            case "logging":
+                handleLoggingCommand(event, options);
+                break;
+            case "levels":
+                handleLevelsToggleCommand(event, options);
+                break;
+            case "points":
+                handlePointsToggleCommand(event, options);
+                break;
             default:
-                // Command is registered but has no prefix implementation - silently ignore
+                // Command is registered but has no prefix implementation
+                String fullInput = String.join(" ", args);
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Slash Command Required",
+                    "The `" + commandName + "` command is not available via prefix.\n" +
+                    "Use the slash command instead: ` /" + commandName + " " + fullInput + "`"
+                )).queue();
                 break;
         }
     }
@@ -520,26 +582,48 @@ public class PrefixCommandService {
 
     /**
      * Parse prefix command arguments into a map
+     * Supports:
+     *   - short flags: -m value
+     *   - long flags: --message value
+     *   - quoted values: -m "multi word value"
+     *   - positional arguments (inferred by order for each command)
      */
     private Map<String, String> parseArguments(String commandName, String[] args) {
         Map<String, String> options = new HashMap<>();
         List<String> positionalArgs = new ArrayList<>();
         
-        // Parse flags and positional arguments
+        // args are already properly tokenized (quotes handled upstream in handlePrefixCommand),
+        // so we iterate directly without re-joining and re-parsing.
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             
-            if (arg.startsWith("-") && arg.length() > 1 && i + 1 < args.length) {
-                // This is a flag
+            if (arg.startsWith("--") && arg.length() > 2) {
+                // Long flag: --flag value
+                String flag = arg.substring(2);
+                if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
+                    String value = args[i + 1];
+                    String optionName = mapFlagToOption(flag);
+                    options.put(optionName, value);
+                    i++;
+                } else {
+                    // Flag with no value — treat as boolean flag
+                    String optionName = mapFlagToOption(flag);
+                    options.put(optionName, "true");
+                }
+            } else if (arg.startsWith("-") && arg.length() > 1 && !arg.startsWith("--")) {
+                // Short flag: -f value
                 String flag = arg.substring(1);
-                String value = args[i + 1];
-                
-                // Map common flags to option names
-                String optionName = mapFlagToOption(flag);
-                options.put(optionName, value);
-                i++; // Skip the value
+                if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
+                    String value = args[i + 1];
+                    String optionName = mapFlagToOption(flag);
+                    options.put(optionName, value);
+                    i++;
+                } else {
+                    String optionName = mapFlagToOption(flag);
+                    options.put(optionName, "true");
+                }
             } else if (!arg.startsWith("-")) {
-                // This is a positional argument
+                // Positional argument
                 positionalArgs.add(arg);
             }
         }
@@ -548,6 +632,40 @@ public class PrefixCommandService {
         handlePositionalArguments(commandName, options, positionalArgs);
         
         return options;
+    }
+    
+    /**
+     * Parse a command string into tokens, respecting double-quoted strings.
+     * E.g. -m "hello world" -> ["-m", "hello world"]
+     */
+    private List<String> parseQuotedTokens(String input) {
+        List<String> tokens = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            
+            if (c == '"') {
+                inQuotes = !inQuotes;
+                continue;
+            }
+            
+            if (c == ' ' && !inQuotes) {
+                if (current.length() > 0) {
+                    tokens.add(current.toString());
+                    current.setLength(0);
+                }
+            } else {
+                current.append(c);
+            }
+        }
+        
+        if (current.length() > 0) {
+            tokens.add(current.toString());
+        }
+        
+        return tokens;
     }
     
     /**
@@ -839,6 +957,93 @@ public class PrefixCommandService {
                     options.put("level", positionalArgs.get(0));
                 }
                 break;
+            case "prefix":
+                // !prefix <action> [prefix]
+                if (positionalArgs.size() >= 1) {
+                    options.put("action", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        options.put("prefix", positionalArgs.get(1));
+                    }
+                }
+                break;
+            case "flags":
+                // !flags [action] [flag]
+                if (positionalArgs.size() >= 1) {
+                    options.put("action", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        options.put("flag", positionalArgs.get(1));
+                    }
+                }
+                break;
+            case "pronouns":
+                // !pronouns <action>
+                if (positionalArgs.size() >= 1) {
+                    options.put("action", positionalArgs.get(0));
+                }
+                break;
+            case "welcome":
+                // !welcome <action> [value]
+                if (positionalArgs.size() >= 1) {
+                    options.put("action", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        options.put("value", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                    }
+                }
+                break;
+            case "logging":
+                // !logging <type> [channel]
+                if (positionalArgs.size() >= 1) {
+                    options.put("type", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        options.put("channel", positionalArgs.get(1));
+                    }
+                }
+                break;
+            case "log":
+                // !log <type> <message...>
+                if (positionalArgs.size() >= 2) {
+                    options.put("type", positionalArgs.get(0));
+                    options.put("message", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                }
+                break;
+            case "antispam":
+                // !antispam <setting> [threshold]
+                if (positionalArgs.size() >= 1) {
+                    options.put("setting", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        options.put("threshold", positionalArgs.get(1));
+                    }
+                }
+                break;
+            case "levels":
+            case "points":
+                // !levels <enable/disable>
+                if (positionalArgs.size() >= 1) {
+                    options.put("action", positionalArgs.get(0));
+                }
+                break;
+            case "support":
+                // !support
+                break;
+            case "chess":
+                // !chess [opponent]
+                if (positionalArgs.size() >= 1) {
+                    options.put("opponent", positionalArgs.get(0));
+                }
+                break;
+            case "poker":
+                // !poker <bet>
+                if (positionalArgs.size() >= 1) {
+                    options.put("bet", positionalArgs.get(0));
+                }
+                break;
+            case "announce":
+                // !announce [message...] — all remaining positional args = the message
+                // Also works with -m "message" or --message "message"
+                if (positionalArgs.size() >= 1) {
+                    options.put("message", String.join(" ", positionalArgs));
+                }
+                break;
             default:
                 // For other commands, put the first positional arg as "target"
                 if (positionalArgs.size() >= 1) {
@@ -850,40 +1055,96 @@ public class PrefixCommandService {
     
     // Command implementations that replicate slash command logic
     
+    // Short helper: forward to slash command by sending instruction to user
+    private void slashOnly(MessageReceivedEvent event, String commandName, String args) {
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+            "Slash Command Required",
+            "The `" + commandName + "` command requires slash commands.\n" +
+            "Use ` /" + commandName + " " + args + "` instead."
+        )).queue();
+    }
+
+    private void handlePrefixConfigCommand(MessageReceivedEvent event, Map<String, String> options) {
+        slashOnly(event, "prefix", options.getOrDefault("action", "") + " " + options.getOrDefault("prefix", ""));
+    }
+
+    private void handleSettingsCommand(MessageReceivedEvent event, Map<String, String> options) {
+        slashOnly(event, "settings", options.getOrDefault("action", ""));
+    }
+
+    private void handleWelcomeCommand(MessageReceivedEvent event, Map<String, String> options) {
+        slashOnly(event, "welcome", options.getOrDefault("action", "") + " " + options.getOrDefault("value", ""));
+    }
+
+    private void handleLoggingCommand(MessageReceivedEvent event, Map<String, String> options) {
+        slashOnly(event, "logging", options.getOrDefault("type", "") + " " + options.getOrDefault("channel", ""));
+    }
+
+    private void handleLevelsToggleCommand(MessageReceivedEvent event, Map<String, String> options) {
+        slashOnly(event, "levels", options.getOrDefault("action", ""));
+    }
+
+    private void handlePointsToggleCommand(MessageReceivedEvent event, Map<String, String> options) {
+        slashOnly(event, "points", options.getOrDefault("action", ""));
+    }
+
     private void handleWorkCommand(MessageReceivedEvent event) {
         try {
             Guild guild = event.getGuild();
             User user = event.getAuthor();
             String guildId = guild.getId();
             String userId = user.getId();
-            
+            String userKey = guildId + ":" + userId;
+
             // Get guild settings to determine work rewards
             Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
 
             // Respect the economy enabled/disabled toggle
-            Boolean economyEnabled = (Boolean) guildSettings.get("enableEconomy");
-            if (economyEnabled != null && !economyEnabled) {
+            if (!ServerBot.getStorageManager().isEconomyEnabled(guildId)) {
                 event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
                     "Economy Disabled",
                     "The economy system is disabled on this server."
                 )).queue();
                 return;
             }
-            int minReward = (Integer) guildSettings.getOrDefault("economy.workRewardMin", 10);
-            int maxReward = (Integer) guildSettings.getOrDefault("economy.workRewardMax", 50);
+
+            // Check cooldown via shared CooldownManager (same as slash command)
+            Number workCooldownNum = (Number) guildSettings.get("workCooldown");
+            // workCooldown is stored in seconds directly (via /settings duration input)
+            int cooldownSeconds = workCooldownNum != null ? workCooldownNum.intValue() : 300;
+
+            if (CooldownManager.isOnCooldown(userId, "work", cooldownSeconds)) {
+                long remaining = CooldownManager.getRemainingCooldown(userId, "work", cooldownSeconds);
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Work Cooldown",
+                    "You need to rest before working again!\nTime remaining: **" + com.serverbot.utils.TimeUtils.formatDuration(java.time.Duration.ofSeconds(remaining)) + "**"
+                )).queue();
+                return;
+            }
+
+            // Set cooldown via shared CooldownManager
+            CooldownManager.setCooldown(userId, "work");
             
-            // Generate random reward
-            int reward = new Random().nextInt(maxReward - minReward + 1) + minReward;
+            // Get work reward amount
+            Number workRewardNum = (Number) guildSettings.get("workReward");
+            int reward = workRewardNum != null ? workRewardNum.intValue() : 50;
+            
+            // Add random variation
+            int variation = reward / 4;
+            reward = reward + new Random().nextInt(variation * 2 + 1) - variation;
             
             // Add money to user's balance
             long currentBalance = ServerBot.getStorageManager().getBalance(guildId, userId);
             ServerBot.getStorageManager().setBalance(guildId, userId, currentBalance + reward);
             
             // Send success message
+            String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
+            String currencyIcon = ServerBot.getStorageManager().getCurrencyIcon(guildId);
+            String cooldownText = com.serverbot.utils.TimeUtils.formatDuration(java.time.Duration.ofSeconds(cooldownSeconds));
             event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
-                "💼 Work Complete!",
-                String.format("You worked hard and earned **%d** coins!\n**New Balance:** %d coins", 
-                    reward, currentBalance + reward)
+                currencyIcon + " Work Complete!",
+                String.format("You worked hard and earned **%d** %s!\n**New Balance:** %d %s\n\n*You can work again in %s.*",
+                    reward, currencyName, currentBalance + reward, currencyName, cooldownText)
             )).queue();
             
         } catch (Exception e) {
@@ -933,12 +1194,12 @@ public class PrefixCommandService {
             
             long balance = ServerBot.getStorageManager().getBalance(guildId, userId);
             
-            // Get currency symbol from guild settings
-            Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
-            String currencyName = (String) guildSettings.getOrDefault("economy.currencyName", "coins");
+            // Get guild settings for currency name and icon
+            String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
+            String currencyIcon = ServerBot.getStorageManager().getCurrencyIcon(guildId);
             
             event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
-                "💰 Balance",
+                currencyIcon + " Balance",
                 String.format("**%s** has **%d** %s", targetUser.getName(), balance, currencyName)
             )).queue();
             
@@ -1011,7 +1272,7 @@ public class PrefixCommandService {
             if (senderBalance < amount) {
                 event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Funds",
-                    String.format("You don't have enough coins. You have %d, but need %d.", 
+                    String.format("You don't have enough. You have %d, but need %d.", 
                         senderBalance, amount)
                 )).queue();
                 return;
@@ -1023,11 +1284,11 @@ public class PrefixCommandService {
             ServerBot.getStorageManager().setBalance(guildId, targetId, targetBalance + amount);
             
             // Get currency info
-            Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
-            String currencyName = (String) guildSettings.getOrDefault("economy.currencyName", "coins");
+            String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
+            String currencyIcon = ServerBot.getStorageManager().getCurrencyIcon(guildId);
             
             event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
-                "💸 Payment Successful",
+                currencyIcon + " Payment Successful",
                 String.format("**%s** paid **%s** %d %s\n\n**Your new balance:** %d %s", 
                     sender.getName(), targetUser.getName(), amount, currencyName,
                     senderBalance - amount, currencyName)
@@ -1045,10 +1306,8 @@ public class PrefixCommandService {
         try {
             Guild guild = event.getGuild();
             String guildId = guild.getId();
-
-            // Get guild settings for currency name
-            Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
-            String currencyName = (String) guildSettings.getOrDefault("economy.currencyName", "coins");
+            String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
+            String currencyIcon = ServerBot.getStorageManager().getCurrencyIcon(guildId);
 
             List<Map.Entry<String, Long>> topBalances = ServerBot.getStorageManager().getTopBalances(guildId, 10);
 
@@ -1075,22 +1334,21 @@ public class PrefixCommandService {
                     displayName = "Unknown User";
                 }
 
-                String medal = switch (i) {
-                    case 0 -> "🥇";
-                    case 1 -> "🥈";
-                    case 2 -> "🥉";
-                    default -> "**" + (i + 1) + ".**";
-                };
-
-                leaderboard.append(String.format("%s %s — **%,d** %s\n", medal, displayName, balance, currencyName));
+                if (i < 3) {
+                    String medal = i == 0 ? "🥇" : i == 1 ? "🥈" : "🥉";
+                    leaderboard.append(medal).append(" ").append(displayName)
+                            .append("\n└ ").append(currencyIcon).append(" **").append(String.format("%,d", balance))
+                            .append("** ").append(currencyName).append("\n\n");
+                } else {
+                    leaderboard.append("**").append(i + 1).append(".** ").append(displayName)
+                            .append("\n└ ").append(currencyIcon).append(" **").append(String.format("%,d", balance))
+                            .append("** ").append(currencyName).append("\n\n");
+                }
             }
 
-            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
-                    .setTitle("💰 Balance Leaderboard")
-                    .setDescription(leaderboard.toString())
-                    .setFooter("Top " + topBalances.size() + " users by balance");
-
-            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                currencyIcon + " Points Leaderboard", leaderboard.toString()
+            )).queue();
 
         } catch (Exception e) {
             event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
@@ -1200,10 +1458,19 @@ public class PrefixCommandService {
             int level = ServerBot.getStorageManager().getLevel(guildId, userId);
             long experience = ServerBot.getStorageManager().getExperience(guildId, userId);
 
-            // Calculate XP needed for next level
-            long xpForNextLevel = (long) Math.pow((level + 1), 2) * 100;
-            long xpProgress = experience - (long) Math.pow(level, 2) * 100;
-            long xpNeeded = xpForNextLevel - (long) Math.pow(level, 2) * 100;
+            // Calculate XP for current and next level (same as RankCommand)
+            long currentLevelExp = ServerBot.getStorageManager().calculateXpForLevel(level);
+            long nextLevelExp = ServerBot.getStorageManager().calculateXpForLevel(level + 1);
+            long expInCurrentLevel = experience - currentLevelExp;
+            long expRequiredThisLevel = nextLevelExp - currentLevelExp;
+            double progressPercent = expRequiredThisLevel > 0
+                    ? (double) expInCurrentLevel / expRequiredThisLevel * 100
+                    : 100.0;
+
+            // Build progress bar (same style as RankCommand)
+            int filledBars = (int) (progressPercent / 10);
+            int emptyBars = 10 - filledBars;
+            String progressBar = "▰".repeat(Math.max(0, filledBars)) + "▱".repeat(Math.max(0, emptyBars));
 
             // Calculate rank position
             List<Map.Entry<String, Integer>> topLevels = ServerBot.getStorageManager().getTopLevels(guildId, 1000);
@@ -1216,22 +1483,16 @@ public class PrefixCommandService {
                 rank = topLevels.size() + 1;
             }
 
-            // Build progress bar
-            int barLength = 10;
-            int filled = xpNeeded > 0 ? (int) ((xpProgress * barLength) / xpNeeded) : 0;
-            filled = Math.max(0, Math.min(barLength, filled));
-            String progressBar = "▓".repeat(filled) + "░".repeat(barLength - filled);
+            String description = "**Level:** " + level + "\n" +
+                    "**Total XP:** " + String.format("%,d", experience) + "\n" +
+                    "**Rank:** #" + rank + "\n" +
+                    "**Progress:** " + Math.max(0, expInCurrentLevel) + "/" + expRequiredThisLevel + " XP\n" +
+                    "**XP to Next Level:** " + (nextLevelExp - experience) + "\n" +
+                    progressBar + " " + String.format("%.1f", progressPercent) + "%";
 
-            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
-                    .setTitle("📊 " + targetUser.getName() + "'s Rank")
-                    .setThumbnail(targetUser.getEffectiveAvatarUrl())
-                    .addField("🏅 Rank", "#" + rank, true)
-                    .addField("📈 Level", String.valueOf(level), true)
-                    .addField("✨ Total XP", String.format("%,d", experience), true)
-                    .addField("Progress to Level " + (level + 1),
-                        progressBar + String.format(" (%,d / %,d XP)", Math.max(0, xpProgress), xpNeeded), false);
-
-            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+            event.getChannel().sendMessageEmbeds(
+                EmbedUtils.createDefaultEmbed(targetUser.getName() + "'s Rank", description)
+            ).queue();
 
         } catch (Exception e) {
             event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
@@ -1272,22 +1533,21 @@ public class PrefixCommandService {
                     displayName = "Unknown User";
                 }
 
-                String medal = switch (i) {
-                    case 0 -> "🥇";
-                    case 1 -> "🥈";
-                    case 2 -> "🥉";
-                    default -> "**" + (i + 1) + ".**";
-                };
-
-                leaderboard.append(String.format("%s %s — Level **%d** (%,d XP)\n", medal, displayName, level, xp));
+                if (i < 3) {
+                    String medal = i == 0 ? "🥇" : i == 1 ? "🥈" : "🥉";
+                    leaderboard.append(medal).append(" ").append(displayName)
+                            .append("\n└ Level **").append(level).append("** (")
+                            .append(String.format("%,d", xp)).append(" XP)\n\n");
+                } else {
+                    leaderboard.append("**").append(i + 1).append(".** ").append(displayName)
+                            .append("\n└ Level **").append(level).append("** (")
+                            .append(String.format("%,d", xp)).append(" XP)\n\n");
+                }
             }
 
-            EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
-                    .setTitle("🏆 XP Leaderboard")
-                    .setDescription(leaderboard.toString())
-                    .setFooter("Top " + topLevels.size() + " users by level");
-
-            event.getChannel().sendMessageEmbeds(embed.build()).queue();
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                "📊 XP Leaderboard", leaderboard.toString()
+            )).queue();
 
         } catch (Exception e) {
             event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
@@ -1318,7 +1578,53 @@ public class PrefixCommandService {
         
         event.getChannel().sendMessage(message).queue();
     }
-    
+
+    private void handleAnnounceCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!PermissionUtils.isBotOwner(event.getAuthor())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Unknown Command",
+                "The command was not found. Use `" + getGuildPrefix(event) + "help` to see available commands."
+            )).queue();
+            return;
+        }
+
+        String message = options.get("message");
+        if (message == null || message.trim().isEmpty()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Missing Message",
+                "Provide a message: `!announce your message here`"
+            )).queue();
+            return;
+        }
+        if (message.length() > 2000) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                "Message Too Long",
+                "Max 2000 characters. Your message is " + message.length() + " characters."
+            )).queue();
+            return;
+        }
+
+        int sentCount = 0;
+        for (Guild guild : event.getJDA().getGuilds()) {
+            Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guild.getId());
+            Object val = settings.get("announcementChannel");
+            String channelId = val instanceof String ? (String) val : null;
+            if (channelId == null) continue;
+
+            TextChannel target = guild.getTextChannelById(channelId);
+            if (target == null) continue;
+            if (!target.canTalk()) continue;
+
+            target.sendMessage(message).queue(null, err -> {});
+            sentCount++;
+        }
+
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+            "Announcement Sent",
+            "Sent to **" + sentCount + "** server(s)."
+        )).queue();
+    }
+
     private void handleTalkAsCommand(MessageReceivedEvent event, Map<String, String> options) {
         String message = options.get("message");
         if (message == null || message.trim().isEmpty()) {
@@ -1350,6 +1656,21 @@ public class PrefixCommandService {
      */
     private void handleAvatarCommand(MessageReceivedEvent event, Map<String, String> options) {
         User user = event.getAuthor();
+        // Check if a target user was passed (via mention or ID)
+        String targetStr = options.get("target");
+        if (targetStr != null && !targetStr.isEmpty()) {
+            String id = targetStr.replaceAll("<@!?(\\d+)>", "$1");
+            if (id.matches("\\d+")) {
+                try {
+                    User mentioned = event.getJDA().getUserById(id);
+                    if (mentioned == null) {
+                        // Try retrieving from Discord if not cached
+                        mentioned = event.getJDA().retrieveUserById(id).complete();
+                    }
+                    if (mentioned != null) user = mentioned;
+                } catch (Exception ignored) { }
+            }
+        }
         String avatarUrl = user.getEffectiveAvatarUrl() + "?size=4096";
         EmbedBuilder embed = new EmbedBuilder()
             .setColor(EmbedUtils.INFO_COLOR)
@@ -2572,15 +2893,14 @@ public class PrefixCommandService {
      * Calculate level from XP
      */
     private int calculateLevel(long xp) {
-        // Simple level calculation: level = sqrt(xp / 100)
-        return (int) Math.floor(Math.sqrt(xp / 100.0));
+        return com.serverbot.ServerBot.getStorageManager().calculateLevel(xp);
     }
 
     /**
      * Calculate XP needed for a specific level
      */
     private long calculateXpForLevel(int level) {
-        return level * level * 100L;
+        return com.serverbot.ServerBot.getStorageManager().calculateXpForLevel(level);
     }
 
     /**
@@ -2733,11 +3053,12 @@ public class PrefixCommandService {
             ServerBot.getStorageManager().setBalance(guildId, userId, currentBalance + totalReward);
 
             // Get currency name
-            String currencyName = (String) guildSettings.getOrDefault("economy.currencyName", "coins");
+            String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
+            String currencyIcon = ServerBot.getStorageManager().getCurrencyIcon(guildId);
 
             // Send success message
             EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.SUCCESS_COLOR)
-                    .setTitle("💰 Daily Reward Claimed!")
+                    .setTitle(currencyIcon + " Daily Reward Claimed!")
                     .setDescription(String.format("You received **%d** %s!", totalReward, currencyName))
                     .addField("🔥 Streak", String.valueOf(currentStreak), true)
                     .addField("💎 Bonus", String.format("%.0f%%", (bonusMultiplier - 1) * 100), true)

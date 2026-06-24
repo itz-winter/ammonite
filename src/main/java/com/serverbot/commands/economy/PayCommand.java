@@ -54,9 +54,10 @@ public class PayCommand implements SlashCommand {
         long senderBalance = storage.getBalance(guildId, senderId);
 
         if (senderBalance < amount) {
+            String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Insufficient Funds",
-                    String.format("You need %,d coins but only have %,d coins!",
-                            amount, senderBalance)))
+                    String.format("You need %,d %s but only have %,d %s!",
+                            amount, currencyName, senderBalance, currencyName)))
                     .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
@@ -65,13 +66,14 @@ public class PayCommand implements SlashCommand {
         storage.removeBalance(guildId, senderId, amount);
         storage.addBalance(guildId, recipientId, amount);
 
+        String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
         String description = String.format(
-                "**%s** paid **%,d coins** to **%s**\n\n" +
-                        "**%s's new balance:** %,d coins\n" +
-                        "**%s's new balance:** %,d coins",
-                sender.getName(), amount, recipient.getName(),
-                sender.getName(), storage.getBalance(guildId, senderId),
-                recipient.getName(), storage.getBalance(guildId, recipientId));
+                "**%s** paid **%,d %s** to **%s**\n\n" +
+                        "**%s's new balance:** %,d %s\n" +
+                        "**%s's new balance:** %,d %s",
+                sender.getName(), amount, currencyName, recipient.getName(),
+                sender.getName(), storage.getBalance(guildId, senderId), currencyName,
+                recipient.getName(), storage.getBalance(guildId, recipientId), currencyName);
 
         event.replyEmbeds(EmbedUtils.createSuccessEmbed("💸 Payment Sent", description)).queue();
     }

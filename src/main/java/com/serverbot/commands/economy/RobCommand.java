@@ -90,13 +90,14 @@ public class RobCommand implements SlashCommand {
                 updateUserBalance(event.getGuild().getId(), robber.getId(), robberBalance + stolenAmount);
                 updateUserBalance(event.getGuild().getId(), target.getId(), targetBalance - stolenAmount);
 
+                String currencyName = ServerBot.getStorageManager().getCurrencyName(event.getGuild().getId());
                 embed.setColor(EmbedUtils.SUCCESS_COLOR)
                         .setTitle("🎯 Robbery Successful!")
                         .setDescription(
                                 "**" + robber.getName() + "** successfully robbed **" + target.getName() + "**!")
-                        .addField("💰 Stolen", stolenAmount + " points", true)
-                        .addField("🏃 Your Balance", (robberBalance + stolenAmount) + " points", true)
-                        .addField("😢 Victim's Balance", (targetBalance - stolenAmount) + " points", true);
+                        .addField("💰 Stolen", stolenAmount + " " + currencyName, true)
+                        .addField("🏃 Your Balance", (robberBalance + stolenAmount) + " " + currencyName, true)
+                        .addField("😢 Victim's Balance", (targetBalance - stolenAmount) + " " + currencyName, true);
 
             } else {
                 // Rob failed - robber loses money as penalty
@@ -105,12 +106,13 @@ public class RobCommand implements SlashCommand {
                     updateUserBalance(event.getGuild().getId(), robber.getId(), robberBalance - penalty);
                 }
 
+                String currencyName = ServerBot.getStorageManager().getCurrencyName(event.getGuild().getId());
                 embed.setColor(EmbedUtils.ERROR_COLOR)
                         .setTitle("🚨 Robbery Failed!")
                         .setDescription("**" + robber.getName() + "** tried to rob **" + target.getName()
                                 + "** but got caught!")
-                        .addField("💸 Fine", penalty + " points", true)
-                        .addField("💰 Your Balance", (robberBalance - penalty) + " points", true)
+                        .addField("💸 Fine", penalty + " " + currencyName, true)
+                        .addField("💰 Your Balance", (robberBalance - penalty) + " " + currencyName, true)
                         .addField("😤 Victim", target.getName() + " kept their money safe!", true);
             }
 
@@ -126,7 +128,7 @@ public class RobCommand implements SlashCommand {
     private boolean isEconomyEnabled(String guildId) {
         try {
             Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
-            return ((Boolean) settings.getOrDefault("enableEconomy", true));
+            return Boolean.TRUE.equals(settings.get("enableEconomy"));
         } catch (Exception e) {
             logger.error("Failed to check economy status", e);
             return false;

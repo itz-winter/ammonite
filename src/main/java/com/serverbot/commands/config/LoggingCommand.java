@@ -29,7 +29,7 @@ public class LoggingCommand implements SlashCommand {
         }
 
         Member executor = event.getMember();
-        if (!PermissionManager.hasPermission(executor, "admin.logging")) {
+        if (!PermissionManager.hasPermission(executor, "admin.logging") && !com.serverbot.utils.PermissionUtils.isBotOwner(event.getUser())) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Permissions", "You need administrator permissions to configure logging."))
                     .setEphemeral(true).queue();
@@ -38,6 +38,16 @@ public class LoggingCommand implements SlashCommand {
 
         String action = event.getOption("action").getAsString();
         String logType = event.getOption("type") != null ? event.getOption("type").getAsString() : null;
+
+        // Bot owners can only view, not modify (unless they also have guild perms)
+        boolean isBotOwner = com.serverbot.utils.PermissionUtils.isBotOwner(event.getUser());
+        boolean hasGuildPerms = PermissionManager.hasPermission(executor, "admin.logging");
+        if (isBotOwner && !hasGuildPerms && !action.equalsIgnoreCase("view")) {
+            event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                    "Read Only", "Bot owners can only view logging configuration. Use `action:view` to see settings."))
+                    .setEphemeral(true).queue();
+            return;
+        }
 
         try {
             String guildId = event.getGuild().getId();
@@ -138,9 +148,32 @@ public class LoggingCommand implements SlashCommand {
                                     "**Reset by:** " + executor.getAsMention()))
                             .queue();
                 }
+                case "exclude" -> {
+                    String targetType = event.getOption("target_type").getAsString();
+                    String targetId = event.getOption("target_id").getAsString();
+
+                    // target_type: user, channel, all
+                    String key;
+                    if ("all".equals(targetType)) {
+                        // Apply to all log types
+                        for (String t : new String[] { "message", "moderation", "member", "voice", "server" }) {
+                            addExclusion(guildId, t, targetId, logType);
+                        }
+                        key = "global";
+                    } else {
+                        key = addExclusion(guildId, logType, targetId, targetType);
+                    }
+
+                    event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+                            "Log Exclusion Added",
+                            "**Type:** " + logType.toUpperCase() + "\n" +
+                                    "**Excluded:** " + targetType + " `" + targetId + "`\n" +
+                                    "**Scope:** " + (key != null ? key : logType)))
+                            .queue();
+                }
                 default -> {
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                            "Invalid Value!", "Valid actions are: set, disable, view, reset")).setEphemeral(true)
+                            "Invalid Value!", "Valid actions are: set, disable, view, reset, exclude")).setEphemeral(true)
                             .queue();
                 }
             }
@@ -159,14 +192,38 @@ public class LoggingCommand implements SlashCommand {
                                 .addChoice("Set Channel", "set")
                                 .addChoice("Disable", "disable")
                                 .addChoice("View Status", "view")
-                                .addChoice("Reset All", "reset"),
+                                .addChoice("Reset All", "reset")
+                                .addChoice("Exclude", "exclude"),
                         new OptionData(OptionType.STRING, "type", "Type of logging", false)
                                 .addChoice("Moderation", "moderation")
                                 .addChoice("Message", "message")
                                 .addChoice("Member", "member")
                                 .addChoice("Voice", "voice")
                                 .addChoice("Server", "server"),
-                        new OptionData(OptionType.CHANNEL, "channel", "Channel for logging (required for set)", false));
+                        new OptionData(OptionType.CHANNEL, "channel", "Channel for logging (required for set)", false),
+                        new OptionData(OptionType.STRING, "target_type", "Type of target to exclude (user, channel, all)", false),
+                        new OptionData(OptionType.STRING, "target_id", "ID of user/channel to exclude from logging", false));
+    }
+
+    /**
+     * Add a target ID to the excluded list for a given log type.
+     */
+    private String addExclusion(String guildId, String logType, String targetId, String targetType) {
+        String key;
+        if ("all".equals(targetType)) {
+            key = "logExcludedAll_" + logType;
+        } else if ("user".equals(targetType)) {
+            key = "logExcludedUsers_" + logType;
+        } else {
+            key = "logExcludedChannels_" + logType;
+        }
+        @SuppressWarnings("unchecked")
+        java.util.List<String> list = (java.util.List<String>) ServerBot.getStorageManager()
+                .getGuildSettings(guildId).get(key);
+        if (list == null) list = new java.util.ArrayList<>();
+        if (!list.contains(targetId)) list.add(targetId);
+        ServerBot.getStorageManager().updateGuildSettings(guildId, key, list);
+        return key;
     }
 
     @Override

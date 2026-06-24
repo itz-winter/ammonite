@@ -9,8 +9,6 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
-import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
@@ -35,8 +33,6 @@ public class WorkCommand implements SlashCommand {
             "You helped organize an event"
     };
 
-    private static final Map<String, Long> workCooldowns = new HashMap<>();
-
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         if (!event.isFromGuild()) {
@@ -48,41 +44,32 @@ public class WorkCommand implements SlashCommand {
         try {
             String guildId = event.getGuild().getId();
             String userId = event.getUser().getId();
-            String userKey = guildId + ":" + userId;
 
             // Get guild settings
             Map<String, Object> guildSettings = ServerBot.getStorageManager().getGuildSettings(guildId);
 
-            // Check if economy is enabled
-            Boolean economyEnabled = (Boolean) guildSettings.get("enableEconomy");
-            if (economyEnabled != null && !economyEnabled) {
+            // Check if economy is enabled (defensive — CommandListener also checks)
+            if (!ServerBot.getStorageManager().isEconomyEnabled(guildId)) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Economy Disabled",
                         "The economy system is disabled on this server.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
 
-            // Get configurable settings
-            Long workRewardSetting = (Long) guildSettings.get("workReward");
-            Long workCooldownSetting = (Long) guildSettings.get("workCooldown");
+            // Get configurable settings (safe extraction from JSON - Gson may return Double)
+            Number workRewardNum = (Number) guildSettings.get("workReward");
+            Number workCooldownNum = (Number) guildSettings.get("workCooldown");
 
-            int baseWorkReward = workRewardSetting != null ? workRewardSetting.intValue() : 50;
-            long cooldownSeconds = workCooldownSetting != null ? workCooldownSetting : 300L; // Default: 5 minutes
+            int baseWorkReward = workRewardNum != null ? workRewardNum.intValue() : 50;
+            // workCooldown is stored in seconds directly (via /settings duration input)
+            int cooldownSeconds = workCooldownNum != null ? workCooldownNum.intValue() : 300;
 
-            // Check cooldown
-            long currentTime = Instant.now().getEpochSecond();
-            long lastWorkTime = workCooldowns.getOrDefault(userKey, 0L);
-            long timeSinceLastWork = currentTime - lastWorkTime;
-
-            if (timeSinceLastWork < cooldownSeconds) {
-                long remainingMinutes = (cooldownSeconds - timeSinceLastWork) / 60;
-                long remainingSecondsLeft = (cooldownSeconds - timeSinceLastWork) % 60;
-
+            // Check cooldown via shared CooldownManager
+            if (CooldownManager.isOnCooldown(userId, "work", cooldownSeconds)) {
+                long remaining = CooldownManager.getRemainingCooldown(userId, "work", cooldownSeconds);
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Work Cooldown",
-                        "You need to rest before working again!\n" +
-                                "Time remaining: " + remainingMinutes + " minutes and " + remainingSecondsLeft
-                                + " seconds"))
+                        "You need to rest before working again!\nTime remaining: **" + formatDuration(remaining) + "**"))
                         .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
@@ -102,18 +89,20 @@ public class WorkCommand implements SlashCommand {
             ServerBot.getStorageManager().addBalance(guildId, userId, workReward);
             long newBalance = ServerBot.getStorageManager().getBalance(guildId, userId);
 
-            // Update cooldown
-            workCooldowns.put(userKey, currentTime);
+            // Update cooldown via shared CooldownManager
+            CooldownManager.setCooldown(userId, "work");
 
             long cooldownMinutes = cooldownSeconds / 60;
             String cooldownText = cooldownMinutes > 0 ? cooldownMinutes + " minutes" : cooldownSeconds + " seconds";
 
+            String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
+            String currencyIcon = ServerBot.getStorageManager().getCurrencyIcon(guildId);
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                    "💼 Work Complete!",
+                    currencyIcon + " Work Complete!",
                     "**Job:** " + workScenario + "\n" +
-                            "**Earned:** " + workReward + " points\n" +
-                            "**New Balance:** " + newBalance + " points\n" +
-                            "\n*You can work again in " + cooldownText + ".*"))
+                            "**Earned:** " + workReward + " " + currencyName + "\n" +
+                            "**New Balance:** " + newBalance + " " + currencyName + "\n" +
+                            "\n*You can work again in " + formatDuration(cooldownSeconds) + ".*"))
                     .queue();
 
         } catch (Exception e) {
@@ -121,6 +110,24 @@ public class WorkCommand implements SlashCommand {
                     "Work Failed",
                     "Failed to complete work: " + e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
+    }
+
+    /**
+     * Format a duration in seconds to a human-readable string.
+     * Examples: 120 -> "2hr", 130 -> "2hr 10min", 3600 -> "1hr"
+     */
+    private String formatDuration(long totalSeconds) {
+        long days = totalSeconds / 86400;
+        long hours = (totalSeconds % 86400) / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long secs = totalSeconds % 60;
+
+        StringBuilder sb = new StringBuilder();
+        if (days > 0) sb.append(days).append("d ");
+        if (hours > 0) sb.append(hours).append("hr ");
+        if (minutes > 0) sb.append(minutes).append("min ");
+        if (secs > 0 && days == 0 && hours == 0) sb.append(secs).append("s");
+        return sb.toString().trim();
     }
 
     public static CommandData getCommandData() {
