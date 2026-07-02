@@ -38,6 +38,7 @@ public class EventListener extends ListenerAdapter {
     // Anti-spam tracking
     private final Map<String, List<Long>> messageTimes = new ConcurrentHashMap<>();
     private final Map<String, Integer> warningCounts = new ConcurrentHashMap<>();
+    private final Map<String, List<String>> recentMessageContent = new ConcurrentHashMap<>();
 
     @Override
     public void onReady(ReadyEvent event) {
@@ -103,9 +104,9 @@ public class EventListener extends ListenerAdapter {
             String guildId = event.getGuild().getId();
             Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
 
-            // Check if auto-moderation is enabled
-            Boolean automodEnabled = (Boolean) settings.get("enableAutomod");
-            if (automodEnabled == null || !automodEnabled) {
+            // Check if anti-spam is enabled (correct key: antiSpamEnabled)
+            Boolean antiSpamEnabled = (Boolean) settings.get("antiSpamEnabled");
+            if (antiSpamEnabled == null || !antiSpamEnabled) {
                 return false;
             }
 
@@ -123,33 +124,74 @@ public class EventListener extends ListenerAdapter {
             String userKey = guildId + ":" + userId;
             long currentTime = System.currentTimeMillis();
 
-            // Get anti-spam settings — handle Long, Integer, and Double (common from JSON
-            // parsers)
-            Object maxMessagesObj = settings.getOrDefault("antiSpamMessageLimit", 10);
-            int maxMessages = ((Number) maxMessagesObj).intValue();
-            long timeWindow = 10000L; // 10 seconds
+            // Read anti-spam settings — all stored as Number from JSON, use (Number) cast
+            int maxMessages = ((Number) settings.getOrDefault("antiSpamMessageLimit", 10)).intValue();
+            long timeWindow = ((Number) settings.getOrDefault("antiSpamTimeWindow", 10)).intValue() * 1000L;
+            int mentionLimit = ((Number) settings.getOrDefault("antiSpamMentionLimit", 5)).intValue();
+            int dupLimit = ((Number) settings.getOrDefault("antiSpamDupLimit", 4)).intValue();
 
-            // Track message times
+            // Track message times within the rolling time window
             messageTimes.computeIfAbsent(userKey, k -> new ArrayList<>()).add(currentTime);
             List<Long> times = messageTimes.get(userKey);
-
-            // Remove old messages outside the time window
             times.removeIf(time -> (currentTime - time) > timeWindow);
 
-            // Check if user is spamming
+            // Track recent message content for duplicate detection (bounded to dupLimit entries)
+            String messageContent = event.getMessage().getContentRaw();
+            List<String> recentContent = recentMessageContent.computeIfAbsent(userKey, k -> new ArrayList<>());
+            recentContent.add(messageContent);
+            while (recentContent.size() > dupLimit) {
+                recentContent.remove(0);
+            }
+
+            // Count user + role mentions in this message
+            int mentionCount = event.getMessage().getMentions().getUsers().size()
+                    + event.getMessage().getMentions().getRoles().size();
+
+            // Evaluate spam conditions in priority order
+            boolean isSpam = false;
+            String spamReason = "Anti-spam violation";
+
             if (times.size() > maxMessages) {
+                isSpam = true;
+                spamReason = "Sending messages too fast";
+            } else if (mentionCount > mentionLimit) {
+                isSpam = true;
+                spamReason = "Excessive mentions (" + mentionCount + " in one message)";
+            } else if (recentContent.size() >= dupLimit && !messageContent.isBlank()) {
+                boolean allSame = recentContent.stream().allMatch(messageContent::equals);
+                if (allSame) {
+                    isSpam = true;
+                    spamReason = "Duplicate message spam";
+                }
+            }
+
+            if (isSpam) {
                 String action = (String) settings.getOrDefault("antiSpamPunishment", "warn");
 
                 // Delete the message if auto-delete is enabled
-                if (autoDelete != null && autoDelete) {
-                    event.getMessage().delete().queue(null, throwable -> {
-                    });
+                if (Boolean.TRUE.equals(autoDelete)) {
+                    event.getMessage().delete().queue(null, throwable -> {});
                 }
+
+                // Notify the user in the channel; auto-delete the notice after 10 seconds
+                String actionDisplay = switch (action.toLowerCase()) {
+                    case "warn" -> "warned";
+                    case "mute" -> "muted";
+                    case "timeout" -> "timed out";
+                    case "kick" -> "kicked";
+                    case "ban" -> "banned";
+                    default -> action;
+                };
+                event.getChannel().sendMessage(
+                        "⚠️ <@" + userId + ">, you have been **" + actionDisplay
+                                + "** for spamming. Reason: " + spamReason)
+                        .queue(msg -> msg.delete().queueAfter(10, TimeUnit.SECONDS, null, err -> {}),
+                                throwable -> {});
 
                 // Apply punishment
                 Member member = event.getMember();
                 if (member != null) {
-                    applyAntiSpamPunishment(event, member, action, settings);
+                    applyAntiSpamPunishment(event, member, action, settings, spamReason);
                 }
 
                 return true; // Spam detected and handled
@@ -163,11 +205,10 @@ public class EventListener extends ListenerAdapter {
     }
 
     private void applyAntiSpamPunishment(MessageReceivedEvent event, Member member, String action,
-            Map<String, Object> settings) {
+            Map<String, Object> settings, String reason) {
         try {
             String guildId = event.getGuild().getId();
             String userId = member.getId();
-            String reason = "Anti-spam violation";
 
             switch (action.toLowerCase()) {
                 case "warn" -> {
@@ -180,88 +221,72 @@ public class EventListener extends ListenerAdapter {
                             guildId, userId, PunishmentType.AUTOMOD, reason, null, "Automod");
                 }
                 case "mute" -> {
-                    // Get mute duration from settings (default 5 minutes)
-                    Object durationObj = settings.getOrDefault("antiSpamMuteDuration", 300000L);
-                    long muteDuration = durationObj instanceof Long ? (Long) durationObj
-                            : ((Integer) durationObj).longValue();
+                    // antiSpamMuteDuration stored in MINUTES → convert to milliseconds
+                    long muteDuration = ((Number) settings.getOrDefault("antiSpamMuteDuration", 10)).longValue()
+                            * 60_000L;
 
                     if (event.getGuild().getSelfMember().canInteract(member)) {
                         member.timeoutFor(muteDuration, TimeUnit.MILLISECONDS).queue(
                                 success -> {
-                                    // Log the mute
-                                    logAntiSpamAction(guildId, userId, "MUTE", reason, muteDuration + "ms");
-
-                                    // Send punishment notification
+                                    logAntiSpamAction(guildId, userId, "MUTE", reason,
+                                            (muteDuration / 60_000) + " min");
                                     PunishmentNotificationService.getInstance().sendPunishmentNotification(
                                             guildId, userId, PunishmentType.MUTE, reason,
                                             Duration.ofMillis(muteDuration), "Automod");
                                 },
-                                throwable -> {
-                                });
+                                throwable -> {});
                     }
                 }
                 case "timeout" -> {
-                    // Get timeout duration from settings (default 10 minutes)
-                    Object durationObj = settings.getOrDefault("antiSpamTimeoutDuration", 600000L);
-                    long timeoutDuration = durationObj instanceof Long ? (Long) durationObj
-                            : ((Integer) durationObj).longValue();
+                    // antiSpamTimeoutDuration stored in MINUTES → convert to milliseconds
+                    long timeoutDuration = ((Number) settings.getOrDefault("antiSpamTimeoutDuration", 10)).longValue()
+                            * 60_000L;
 
                     if (event.getGuild().getSelfMember().canInteract(member)) {
                         member.timeoutFor(timeoutDuration, TimeUnit.MILLISECONDS).queue(
                                 success -> {
-                                    // Log the timeout
-                                    logAntiSpamAction(guildId, userId, "TIMEOUT", reason, timeoutDuration + "ms");
-
-                                    // Send punishment notification
+                                    logAntiSpamAction(guildId, userId, "TIMEOUT", reason,
+                                            (timeoutDuration / 60_000) + " min");
                                     PunishmentNotificationService.getInstance().sendPunishmentNotification(
                                             guildId, userId, PunishmentType.TIMEOUT, reason,
                                             Duration.ofMillis(timeoutDuration), "Automod");
                                 },
-                                throwable -> {
-                                });
+                                throwable -> {});
                     }
                 }
                 case "kick" -> {
                     if (event.getGuild().getSelfMember().canInteract(member)) {
                         event.getGuild().kick(member).reason(reason).queue(
                                 success -> {
-                                    // Log the kick
                                     logAntiSpamAction(guildId, userId, "KICK", reason, null);
-
-                                    // Send punishment notification
                                     PunishmentNotificationService.getInstance().sendPunishmentNotification(
                                             guildId, userId, PunishmentType.KICK, reason, null, "Automod");
                                 },
-                                throwable -> {
-                                });
+                                throwable -> {});
                     }
                 }
                 case "ban" -> {
-                    // Get ban duration from settings (default 1 day)
-                    Object durationObj = settings.getOrDefault("antiSpamBanDuration", 86400000L);
-                    long banDuration = durationObj instanceof Long ? (Long) durationObj
-                            : ((Integer) durationObj).longValue();
+                    // antiSpamBanDuration stored in HOURS → convert to milliseconds
+                    long banDuration = ((Number) settings.getOrDefault("antiSpamBanDuration", 0)).longValue()
+                            * 3_600_000L;
 
                     if (event.getGuild().getSelfMember().canInteract(member)) {
                         event.getGuild().ban(member.getUser(), 0, TimeUnit.SECONDS).reason(reason).queue(
                                 success -> {
-                                    // Log the ban
-                                    logAntiSpamAction(guildId, userId, "BAN", reason, banDuration + "ms");
-
-                                    // Send punishment notification
+                                    logAntiSpamAction(guildId, userId, "BAN", reason,
+                                            (banDuration / 3_600_000) + " hr");
                                     PunishmentNotificationService.getInstance().sendPunishmentNotification(
                                             guildId, userId, PunishmentType.BAN, reason,
                                             Duration.ofMillis(banDuration), "Automod");
 
-                                    // Schedule unban if temporary
+                                    // Schedule unban if duration is set (0 = permanent ban)
                                     if (banDuration > 0) {
                                         long unbanTimestamp = System.currentTimeMillis() + banDuration;
                                         SchedulerService.getInstance().scheduleUnban(guildId, userId, reason,
                                                 unbanTimestamp);
                                     }
                                 },
-                                throwable -> {
-                                });
+                                throwable -> {});
                     }
                 }
             }

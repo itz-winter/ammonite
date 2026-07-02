@@ -93,18 +93,16 @@ public class CommandListener extends ListenerAdapter {
         } catch (Exception e) {
             logger.error("Error executing command: {}", commandName, e);
 
-            // Build a helpful error message based on the exception type
+            // Build a helpful error message based on the exception type.
+            // Only unexpected exceptions (bugs) get the "Report Bug" button.
             String errorTitle = "Command Error";
             String errorDescription;
+            boolean reportable = false;
 
             if (e instanceof IllegalArgumentException) {
                 errorTitle = "Invalid Input";
                 errorDescription = "One of the provided arguments was invalid: " + e.getMessage() + "\n\n" +
                         "💡 **Tip:** Check that all required parameters are provided and in the correct format.";
-            } else if (e instanceof NullPointerException) {
-                errorTitle = "Missing Data";
-                errorDescription = "A required piece of data was missing. This may be a bug.\n\n" +
-                        "💡 **Tip:** Try running the command again. If the issue persists, contact a server admin.";
             } else if (e instanceof SecurityException
                     || e.getMessage() != null && e.getMessage().contains("permission")) {
                 errorTitle = "Permission Error";
@@ -116,24 +114,67 @@ public class CommandListener extends ListenerAdapter {
                 errorDescription = "Expected a number but received something else.\n\n" +
                         "💡 **Tip:** Make sure you're providing numeric values where required.";
             } else {
-                errorDescription = "An unexpected error occurred while executing `/" + commandName + "`.\n\n" +
-                        "**Error:** " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName())
-                        + "\n\n" +
-                        "💡 **Tip:** Try again. If the issue persists, contact a server admin.";
+                // NullPointerException or any other unexpected exception — likely a bug
+                reportable = true;
+                if (e instanceof NullPointerException) {
+                    errorTitle = "Missing Data";
+                    errorDescription = "A required piece of data was missing. This may be a bug.\n\n" +
+                            "💡 **Tip:** Try running the command again. If the issue persists, please report it below.";
+                } else {
+                    errorDescription = "An unexpected error occurred while executing `/" + commandName + "`.\n\n" +
+                            "**Error:** " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()) +
+                            "\n\n💡 **Tip:** Try again. If the issue persists, please report it below.";
+                }
+            }
+
+            // Build the button row — reportable errors get an extra "Report Bug" button
+            net.dv8tion.jda.api.components.actionrow.ActionRow buttons;
+            if (reportable) {
+                String simpleName  = e.getClass().getSimpleName();
+                String safeCmdName = commandName.length() > 20 ? commandName.substring(0, 20) : commandName;
+                String safeErr     = simpleName.length()  > 30 ? simpleName.substring(0, 30)  : simpleName;
+                String dedupKey    = commandName + ":" + simpleName;
+                String contextKey  = event.getUser().getId() + ":" + safeCmdName + ":" + safeErr;
+
+                // Collect report context so the button listener can retrieve it
+                Map<String, Object> reportCtx = new java.util.HashMap<>();
+                reportCtx.put("dedupKey",      dedupKey);
+                reportCtx.put("commandName",   commandName);
+                reportCtx.put("errorType",     simpleName);
+                reportCtx.put("errorMessage",  e.getMessage() != null ? e.getMessage() : "(no message)");
+                reportCtx.put("stackTrace",    getStackTraceString(e));
+                reportCtx.put("userId",        event.getUser().getId());
+                reportCtx.put("userTag",       event.getUser().getName());
+                if (event.isFromGuild() && event.getMember() != null) {
+                    reportCtx.put("guildId",   event.getGuild().getId());
+                    reportCtx.put("guildName", event.getGuild().getName());
+                    reportCtx.put("channelId", event.getChannel().getId());
+                    java.util.List<String> roles = event.getMember().getRoles().stream()
+                            .map(r -> r.getName() + " (" + r.getId() + ")")
+                            .collect(java.util.stream.Collectors.toList());
+                    reportCtx.put("userRoles", roles);
+                }
+                ErrorReportButtonListener.pendingReportContext.put(contextKey, reportCtx);
+
+                String reportBtnId = "err_rep:" + event.getUser().getId() + ":" + safeCmdName + ":" + safeErr;
+                buttons = net.dv8tion.jda.api.components.actionrow.ActionRow.of(
+                        net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"),
+                        net.dv8tion.jda.api.components.buttons.Button.danger(reportBtnId, "\uD83D\uDCCB Report Bug"));
+            } else {
+                buttons = net.dv8tion.jda.api.components.actionrow.ActionRow.of(
+                        net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"));
             }
 
             if (!event.isAcknowledged()) {
                 SafeRestAction.queue(
-                        event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                                errorTitle,
-                                errorDescription)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))),
+                        event.replyEmbeds(EmbedUtils.createErrorEmbed(errorTitle, errorDescription))
+                                .setEphemeral(true).setComponents(buttons),
                         "reply with command error");
             } else {
-                // If already acknowledged (deferred), use hook to send follow-up
+                // Already acknowledged (deferred) — use hook follow-up
                 SafeRestAction.queue(
-                        event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
-                                errorTitle,
-                                errorDescription)).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))),
+                        event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(errorTitle, errorDescription))
+                                .setEphemeral(true).setComponents(buttons),
                         "send follow-up command error");
             }
         }
@@ -162,5 +203,12 @@ public class CommandListener extends ListenerAdapter {
      */
     private boolean isLevelingCommand(SlashCommand command) {
         return command.getCategory() == CommandCategory.LEVELING;
+    }
+
+    /** Convert a Throwable stack trace to a string (for error reports). */
+    private static String getStackTraceString(Throwable t) {
+        java.io.StringWriter sw = new java.io.StringWriter();
+        t.printStackTrace(new java.io.PrintWriter(sw));
+        return sw.toString();
     }
 }

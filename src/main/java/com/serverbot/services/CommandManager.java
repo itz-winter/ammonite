@@ -37,6 +37,7 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.utility.RestartCommand());
         registerCommand(new com.serverbot.commands.utility.StatusCommand());
         registerCommand(new com.serverbot.commands.owner.AnnounceCommand());
+        registerCommand(new com.serverbot.commands.owner.ReportsCommand());
         registerCommand(new com.serverbot.commands.utility.InfoCommand());
         registerCommand(new com.serverbot.commands.utility.PingCommand());
         registerCommand(new com.serverbot.commands.utility.AvatarCommand());
@@ -148,6 +149,9 @@ public class CommandManager {
         // Privacy & data management commands (Discord ToS compliance)
         registerCommand(new com.serverbot.commands.utility.PrivacyCommand());
         registerCommand(new com.serverbot.commands.utility.DeleteDataCommand());
+
+        // User preference command
+        registerCommand(new com.serverbot.commands.utility.PreferenceCommand());
 
         // Music commands
         registerCommand(new com.serverbot.commands.music.PlayCommand());
@@ -320,6 +324,9 @@ public class CommandManager {
         // Privacy & data management commands (Discord ToS compliance)
         commandDataList.add(com.serverbot.commands.utility.PrivacyCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.DeleteDataCommand.getCommandData());
+
+        // User preference command
+        commandDataList.add(com.serverbot.commands.utility.PreferenceCommand.getCommandData());
 
         // Music commands
         commandDataList.add(com.serverbot.commands.music.PlaylistCommand.getCommandData());

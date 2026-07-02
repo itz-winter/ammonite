@@ -94,7 +94,9 @@ public class SuspiciousListCommand implements SlashCommand {
                                                 new Command.Choice("Pending – unverified reports", "pending"),
                                                 new Command.Choice("All – validated + pending", "all"))),
                         new SubcommandData("scan",
-                                "Scan the masterlist for deleted/suspended Discord accounts and remove them"));
+                                "Scan the masterlist for deleted/suspended Discord accounts and remove them"),
+                        new SubcommandData("review",
+                                "Step through pending entries one by one to validate, remove, or skip them"));
     }
 
     @Override
@@ -131,6 +133,7 @@ public class SuspiciousListCommand implements SlashCommand {
             case "validate" -> handleValidate(event);
             case "stats" -> handleStats(event);
             case "scan" -> handleScan(event);
+            case "review" -> handleReview(event);
             default -> event.reply("Unknown subcommand.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
     }
@@ -219,12 +222,17 @@ public class SuspiciousListCommand implements SlashCommand {
         if (totalPages > 1) {
             Button prev = page > 1
                     ? Button.secondary(SLV_PAGE_BTN + ":" + (page - 1), "\u25C0 Previous")
-                    : Button.secondary(SLV_PAGE_BTN + ":0", "\u25C0 Previous").asDisabled();
+                    : Button.secondary("slv:page:prev", "\u25C0 Previous").asDisabled();
             Button next = page < totalPages
                     ? Button.secondary(SLV_PAGE_BTN + ":" + (page + 1), "Next \u25B6")
-                    : Button.secondary(SLV_PAGE_BTN + ":0", "Next \u25B6").asDisabled();
-            Button counter = Button.secondary(SLV_PAGE_BTN + ":0", page + " / " + totalPages).asDisabled();
-            navRow = ActionRow.of(prev, counter, next);
+                    : Button.secondary("slv:page:next", "Next \u25B6").asDisabled();
+            Button counter = Button.secondary("slv:page:cur", page + " / " + totalPages).asDisabled();
+            Button refresh = Button.secondary("slv:refresh:" + page, "\uD83D\uDD04 Refresh");
+            navRow = ActionRow.of(prev, counter, next, refresh);
+        } else if (totalPages == 1) {
+            // Single page — only show a refresh button
+            Button refresh = Button.secondary("slv:refresh:1", "\uD83D\uDD04 Refresh");
+            navRow = ActionRow.of(refresh);
         }
 
         return new PagedViewResult(embed.build(), navRow);
@@ -552,6 +560,84 @@ public class SuspiciousListCommand implements SlashCommand {
 
             logger.info("Bot owner {} triggered on-demand scan: {}", event.getUser().getId(), result.summary());
         });
+    }
+
+    //  /suspiciouslist review 
+
+    /**
+     * Steps through pending suspicious entries one by one, presenting each with
+     * four action buttons: Validate, Mark Safe (remove), Skip, and Done.
+     *
+     * Button IDs:
+     *   slv:review:validate:<userId>
+     *   slv:review:safe:<userId>
+     *   slv:review:skip:<userId>
+     *   slv:review:done
+     */
+    private void handleReview(SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
+        Map<String, Map<String, Object>> all = ServerBot.getStorageManager().getAllSuspiciousUsers();
+        // Filter to pending (non-validated) entries only
+        List<Map.Entry<String, Map<String, Object>>> pending = new ArrayList<>();
+        for (Map.Entry<String, Map<String, Object>> entry : all.entrySet()) {
+            if (!Boolean.TRUE.equals(entry.getValue().get("validated"))) {
+                pending.add(entry);
+            }
+        }
+
+        if (pending.isEmpty()) {
+            event.getHook().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                    "Review Complete",
+                    "There are no pending entries to review. All entries have been validated.")).queue();
+            return;
+        }
+
+        // Show first pending entry
+        Map.Entry<String, Map<String, Object>> first = pending.get(0);
+        event.getHook().sendMessageEmbeds(buildReviewEmbed(event.getJDA(), first, pending.size()))
+                .setComponents(buildReviewActionRow(first.getKey()))
+                .queue();
+
+        logger.info("Bot owner {} started review of {} pending suspicious entries", event.getUser().getId(), pending.size());
+    }
+
+    /** Build the embed for a single review entry. */
+    public static net.dv8tion.jda.api.entities.MessageEmbed buildReviewEmbed(
+            net.dv8tion.jda.api.JDA jda, Map.Entry<String, Map<String, Object>> entry, int remaining) {
+        String userId = entry.getKey();
+        Map<String, Object> data = entry.getValue();
+        String reason = (String) data.getOrDefault("reason", "No reason provided");
+        String markedBy = (String) data.getOrDefault("markedBy", "unknown");
+        long markedAt = ((Number) data.getOrDefault("markedAt", 0L)).longValue();
+
+        String userInfo = "<@" + userId + "> (`" + userId + "`)";
+        try {
+            net.dv8tion.jda.api.entities.User u = jda.retrieveUserById(userId).complete();
+            if (u != null) userInfo = u.getName() + " " + userInfo;
+        } catch (Exception ignored) {}
+
+        return new net.dv8tion.jda.api.EmbedBuilder()
+                .setColor(java.awt.Color.ORANGE)
+                .setTitle("🔍 Review Pending Entry (" + remaining + " remaining)")
+                .addField("User", userInfo, false)
+                .addField("Reason", reason, false)
+                .addField("Reported by", "<@" + markedBy + ">", true)
+                .addField("Reported at", markedAt > 0
+                        ? "<t:" + (markedAt / 1000) + ":f>"
+                        : "Unknown", true)
+                .setFooter("Use the buttons below to take action on this entry")
+                .setTimestamp(java.time.Instant.now())
+                .build();
+    }
+
+    /** Build the review action row for a given userId. */
+    public static ActionRow buildReviewActionRow(String userId) {
+        return ActionRow.of(
+                Button.success("slv:review:validate:" + userId, "✅ Validate"),
+                Button.danger("slv:review:safe:" + userId, "🟢 Mark Safe"),
+                Button.secondary("slv:review:skip:" + userId, "⏭ Skip"),
+                Button.secondary("slv:review:done", "🏁 Done"));
     }
 
     //  /suspiciouslist ban 

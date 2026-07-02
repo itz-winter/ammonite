@@ -5,6 +5,8 @@ import com.serverbot.commands.CommandCategory;
 import com.serverbot.commands.SlashCommand;
 import com.serverbot.storage.FileStorageManager;
 import com.serverbot.utils.EmbedUtils;
+import com.serverbot.utils.context.CommandContext;
+import com.serverbot.utils.context.SlashCommandContext;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -17,34 +19,51 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 public class BalanceCommand implements SlashCommand {
 
     @Override
+    public boolean supportsCommandContext() {
+        return true;
+    }
+
+    @Override
     public void execute(SlashCommandInteractionEvent event) {
-        if (!event.isFromGuild()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                    "Guild Only", "This command can only be used in servers.")).setEphemeral(true).queue();
+        executeWithContext(new SlashCommandContext(event));
+    }
+
+    @Override
+    public void executeWithContext(CommandContext ctx) {
+        if (!ctx.isFromGuild()) {
+            ctx.replyEphemeral(EmbedUtils.createErrorEmbed(
+                    "Guild Only", "This command can only be used in servers."));
             return;
         }
 
-        User targetUser = event.getOption("user") != null ? event.getOption("user").getAsUser() : event.getUser();
+        User targetUser = ctx.hasOption("user") ? ctx.getUserOption("user") : ctx.getUser();
+
+        if (targetUser == null) {
+            ctx.replyEphemeral(EmbedUtils.createErrorEmbed(
+                    "User Not Found", "Could not find the specified user."));
+            return;
+        }
 
         if (targetUser.isBot()) {
-            event.replyEmbeds(EmbedUtils.createErrorEmbed("Invalid Target",
-                    "Invalid target!")).setEphemeral(true).queue();
+            ctx.replyEphemeral(EmbedUtils.createErrorEmbed("Invalid Target", "Invalid target!"));
             return;
         }
 
         FileStorageManager storage = ServerBot.getStorageManager();
-        String guildId = event.getGuild().getId();
+        String guildId = ctx.getGuildId();
         String userId = targetUser.getId();
 
         long balance = storage.getBalance(guildId, userId);
-        String currencyIcon = ServerBot.getStorageManager().getCurrencyIcon(guildId);
-        String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
+        String currencyIcon = storage.getCurrencyIcon(guildId);
+        String currencyName = storage.getCurrencyName(guildId);
 
-        String title = targetUser.equals(event.getUser()) ? currencyIcon + " Your Balance" : currencyIcon + " " + targetUser.getName() + "'s Balance";
+        String title = targetUser.equals(ctx.getUser())
+                ? currencyIcon + " Your Balance"
+                : currencyIcon + " " + targetUser.getName() + "'s Balance";
 
         String description = String.format("**Balance:** %,d %s", balance, currencyName);
 
-        event.replyEmbeds(EmbedUtils.createSuccessEmbed(title, description)).queue();
+        ctx.replyRespectingPreference(EmbedUtils.createSuccessEmbed(title, description));
     }
 
     @Override
@@ -72,3 +91,4 @@ public class BalanceCommand implements SlashCommand {
                 .addOption(OptionType.USER, "user", "The user to check balance for", false);
     }
 }
+

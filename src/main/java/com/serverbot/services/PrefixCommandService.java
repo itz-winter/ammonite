@@ -150,7 +150,46 @@ public class PrefixCommandService {
         Map.entry("shuffle", "shuffle"),
         // Global chat aliases
         Map.entry("globalchat", "globalchat"),
-        Map.entry("gc", "globalchat")
+        Map.entry("gc", "globalchat"),
+        // Change 3: additional command aliases
+        Map.entry("check", "check"),
+        Map.entry("currency", "currency"),
+        Map.entry("curr", "currency"),
+        Map.entry("privacy", "privacy"),
+        Map.entry("deletedata", "deletedata"),
+        Map.entry("datadelete", "deletedata"),
+        Map.entry("flags", "flags"),
+        Map.entry("pronouns", "pronouns"),
+        Map.entry("reports", "reports"),
+        Map.entry("report", "reports"),
+        // Change 3: additional command aliases (batch 2)
+        Map.entry("support", "support"),
+        Map.entry("chess", "chess"),
+        Map.entry("poker", "poker"),
+        Map.entry("add", "add"),
+        Map.entry("addbalance", "add"),
+        Map.entry("subtract", "subtract"),
+        Map.entry("subtractbalance", "subtract"),
+        Map.entry("chargeback", "chargeback"),
+        Map.entry("log", "log"),
+        Map.entry("antispam", "antispam"),
+        Map.entry("rolepersistence", "rolepersistence"),
+        Map.entry("rp", "rolepersistence"),
+        Map.entry("punishmentdm", "punishment-dm"),
+        Map.entry("pdm", "punishment-dm"),
+        Map.entry("punishment-dm", "punishment-dm"),
+        Map.entry("suspiciousnotify", "suspiciousnotify"),
+        Map.entry("snotify", "suspiciousnotify"),
+        Map.entry("servermessages", "servermessages"),
+        Map.entry("reactionrole", "reactionrole"),
+        Map.entry("rr", "reactionrole"),
+        Map.entry("autoconfig", "autoconfig"),
+        Map.entry("setup", "autoconfig"),
+        Map.entry("playlist", "playlist"),
+        Map.entry("pl", "playlist"),
+        Map.entry("suspiciouslist", "suspiciouslist"),
+        Map.entry("sl", "suspiciouslist"),
+        Map.entry("embedgui", "embedgui")
     );
 
     public PrefixCommandService(CommandManager commandManager) {
@@ -294,11 +333,27 @@ public class PrefixCommandService {
     }
     
     /**
-     * Handle specific commands by calling their logic directly
+     * Handle specific commands by calling their logic directly.
+     * Commands that implement supportsCommandContext() = true are routed through
+     * the unified executeWithContext() path. All others use the manual handlers below.
      */
     private void handleSpecificCommand(MessageReceivedEvent event, String commandName, String[] args, SlashCommand slashCommand) {
         // Parse arguments for this command
         Map<String, String> options = parseArguments(commandName, args);
+
+        // ── Unified CommandContext routing ─────────────────────────────────────
+        // If the command has been migrated to the CommandContext pattern, use it.
+        if (slashCommand != null && slashCommand.supportsCommandContext()) {
+            try {
+                com.serverbot.utils.context.PrefixCommandContext ctx =
+                        new com.serverbot.utils.context.PrefixCommandContext(event, options);
+                slashCommand.executeWithContext(ctx);
+            } catch (Exception e) {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                        "Command Error", "An error occurred: " + e.getMessage())).queue();
+            }
+            return;
+        }
         
         switch (commandName.toLowerCase()) {
             case "work":
@@ -470,7 +525,7 @@ public class PrefixCommandService {
                 handleLeaveCommand(event);
                 break;
             case "queue":
-                handleQueueCommand(event);
+                handleQueueCommand(event, options);
                 break;
             case "pause":
                 handlePauseCommand(event);
@@ -530,6 +585,80 @@ public class PrefixCommandService {
                 break;
             case "points":
                 handlePointsToggleCommand(event, options);
+                break;
+            // Change 3: additional prefix commands
+            case "check":
+                handleCheckCommand(event, options);
+                break;
+            case "currency":
+                handleCurrencyInfoCommand(event);
+                break;
+            case "privacy":
+                handlePrivacyCommand(event);
+                break;
+            case "deletedata":
+                handleDeleteDataCommand(event);
+                break;
+            case "flags":
+                handleFlagsListCommand(event, options);
+                break;
+            case "pronouns":
+                handlePronounsCommand(event, options);
+                break;
+            case "reports":
+                handleReportsCommand(event, options);
+                break;
+            // Change 3 (batch 2): remaining commands
+            case "support":
+                handleSupportCommand(event);
+                break;
+            case "chess":
+                handleChessPrefix(event, options);
+                break;
+            case "poker":
+                handlePokerPrefix(event, options);
+                break;
+            case "add":
+                handleAddBalancePrefix(event, options);
+                break;
+            case "subtract":
+                handleSubtractBalancePrefix(event, options);
+                break;
+            case "chargeback":
+                handleChargebackPrefix(event, options);
+                break;
+            case "log":
+                handleLogPrefix(event, options);
+                break;
+            case "antispam":
+                handleAntispamPrefix(event, options);
+                break;
+            case "rolepersistence":
+                handleRolePersistencePrefix(event, options);
+                break;
+            case "punishment-dm":
+                handlePunishmentDmPrefix(event, options);
+                break;
+            case "suspiciousnotify":
+                handleSuspiciousNotifyPrefix(event, options);
+                break;
+            case "servermessages":
+                handleServerMessagesPrefix(event, options);
+                break;
+            case "reactionrole":
+                handleReactionRolePrefix(event);
+                break;
+            case "autoconfig":
+                handleAutoConfigPrefix(event);
+                break;
+            case "playlist":
+                handlePlaylistPrefix(event, options);
+                break;
+            case "suspiciouslist":
+                handleSuspiciousListPrefix(event, options);
+                break;
+            case "embedgui":
+                handleEmbedGuiPrefix(event);
                 break;
             default:
                 // Command is registered but has no prefix implementation
@@ -976,9 +1105,12 @@ public class PrefixCommandService {
                 }
                 break;
             case "pronouns":
-                // !pronouns <action>
+                // !pronouns <action> [pronoun1/pronoun2/...]
                 if (positionalArgs.size() >= 1) {
                     options.put("action", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        options.put("pronouns", String.join("/", positionalArgs.subList(1, positionalArgs.size())));
+                    }
                 }
                 break;
             case "welcome":
@@ -1042,6 +1174,88 @@ public class PrefixCommandService {
                 // Also works with -m "message" or --message "message"
                 if (positionalArgs.size() >= 1) {
                     options.put("message", String.join(" ", positionalArgs));
+                }
+                break;
+            case "check":
+                // !check @user or !check 123456789
+                if (positionalArgs.size() >= 1) {
+                    options.put("user", positionalArgs.get(0));
+                }
+                break;
+            case "reports":
+                // !reports [subcommand] [query]
+                if (positionalArgs.size() >= 1) {
+                    options.put("subcommand", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        options.put("query", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                    }
+                }
+                break;
+            case "add":
+            case "subtract":
+                // !add @user 1000  /  !subtract @user 500
+                if (positionalArgs.size() >= 1) {
+                    options.put("user", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        options.put("amount", positionalArgs.get(1));
+                    }
+                }
+                break;
+            case "chargeback":
+                // !chargeback <transactionId> [reason...]
+                if (positionalArgs.size() >= 1) {
+                    options.put("transactionid", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        options.put("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                    }
+                }
+                break;
+            case "rolepersistence":
+                // !rolepersistence [enable|disable|status|clear]
+                if (positionalArgs.size() >= 1) {
+                    options.put("action", positionalArgs.get(0));
+                }
+                break;
+            case "punishment-dm":
+                // !punishmentdm [enable|disable|status]
+                if (positionalArgs.size() >= 1) {
+                    options.put("action", positionalArgs.get(0));
+                }
+                break;
+            case "suspiciousnotify":
+                // !suspiciousnotify [enable|disable|status]
+                if (positionalArgs.size() >= 1) {
+                    options.put("action", positionalArgs.get(0));
+                }
+                break;
+            case "servermessages":
+                // !servermessages [list|set <key> <value>]
+                if (positionalArgs.size() >= 1) {
+                    options.put("action", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        options.put("key", positionalArgs.get(1));
+                        if (positionalArgs.size() >= 3) {
+                            options.put("value", String.join(" ", positionalArgs.subList(2, positionalArgs.size())));
+                        }
+                    }
+                }
+                break;
+            case "playlist":
+                // !playlist [action] [name] [args...]
+                if (positionalArgs.size() >= 1) {
+                    options.put("action", positionalArgs.get(0));
+                    if (positionalArgs.size() >= 2) {
+                        options.put("name", positionalArgs.get(1));
+                        if (positionalArgs.size() >= 3) {
+                            options.put("args", String.join(" ", positionalArgs.subList(2, positionalArgs.size())));
+                        }
+                    }
+                }
+                break;
+            case "suspiciouslist":
+                // !suspiciouslist [page]
+                if (positionalArgs.size() >= 1) {
+                    options.put("page", positionalArgs.get(0));
                 }
                 break;
             default:
@@ -6606,7 +6820,7 @@ public class PrefixCommandService {
         )).queue();
     }
 
-    private void handleQueueCommand(MessageReceivedEvent event) {
+    private void handleQueueCommand(MessageReceivedEvent event, Map<String, String> options) {
         if (!event.isFromGuild()) return;
 
         com.serverbot.music.MusicManager musicManager = com.serverbot.music.MusicManager.getInstance();
@@ -6617,51 +6831,14 @@ public class PrefixCommandService {
             return;
         }
 
-        com.serverbot.music.GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
-        com.sedmelluq.discord.lavaplayer.track.AudioTrack currentTrack = gmm.getScheduler().getCurrentTrack();
-        java.util.List<com.sedmelluq.discord.lavaplayer.track.AudioTrack> queue = gmm.getScheduler().getQueue();
+        // Parse optional page argument (positional first word or named "page")
+        int page = 1;
+        String pageArg = options.getOrDefault("page", options.getOrDefault("arg0", "1"));
+        try { page = Integer.parseInt(pageArg.trim()); } catch (NumberFormatException ignored) {}
 
-        EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
-                .setTitle("🎶 Music Queue");
-
-        if (currentTrack != null) {
-            String progress = com.serverbot.music.MusicUtils.createProgressBar(currentTrack.getPosition(), currentTrack.getDuration());
-            embed.addField("Now Playing",
-                    com.serverbot.music.MusicUtils.formatTrack(currentTrack) + "\n" +
-                    progress + " `" + com.serverbot.music.MusicUtils.formatDuration(currentTrack.getPosition()) +
-                    "/" + com.serverbot.music.MusicUtils.formatDuration(currentTrack.getDuration()) + "`",
-                    false);
-        } else {
-            embed.addField("Now Playing", "Nothing is currently playing.", false);
-        }
-
-        if (queue.isEmpty()) {
-            embed.addField("Up Next", "Queue is empty. Use `!play` to add tracks!", false);
-        } else {
-            StringBuilder queueStr = new StringBuilder();
-            int displayCount = Math.min(queue.size(), 10);
-            for (int i = 0; i < displayCount; i++) {
-                queueStr.append(com.serverbot.music.MusicUtils.formatTrackShort(queue.get(i), i + 1)).append("\n");
-            }
-            if (queue.size() > 10) {
-                queueStr.append("*... and ").append(queue.size() - 10).append(" more*");
-            }
-            long totalDuration = queue.stream().mapToLong(t -> t.getDuration()).sum();
-            if (currentTrack != null) {
-                totalDuration += currentTrack.getDuration() - currentTrack.getPosition();
-            }
-            embed.addField("Up Next (" + queue.size() + " tracks)", queueStr.toString(), false);
-            embed.setFooter("Total queue time: " + com.serverbot.music.MusicUtils.formatDuration(totalDuration));
-        }
-
-        String statusLine = "";
-        if (gmm.getScheduler().isRepeating()) statusLine += "🔁 Repeat ON  ";
-        if (gmm.getScheduler().isShuffling()) statusLine += "🔀 Shuffle ON";
-        if (!statusLine.isEmpty()) {
-            embed.addField("Mode", statusLine.trim(), false);
-        }
-
-        event.getChannel().sendMessageEmbeds(embed.build()).queue();
+        net.dv8tion.jda.api.entities.MessageEmbed embed =
+                com.serverbot.commands.music.QueueCommand.buildQueueEmbed(musicManager, event.getGuild(), page);
+        event.getChannel().sendMessageEmbeds(embed).queue();
     }
 
     private void handlePauseCommand(MessageReceivedEvent event) {
@@ -7244,5 +7421,626 @@ public class PrefixCommandService {
                 default  -> 0;
             };
         } catch (Exception e) { return 0; }
+    }
+
+    // ── Change 3: New prefix command handlers ─────────────────────────────────
+
+    /**
+     * !check @user / !check <id> / !check <discord_url>
+     * Routes to CheckCommand if it supports CommandContext, else provides a basic response.
+     */
+    private void handleCheckCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Guild Only", "This command can only be used in servers.")).queue();
+            return;
+        }
+        net.dv8tion.jda.api.entities.Member member = event.getMember();
+        if (!PermissionManager.hasPermission(member, "mod.check")) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Insufficient Permissions", "You need the `mod.check` permission.")).queue();
+            return;
+        }
+        String input = options.get("user");
+        if (input == null) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Missing Input", "Usage: `!check @user` or `!check <user_id>`")).queue();
+            return;
+        }
+        // Route through CommandContext — CheckCommand must be fetched from CommandManager
+        com.serverbot.commands.SlashCommand checkCmd = commandManager.getCommand("check");
+        if (checkCmd != null && checkCmd.supportsCommandContext()) {
+            com.serverbot.utils.context.PrefixCommandContext ctx =
+                    new com.serverbot.utils.context.PrefixCommandContext(event, options);
+            checkCmd.executeWithContext(ctx);
+        } else {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Slash Command Required",
+                    "Use `/check user:" + input + "` instead.")).queue();
+        }
+    }
+
+    /**
+     * !currency — display current server currency name and icon
+     */
+    private void handleCurrencyInfoCommand(MessageReceivedEvent event) {
+        if (!event.isFromGuild()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Guild Only", "This command can only be used in servers.")).queue();
+            return;
+        }
+        String guildId = event.getGuild().getId();
+        String name = ServerBot.getStorageManager().getCurrencyName(guildId);
+        String icon = ServerBot.getStorageManager().getCurrencyIcon(guildId);
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                "Server Currency",
+                icon + " **Name:** " + name + "\n" +
+                "**Icon:** " + icon + "\n\n" +
+                "*Use `/currency name <name>` or `/currency icon <emoji>` to change.*")).queue();
+    }
+
+    /**
+     * !privacy — show privacy policy info
+     */
+    private void handlePrivacyCommand(MessageReceivedEvent event) {
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                "🔒 Privacy Policy",
+                "This bot stores minimal data required for its features:\n" +
+                "• Economy balances and transaction history\n" +
+                "• XP and leveling data\n" +
+                "• Moderation warnings and logs\n" +
+                "• Server configuration settings\n\n" +
+                "Use `!deletedata` to request deletion of your personal data.\n" +
+                "Use `/privacy` for the full privacy policy.")).queue();
+    }
+
+    /**
+     * !deletedata — request deletion of personal data
+     */
+    private void handleDeleteDataCommand(MessageReceivedEvent event) {
+        String userId = event.getAuthor().getId();
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createWarningEmbed(
+                "⚠️ Delete Your Data",
+                "This will **permanently delete** all your data from this bot:\n" +
+                "• Economy balances\n" +
+                "• XP and levels\n" +
+                "• Warnings (from your perspective)\n\n" +
+                "To confirm, use the slash command `/deletedata confirm:true`.\n" +
+                "Or use `/privacy` to learn more about what data we store.")).queue();
+    }
+
+    /**
+     * !flags [page] — list available pride flags
+     */
+    private void handleFlagsListCommand(MessageReceivedEvent event, Map<String, String> options) {
+        com.serverbot.commands.SlashCommand flagsCmd = commandManager.getCommand("flags");
+        if (flagsCmd != null && flagsCmd.supportsCommandContext()) {
+            com.serverbot.utils.context.PrefixCommandContext ctx =
+                    new com.serverbot.utils.context.PrefixCommandContext(event, options);
+            flagsCmd.executeWithContext(ctx);
+        } else {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                    "Pride Flags",
+                    "Use `/flags list` to see all available pride flags, or `/pride flag:<name>` to apply one.")).queue();
+        }
+    }
+
+    /**
+     * !pronouns [action] [pronouns] — manage user pronouns
+     */
+    private void handlePronounsCommand(MessageReceivedEvent event, Map<String, String> options) {
+        com.serverbot.commands.SlashCommand pronounsCmd = commandManager.getCommand("pronouns");
+        if (pronounsCmd != null && pronounsCmd.supportsCommandContext()) {
+            com.serverbot.utils.context.PrefixCommandContext ctx =
+                    new com.serverbot.utils.context.PrefixCommandContext(event, options);
+            pronounsCmd.executeWithContext(ctx);
+        } else {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                    "Pronouns",
+                    "Use `/pronouns` to manage your pronouns.")).queue();
+        }
+    }
+
+    /**
+     * !reports [error] [query] [sort] [page] – view error reports (bot owner only)
+     */
+    private void handleReportsCommand(MessageReceivedEvent event, Map<String, String> options) {
+        if (!PermissionUtils.isBotOwner(event.getAuthor())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Access Denied", "Only bot owners can view error reports.")).queue();
+            return;
+        }
+        // Route through ReportsCommand via CommandContext
+        com.serverbot.commands.SlashCommand reportsCmd = commandManager.getCommand("reports");
+        if (reportsCmd != null && reportsCmd.supportsCommandContext()) {
+            com.serverbot.utils.context.PrefixCommandContext ctx =
+                    new com.serverbot.utils.context.PrefixCommandContext(event, options);
+            reportsCmd.executeWithContext(ctx);
+        } else {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                    "Error Reports", "Use `/reports error` (slash command) to view error reports.")).queue();
+        }
+    }
+
+    // ── Change 3 batch 2: new handler methods ────────────────────────────────
+
+    /** !support — show the support server link. */
+    private void handleSupportCommand(MessageReceivedEvent event) {
+        String link = ServerBot.getConfigManager().getConfig().getSupportServerInvite();
+        if (link == null || link.isBlank()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                    "Support", "No support server has been configured. Contact the bot owner for help.")).queue();
+        } else {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                    "Support", "Join the support server: " + link)).queue();
+        }
+    }
+
+    /**
+     * !chess — chess is an interactive slash command using buttons; prefix is not supported.
+     */
+    private void handleChessPrefix(MessageReceivedEvent event, Map<String, String> options) {
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                "♟ Chess",
+                "Chess requires Discord's button UI and cannot be started via prefix.\n\n" +
+                "**Use the slash command:** `/chess`\n" +
+                "You can challenge another user or play against the bot.")).queue();
+    }
+
+    /**
+     * !poker — poker is an interactive slash command using buttons; prefix is not supported.
+     */
+    private void handlePokerPrefix(MessageReceivedEvent event, Map<String, String> options) {
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                "🃏 Poker",
+                "Poker requires Discord's button UI and cannot be started via prefix.\n\n" +
+                "**Use the slash command:** `/poker bet:<amount>`")).queue();
+    }
+
+    /**
+     * !add @user &lt;amount&gt; — add balance to a user (admin).
+     */
+    private void handleAddBalancePrefix(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).queue();
+            return;
+        }
+        if (!PermissionManager.hasPermission(event.getMember(), "economy.admin.add")) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Insufficient Permissions", "You need `economy.admin.add` permission.")).queue();
+            return;
+        }
+        String userArg = options.get("user");
+        String amountArg = options.get("amount");
+        if (userArg == null || amountArg == null) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Usage", "`!add @user <amount>`")).queue();
+            return;
+        }
+        long amount;
+        try { amount = Long.parseLong(amountArg); } catch (NumberFormatException e) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Invalid Amount", "Amount must be a number.")).queue();
+            return;
+        }
+        if (amount <= 0) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Invalid Amount", "Amount must be positive.")).queue();
+            return;
+        }
+        String targetId = extractUserId(userArg);
+        if (targetId == null) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Invalid User", "Mention a user or provide their ID.")).queue();
+            return;
+        }
+        String guildId = event.getGuild().getId();
+        ServerBot.getStorageManager().addBalance(guildId, targetId, amount);
+        long newBalance = ServerBot.getStorageManager().getBalance(guildId, targetId);
+        Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
+        String currencyName = (String) settings.getOrDefault("currencyName", "coins");
+        String currencyIcon = (String) settings.getOrDefault("currencyIcon", "🪙");
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                "Balance Added",
+                currencyIcon + " Added **" + amount + " " + currencyName + "** to <@" + targetId + ">.\n" +
+                "New balance: **" + newBalance + " " + currencyName + "**")).queue();
+    }
+
+    /**
+     * !subtract @user &lt;amount&gt; — subtract balance from a user (admin).
+     */
+    private void handleSubtractBalancePrefix(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).queue();
+            return;
+        }
+        if (!PermissionManager.hasPermission(event.getMember(), "economy.admin.subtract")) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Insufficient Permissions", "You need `economy.admin.subtract` permission.")).queue();
+            return;
+        }
+        String userArg = options.get("user");
+        String amountArg = options.get("amount");
+        if (userArg == null || amountArg == null) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Usage", "`!subtract @user <amount>`")).queue();
+            return;
+        }
+        long amount;
+        try { amount = Long.parseLong(amountArg); } catch (NumberFormatException e) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Invalid Amount", "Amount must be a number.")).queue();
+            return;
+        }
+        if (amount <= 0) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Invalid Amount", "Amount must be positive.")).queue();
+            return;
+        }
+        String targetId = extractUserId(userArg);
+        if (targetId == null) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Invalid User", "Mention a user or provide their ID.")).queue();
+            return;
+        }
+        String guildId = event.getGuild().getId();
+        boolean ok = ServerBot.getStorageManager().removeBalance(guildId, targetId, amount);
+        Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
+        String currencyName = (String) settings.getOrDefault("currencyName", "coins");
+        String currencyIcon = (String) settings.getOrDefault("currencyIcon", "🪙");
+        if (!ok) {
+            long currentBal = ServerBot.getStorageManager().getBalance(guildId, targetId);
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Insufficient Funds", "<@" + targetId + "> only has **" + currentBal + " " + currencyName + "**.")).queue();
+            return;
+        }
+        long newBalance = ServerBot.getStorageManager().getBalance(guildId, targetId);
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                "Balance Subtracted",
+                currencyIcon + " Subtracted **" + amount + " " + currencyName + "** from <@" + targetId + ">.\n" +
+                "New balance: **" + newBalance + " " + currencyName + "**")).queue();
+    }
+
+    /**
+     * !chargeback — complex admin command; direct to slash for full functionality.
+     */
+    private void handleChargebackPrefix(MessageReceivedEvent event, Map<String, String> options) {
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                "Chargeback",
+                "Use the slash command for chargebacks:\n" +
+                "**`/chargeback transactionid:<id> reason:<reason>`**\n\n" +
+                "Chargebacks reverse recorded economy transactions. Transaction IDs are shown in economy logs.")).queue();
+    }
+
+    /**
+     * !log [action] — view or create a manual log entry.
+     */
+    private void handleLogPrefix(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).queue();
+            return;
+        }
+        if (!PermissionManager.hasPermission(event.getMember(), "logging.view")) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Insufficient Permissions", "You need the `logging.view` permission.")).queue();
+            return;
+        }
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                "Manual Log",
+                "Use the slash command to create a manual log entry:\n" +
+                "**`/log action:<action> [actiontype:<type>] [target:<user>] [reason:<reason>]`**\n\n" +
+                "Available actions: `warn`, `ban`, `kick`, `mute`, `timeout`, `note`")).queue();
+    }
+
+    /**
+     * !antispam — view current antispam settings (configuration requires slash).
+     */
+    private void handleAntispamPrefix(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).queue();
+            return;
+        }
+        if (!PermissionManager.hasPermission(event.getMember(), "admin.antispam")) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Insufficient Permissions", "You need `admin.antispam` permission.")).queue();
+            return;
+        }
+        Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
+        boolean enabled = Boolean.TRUE.equals(settings.get("antiSpamEnabled"));
+        int msgLimit = ((Number) settings.getOrDefault("antiSpamMessageLimit", 10)).intValue();
+        int timeWindow = ((Number) settings.getOrDefault("antiSpamTimeWindow", 10)).intValue();
+        int mentionLimit = ((Number) settings.getOrDefault("antiSpamMentionLimit", 5)).intValue();
+        int dupLimit = ((Number) settings.getOrDefault("antiSpamDupLimit", 4)).intValue();
+        int muteDur = ((Number) settings.getOrDefault("antiSpamMuteDuration", 10)).intValue();
+        int timeoutDur = ((Number) settings.getOrDefault("antiSpamTimeoutDuration", 10)).intValue();
+        int banDur = ((Number) settings.getOrDefault("antiSpamBanDuration", 0)).intValue();
+        String status = enabled ? "✅ Enabled" : "❌ Disabled";
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                "🛡 Antispam Settings",
+                "**Status:** " + status + "\n" +
+                "**Message limit:** " + msgLimit + " messages per " + timeWindow + "s window\n" +
+                "**Mention limit:** " + mentionLimit + " mentions per message\n" +
+                "**Duplicate limit:** " + dupLimit + " duplicate messages\n" +
+                "**Mute duration:** " + muteDur + " minutes\n" +
+                "**Timeout duration:** " + timeoutDur + " minutes\n" +
+                "**Ban duration:** " + (banDur == 0 ? "disabled" : banDur + " hours") + "\n\n" +
+                "*Use `/antispam` to open the configuration panel.*")).queue();
+    }
+
+    /**
+     * !rolepersistence [enable|disable|status] — basic role persistence control.
+     */
+    private void handleRolePersistencePrefix(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).queue();
+            return;
+        }
+        if (!PermissionManager.hasPermission(event.getMember(), "admin.rolepersistence")) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Insufficient Permissions", "You need `admin.rolepersistence` permission.")).queue();
+            return;
+        }
+        String action = options.getOrDefault("action", "status").toLowerCase();
+        String guildId = event.getGuild().getId();
+        Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
+        switch (action) {
+            case "enable" -> {
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "rolePersistenceEnabled", true);
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                        "Role Persistence", "Role persistence has been **enabled**.")).queue();
+            }
+            case "disable" -> {
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "rolePersistenceEnabled", false);
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                        "Role Persistence", "Role persistence has been **disabled**.")).queue();
+            }
+            default -> {
+                boolean enabled = Boolean.TRUE.equals(settings.get("rolePersistenceEnabled"));
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                        "Role Persistence",
+                        "**Status:** " + (enabled ? "✅ Enabled" : "❌ Disabled") + "\n\n" +
+                        "Usage: `!rolepersistence enable` / `!rolepersistence disable`\n" +
+                        "For advanced options (clear, excluded roles) use `/rolepersistence`.")).queue();
+            }
+        }
+    }
+
+    /**
+     * !punishmentdm [enable|disable] — basic punishment DM notification control.
+     */
+    private void handlePunishmentDmPrefix(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).queue();
+            return;
+        }
+        if (!PermissionManager.hasPermission(event.getMember(), "admin.punishment_dm")) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Insufficient Permissions", "You need admin permissions.")).queue();
+            return;
+        }
+        String action = options.getOrDefault("action", "status").toLowerCase();
+        String guildId = event.getGuild().getId();
+        Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
+        switch (action) {
+            case "enable" -> {
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "punishmentDmEnabled", true);
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                        "Punishment DMs", "Punishment DMs have been **enabled**.\nUsers will now be notified when punished.")).queue();
+            }
+            case "disable" -> {
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "punishmentDmEnabled", false);
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                        "Punishment DMs", "Punishment DMs have been **disabled**.")).queue();
+            }
+            default -> {
+                boolean enabled = Boolean.TRUE.equals(settings.get("punishmentDmEnabled"));
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                        "Punishment DMs",
+                        "**Status:** " + (enabled ? "✅ Enabled" : "❌ Disabled") + "\n\n" +
+                        "Usage: `!punishmentdm enable` / `!punishmentdm disable`\n" +
+                        "For full options use `/punishment-dm`.")).queue();
+            }
+        }
+    }
+
+    /**
+     * !suspiciousnotify [enable|disable] — basic suspicious account notify control.
+     */
+    private void handleSuspiciousNotifyPrefix(MessageReceivedEvent event, Map<String, String> options) {
+        if (!event.isFromGuild()) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Guild Only", "Servers only.")).queue();
+            return;
+        }
+        if (!PermissionManager.hasPermission(event.getMember(), "admin.suspicious")) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Insufficient Permissions", "You need admin permissions.")).queue();
+            return;
+        }
+        String action = options.getOrDefault("action", "status").toLowerCase();
+        String guildId = event.getGuild().getId();
+        Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
+        switch (action) {
+            case "enable" -> {
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "suspiciousNotifyEnabled", true);
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                        "Suspicious Notifications", "Suspicious account notifications have been **enabled**.")).queue();
+            }
+            case "disable" -> {
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "suspiciousNotifyEnabled", false);
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createSuccessEmbed(
+                        "Suspicious Notifications", "Suspicious account notifications have been **disabled**.")).queue();
+            }
+            default -> {
+                boolean enabled = Boolean.TRUE.equals(settings.get("suspiciousNotifyEnabled"));
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                        "Suspicious Notifications",
+                        "**Status:** " + (enabled ? "✅ Enabled" : "❌ Disabled") + "\n\n" +
+                        "Usage: `!suspiciousnotify enable` / `!suspiciousnotify disable`\n" +
+                        "For full options use `/suspiciousnotify`.")).queue();
+            }
+        }
+    }
+
+    /**
+     * !servermessages — redirect to slash (complex multi-key configuration).
+     */
+    private void handleServerMessagesPrefix(MessageReceivedEvent event, Map<String, String> options) {
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                "Server Messages",
+                "Server message configuration requires the slash command interface:\n" +
+                "**`/servermessages list`** — see all configurable messages\n" +
+                "**`/servermessages set key:<key> value:<message>`** — set a message\n" +
+                "**`/servermessages reset key:<key>`** — reset to default")).queue();
+    }
+
+    /**
+     * !reactionrole — redirect to slash (inherently emoji/reaction-based).
+     */
+    private void handleReactionRolePrefix(MessageReceivedEvent event) {
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                "Reaction Roles",
+                "Reaction roles require Discord's emoji/reaction system which is not available via prefix commands.\n\n" +
+                "Use the slash command: **`/reactionrole`**\n" +
+                "Subcommands: `create`, `add`, `remove`, `list`, `clear`")).queue();
+    }
+
+    /**
+     * !autoconfig — redirect to slash (interactive guided wizard).
+     */
+    private void handleAutoConfigPrefix(MessageReceivedEvent event) {
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                "Auto Configuration",
+                "The auto-configuration wizard uses interactive menus and cannot be run via prefix.\n\n" +
+                "Use the slash command: **`/autoconfig`** to launch the guided setup wizard.")).queue();
+    }
+
+    /**
+     * !playlist [action] [name] — music playlist management.
+     */
+    private void handlePlaylistPrefix(MessageReceivedEvent event, Map<String, String> options) {
+        String action = options.getOrDefault("action", "list").toLowerCase();
+        String userId = event.getAuthor().getId();
+
+        switch (action) {
+            case "list" -> {
+                java.util.List<com.serverbot.storage.FileStorageManager.UserPlaylist> playlists =
+                        ServerBot.getStorageManager().getUserPlaylists(userId);
+                if (playlists.isEmpty()) {
+                    event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                            "Your Playlists",
+                            "You have no playlists. Create one with `!playlist create <name>`.")).queue();
+                } else {
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < playlists.size(); i++) {
+                        var pl = playlists.get(i);
+                        sb.append("`").append(i + 1).append(".` **").append(pl.name).append("**");
+                        if (pl.description != null && !pl.description.isBlank())
+                            sb.append(" — ").append(pl.description);
+                        sb.append(" (").append(pl.entries.size()).append(" tracks)\n");
+                    }
+                    event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                            "🎵 Your Playlists", sb.toString())).queue();
+                }
+            }
+            case "create" -> {
+                String name = options.get("name");
+                if (name == null) {
+                    event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!playlist create <name> [description]`")).queue();
+                    return;
+                }
+                String desc = options.getOrDefault("args", "");
+                boolean ok = ServerBot.getStorageManager().createUserPlaylist(userId, name, desc);
+                event.getChannel().sendMessageEmbeds(ok
+                        ? EmbedUtils.createSuccessEmbed("Playlist Created", "Created playlist **" + name + "**.")
+                        : EmbedUtils.createErrorEmbed("Already Exists", "You already have a playlist named **" + name + "**.")).queue();
+            }
+            case "delete" -> {
+                String name = options.get("name");
+                if (name == null) {
+                    event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed("Usage", "`!playlist delete <name>`")).queue();
+                    return;
+                }
+                boolean ok = ServerBot.getStorageManager().deleteUserPlaylist(userId, name);
+                event.getChannel().sendMessageEmbeds(ok
+                        ? EmbedUtils.createSuccessEmbed("Playlist Deleted", "Deleted playlist **" + name + "**.")
+                        : EmbedUtils.createErrorEmbed("Not Found", "No playlist named **" + name + "**.")).queue();
+            }
+            case "play" -> {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                        "Play Playlist",
+                        "Use the slash command to play a playlist:\n**`/playlist play name:<name>`**\n" +
+                        "Music loading requires proper voice channel handling.")).queue();
+            }
+            default -> {
+                event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                        "Playlist Help",
+                        "**Prefix commands:** `!playlist list` · `!playlist create <name>` · `!playlist delete <name>`\n\n" +
+                        "**Full playlist management** (add/remove tracks, reorder, play):\nUse `/playlist`")).queue();
+            }
+        }
+    }
+
+    /**
+     * !suspiciouslist [page] — view the suspicious users list (bot owner only).
+     */
+    private void handleSuspiciousListPrefix(MessageReceivedEvent event, Map<String, String> options) {
+        if (!PermissionUtils.isBotOwner(event.getAuthor())) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createErrorEmbed(
+                    "Access Denied", "Only bot owners can view the suspicious users list.")).queue();
+            return;
+        }
+        int page = 1;
+        String pageStr = options.get("page");
+        if (pageStr != null) {
+            try { page = Math.max(1, Integer.parseInt(pageStr)); } catch (NumberFormatException ignored) {}
+        }
+        int pageSize = 10;
+        Map<String, Map<String, Object>> all = ServerBot.getStorageManager().getAllSuspiciousUsers();
+        java.util.List<Map<String, Object>> entries = new java.util.ArrayList<>(all.values());
+        int total = entries.size();
+        int totalPages = Math.max(1, (int) Math.ceil((double) total / pageSize));
+        page = Math.min(page, totalPages);
+        int start = (page - 1) * pageSize;
+        java.util.List<Map<String, Object>> pageEntries = entries.subList(start, Math.min(start + pageSize, total));
+
+        if (total == 0) {
+            event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                    "Suspicious Users", "No suspicious users on record.")).queue();
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Map<String, Object> entry : pageEntries) {
+            String userId = (String) entry.getOrDefault("userId", "?");
+            String reason = (String) entry.getOrDefault("reason", "No reason");
+            String status = (String) entry.getOrDefault("status", "pending");
+            sb.append("<@").append(userId).append("> (`").append(userId).append("`)\n")
+              .append("Reason: ").append(reason.length() > 60 ? reason.substring(0, 57) + "..." : reason)
+              .append(" | Status: ").append(status).append("\n\n");
+        }
+        event.getChannel().sendMessageEmbeds(new net.dv8tion.jda.api.EmbedBuilder()
+                .setColor(new java.awt.Color(231, 76, 60))
+                .setTitle("🚨 Suspicious Users List")
+                .setDescription(sb.toString())
+                .setFooter("Page " + page + "/" + totalPages + " • " + total + " total | Use /suspiciouslist for full management")
+                .setTimestamp(java.time.Instant.now())
+                .build()).queue();
+    }
+
+    /**
+     * !embedgui — redirect to slash (visual editor requires GUI components).
+     */
+    private void handleEmbedGuiPrefix(MessageReceivedEvent event) {
+        event.getChannel().sendMessageEmbeds(EmbedUtils.createInfoEmbed(
+                "Embed Builder",
+                "The visual embed builder requires Discord's button and modal UI.\n\n" +
+                "Use the slash command: **`/embedgui`**\n" +
+                "For a text-based embed, use: **`/embed`** or **`!embed`**")).queue();
+    }
+
+    /** Extract a user ID from a mention (&lt;@123&gt;, &lt;@!123&gt;) or raw ID string. Returns null if invalid. */
+    private static String extractUserId(String input) {
+        if (input == null) return null;
+        // @mention
+        if (input.startsWith("<@") && input.endsWith(">")) {
+            String id = input.replaceAll("[^0-9]", "");
+            return id.isEmpty() ? null : id;
+        }
+        // Raw snowflake
+        if (input.matches("\\d{17,20}")) return input;
+        return null;
     }
 }

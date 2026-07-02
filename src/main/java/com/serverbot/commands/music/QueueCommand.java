@@ -10,7 +10,9 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 import java.util.List;
 
@@ -18,6 +20,8 @@ import java.util.List;
  * Queue command - shows the current music queue and now-playing track.
  */
 public class QueueCommand implements SlashCommand {
+
+    private static final int PAGE_SIZE = 10;
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
@@ -29,13 +33,34 @@ public class QueueCommand implements SlashCommand {
             return;
         }
 
-        GuildMusicManager gmm = musicManager.getGuildMusicManager(event.getGuild());
+        int page = event.getOption("page") != null ? (int) event.getOption("page").getAsLong() : 1;
+        event.replyEmbeds(buildQueueEmbed(musicManager, event.getGuild(), page)).queue();
+    }
+
+    /**
+     * Build the paginated queue embed. Used by both the slash command and prefix handler.
+     *
+     * @param musicManager the active music manager
+     * @param guild        the guild being queried
+     * @param page         1-based page number
+     * @return the embed to display
+     */
+    public static net.dv8tion.jda.api.entities.MessageEmbed buildQueueEmbed(
+            MusicManager musicManager, net.dv8tion.jda.api.entities.Guild guild, int page) {
+
+        GuildMusicManager gmm = musicManager.getGuildMusicManager(guild);
         AudioTrack currentTrack = gmm.getScheduler().getCurrentTrack();
         List<AudioTrack> queue = gmm.getScheduler().getQueue();
+
+        int totalPages = queue.isEmpty() ? 1 : (int) Math.ceil((double) queue.size() / PAGE_SIZE);
+        int clampedPage = Math.max(1, Math.min(page, totalPages));
+        int startIndex = (clampedPage - 1) * PAGE_SIZE; // inclusive
+        int endIndex = Math.min(startIndex + PAGE_SIZE, queue.size()); // exclusive
 
         EmbedBuilder embed = EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
                 .setTitle("🎶 Music Queue");
 
+        // Now Playing field
         if (currentTrack != null) {
             String progress = MusicUtils.createProgressBar(currentTrack.getPosition(), currentTrack.getDuration());
             embed.addField("Now Playing",
@@ -47,43 +72,45 @@ public class QueueCommand implements SlashCommand {
             embed.addField("Now Playing", "Nothing is currently playing.", false);
         }
 
+        // Queue field (paginated)
         if (queue.isEmpty()) {
             embed.addField("Up Next", "Queue is empty. Use `/play` to add tracks!", false);
         } else {
             StringBuilder queueStr = new StringBuilder();
-            int displayCount = Math.min(queue.size(), 10);
-            for (int i = 0; i < displayCount; i++) {
+            for (int i = startIndex; i < endIndex; i++) {
                 queueStr.append(MusicUtils.formatTrackShort(queue.get(i), i + 1)).append("\n");
             }
-            if (queue.size() > 10) {
-                queueStr.append("*... and ").append(queue.size() - 10).append(" more*");
-            }
 
-            // Calculate total queue duration
-            long totalDuration = queue.stream().mapToLong(t -> t.getDuration()).sum();
+            long totalDuration = queue.stream().mapToLong(AudioTrack::getDuration).sum();
             if (currentTrack != null) {
                 totalDuration += currentTrack.getDuration() - currentTrack.getPosition();
             }
 
             embed.addField("Up Next (" + queue.size() + " tracks)", queueStr.toString(), false);
-            embed.setFooter("Total queue time: " + MusicUtils.formatDuration(totalDuration));
+
+            String footerText = "Page " + clampedPage + "/" + totalPages
+                    + " • Total queue time: " + MusicUtils.formatDuration(totalDuration);
+            if (totalPages > 1) {
+                footerText += " • Use /queue page:<n> to navigate";
+            }
+            embed.setFooter(footerText);
         }
 
-        // Show repeat/shuffle status
+        // Repeat / shuffle status
         String statusLine = "";
-        if (gmm.getScheduler().isRepeating())
-            statusLine += "🔁 Repeat ON  ";
-        if (gmm.getScheduler().isShuffling())
-            statusLine += "🔀 Shuffle ON";
+        if (gmm.getScheduler().isRepeating())  statusLine += "🔁 Repeat ON  ";
+        if (gmm.getScheduler().isShuffling())  statusLine += "🔀 Shuffle ON";
         if (!statusLine.isEmpty()) {
             embed.addField("Mode", statusLine.trim(), false);
         }
 
-        event.replyEmbeds(embed.build()).queue();
+        return embed.build();
     }
 
     public static CommandData getCommandData() {
-        return Commands.slash("queue", "Show what's currently playing.");
+        return Commands.slash("queue", "Show what's currently playing.")
+                .addOptions(new OptionData(OptionType.INTEGER, "page", "Page number (default: 1)", false)
+                        .setMinValue(1));
     }
 
     @Override

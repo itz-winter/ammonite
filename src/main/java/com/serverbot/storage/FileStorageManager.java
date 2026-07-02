@@ -52,6 +52,15 @@ public class FileStorageManager {
     private final Map<String, List<UserPlaylist>> userPlaylistsCache = new ConcurrentHashMap<>();
     private final File userPlaylistsFile;
 
+    // Error reports cache: dedupKey (cmdName:exceptionSimpleName) -> report Map
+    private final Map<String, Map<String, Object>> errorReportsCache = new ConcurrentHashMap<>();
+    private final File errorReportsFile;
+
+    // User preferences cache: userId -> preference map
+    // Stored globally (not per-guild) since preferences follow the user across servers
+    private final Map<String, Map<String, Object>> userPreferencesCache = new ConcurrentHashMap<>();
+    private final File userPreferencesFile;
+
     /** A single entry in a user-created playlist. */
     public static class PlaylistEntry {
         public String url;
@@ -89,6 +98,8 @@ public class FileStorageManager {
         this.suspiciousUsersFile = new File(dataDir, "suspicious_users.json");
         this.pendingReportMessagesFile = new File(dataDir, "pending_report_messages.json");
         this.userPlaylistsFile = new File(dataDir, "user_playlists.json");
+        this.errorReportsFile = new File(dataDir, "error_reports.json");
+        this.userPreferencesFile = new File(dataDir, "user_preferences.json");
         this.gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .registerTypeAdapter(java.time.Instant.class, new com.serverbot.utils.InstantTypeAdapter())
@@ -119,6 +130,8 @@ public class FileStorageManager {
         loadSuspiciousUsers();
         loadPendingReportMessages();
         loadUserPlaylists();
+        loadErrorReports();
+        loadUserPreferences();
         logger.info("All data loaded from files");
     }
 
@@ -675,6 +688,7 @@ public class FileStorageManager {
         saveGuildSettings();
         saveTempPunishments();
         saveModerationLogs();
+        saveErrorReports();
         logger.info("All data saved to files");
     }
 
@@ -1362,5 +1376,218 @@ public class FileStorageManager {
     public void close() {
         saveAllData();
         logger.info("File storage manager closed");
+    }
+
+    // ── Error Reports ─────────────────────────────────────────────────────────
+
+    /**
+     * Save (or increment) an error report.
+     * dedupKey = "cmdName:exceptionSimpleName", stored in reportData under "dedupKey".
+     * If a report with the same dedupKey already exists, its count is incremented
+     * and lastReportedAt is updated. Otherwise the report is stored fresh.
+     */
+    @SuppressWarnings("unchecked")
+    public void saveErrorReport(Map<String, Object> reportData) {
+        String dedupKey = (String) reportData.get("dedupKey");
+        if (dedupKey == null || dedupKey.isBlank()) return;
+
+        Map<String, Object> existing = errorReportsCache.get(dedupKey);
+        if (existing != null) {
+            int count = ((Number) existing.getOrDefault("count", 1)).intValue();
+            existing.put("count", count + 1);
+            existing.put("lastReportedAt", System.currentTimeMillis());
+        } else {
+            reportData.put("count", 1);
+            reportData.put("timestamp", System.currentTimeMillis());
+            reportData.put("lastReportedAt", System.currentTimeMillis());
+            if (!reportData.containsKey("tags")) {
+                reportData.put("tags", new ArrayList<String>());
+            }
+            errorReportsCache.put(dedupKey, reportData);
+        }
+        saveErrorReports();
+    }
+
+    /**
+     * Returns true if an error with the given dedupKey has already been reported.
+     */
+    public boolean hasErrorReport(String dedupKey) {
+        return errorReportsCache.containsKey(dedupKey);
+    }
+
+    /**
+     * Retrieve a paged, optionally filtered and sorted list of error reports.
+     *
+     * @param query    Search string matched against commandName and errorType (null = no filter)
+     * @param sort     "most-reported" | "least-reported" | "newest" | "oldest" (default: "most-reported")
+     * @param page     1-based page number
+     * @param pageSize how many reports per page
+     */
+    public List<Map<String, Object>> getErrorReports(String query, String sort, int page, int pageSize) {
+        List<Map<String, Object>> all = new ArrayList<>(errorReportsCache.values());
+
+        // Filter by query
+        if (query != null && !query.isBlank()) {
+            String q = query.toLowerCase().trim();
+            all = all.stream().filter(r -> {
+                String cmd = String.valueOf(r.getOrDefault("commandName", "")).toLowerCase();
+                String err = String.valueOf(r.getOrDefault("errorType", "")).toLowerCase();
+                String msg = String.valueOf(r.getOrDefault("errorMessage", "")).toLowerCase();
+                return cmd.contains(q) || err.contains(q) || msg.contains(q);
+            }).collect(java.util.stream.Collectors.toList());
+        }
+
+        // Sort
+        if ("least-reported".equalsIgnoreCase(sort)) {
+            all.sort(java.util.Comparator.comparingInt(
+                    r -> ((Number) r.getOrDefault("count", 0)).intValue()));
+        } else if ("newest".equalsIgnoreCase(sort)) {
+            all.sort((a, b) -> Long.compare(
+                    ((Number) b.getOrDefault("lastReportedAt", 0L)).longValue(),
+                    ((Number) a.getOrDefault("lastReportedAt", 0L)).longValue()));
+        } else if ("oldest".equalsIgnoreCase(sort)) {
+            all.sort(java.util.Comparator.comparingLong(
+                    r -> ((Number) r.getOrDefault("timestamp", 0L)).longValue()));
+        } else {
+            // Default: most-reported
+            all.sort((a, b) -> Integer.compare(
+                    ((Number) b.getOrDefault("count", 0)).intValue(),
+                    ((Number) a.getOrDefault("count", 0)).intValue()));
+        }
+
+        // Paginate
+        int start = (page - 1) * pageSize;
+        if (start >= all.size()) return new ArrayList<>();
+        return new ArrayList<>(all.subList(start, Math.min(start + pageSize, all.size())));
+    }
+
+    /**
+     * Total count of error reports matching an optional query (for page count calculation).
+     */
+    public int getErrorReportTotalCount(String query) {
+        if (query == null || query.isBlank()) return errorReportsCache.size();
+        String q = query.toLowerCase().trim();
+        return (int) errorReportsCache.values().stream().filter(r -> {
+            String cmd = String.valueOf(r.getOrDefault("commandName", "")).toLowerCase();
+            String err = String.valueOf(r.getOrDefault("errorType", "")).toLowerCase();
+            String msg = String.valueOf(r.getOrDefault("errorMessage", "")).toLowerCase();
+            return cmd.contains(q) || err.contains(q) || msg.contains(q);
+        }).count();
+    }
+
+    /**
+     * Add a tag to an error report. Returns false if the report does not exist or tag already present.
+     */
+    @SuppressWarnings("unchecked")
+    public boolean addTagToErrorReport(String dedupKey, String tag) {
+        Map<String, Object> report = errorReportsCache.get(dedupKey);
+        if (report == null) return false;
+        List<String> tags = (List<String>) report.computeIfAbsent("tags", k -> new ArrayList<String>());
+        String normalised = tag.toLowerCase().trim();
+        if (tags.contains(normalised)) return false;
+        tags.add(normalised);
+        saveErrorReports();
+        return true;
+    }
+
+    /**
+     * Remove a tag from an error report. Returns false if not found.
+     */
+    @SuppressWarnings("unchecked")
+    public boolean removeTagFromErrorReport(String dedupKey, String tag) {
+        Map<String, Object> report = errorReportsCache.get(dedupKey);
+        if (report == null) return false;
+        List<String> tags = (List<String>) report.get("tags");
+        if (tags == null) return false;
+        boolean removed = tags.remove(tag.toLowerCase().trim());
+        if (removed) saveErrorReports();
+        return removed;
+    }
+
+    /**
+     * Delete an error report entirely. Returns false if not found.
+     */
+    public boolean deleteErrorReport(String dedupKey) {
+        if (errorReportsCache.remove(dedupKey) == null) return false;
+        saveErrorReports();
+        return true;
+    }
+
+    /** Get a single error report by dedupKey, or null. */
+    public Map<String, Object> getErrorReport(String dedupKey) {
+        return errorReportsCache.get(dedupKey);
+    }
+
+    private void loadErrorReports() {
+        errorReportsCache.clear();
+        if (!errorReportsFile.exists()) return;
+        try (FileReader reader = new FileReader(errorReportsFile)) {
+            Type type = new TypeToken<Map<String, Map<String, Object>>>() {}.getType();
+            Map<String, Map<String, Object>> data = gson.fromJson(reader, type);
+            if (data != null) errorReportsCache.putAll(data);
+            logger.debug("Loaded {} error reports", errorReportsCache.size());
+        } catch (IOException e) {
+            logger.error("Failed to load error reports", e);
+        }
+    }
+
+    private void saveErrorReports() {
+        try (FileWriter writer = new FileWriter(errorReportsFile)) {
+            gson.toJson(errorReportsCache, writer);
+        } catch (IOException e) {
+            logger.error("Failed to save error reports", e);
+        }
+    }
+
+    // ===== User preferences =====
+
+    /**
+     * Returns the raw preference map for a user, creating an empty one if absent.
+     * Callers should use the typed helpers below rather than this directly.
+     */
+    private Map<String, Object> getUserPrefs(String userId) {
+        return userPreferencesCache.computeIfAbsent(userId, k -> new HashMap<>());
+    }
+
+    /**
+     * Whether the user prefers ephemeral (private) command responses.
+     * Default: {@code true} — responses are ephemeral unless the user explicitly disables it.
+     */
+    public boolean getUserEphemeralPreference(String userId) {
+        Object val = getUserPrefs(userId).get("ephemeralEnabled");
+        if (val == null) return true; // default: ephemeral ON
+        return Boolean.TRUE.equals(val);
+    }
+
+    /**
+     * Set whether this user's command responses should be ephemeral by default.
+     *
+     * @param userId  the Discord user ID
+     * @param enabled {@code true} to make responses ephemeral, {@code false} to make them visible
+     */
+    public void setUserEphemeralPreference(String userId, boolean enabled) {
+        getUserPrefs(userId).put("ephemeralEnabled", enabled);
+        saveUserPreferences();
+    }
+
+    private void loadUserPreferences() {
+        userPreferencesCache.clear();
+        if (!userPreferencesFile.exists()) return;
+        try (FileReader reader = new FileReader(userPreferencesFile)) {
+            Type type = new TypeToken<Map<String, Map<String, Object>>>() {}.getType();
+            Map<String, Map<String, Object>> data = gson.fromJson(reader, type);
+            if (data != null) userPreferencesCache.putAll(data);
+            logger.debug("Loaded preferences for {} users", userPreferencesCache.size());
+        } catch (IOException e) {
+            logger.error("Failed to load user preferences", e);
+        }
+    }
+
+    private void saveUserPreferences() {
+        try (FileWriter writer = new FileWriter(userPreferencesFile)) {
+            gson.toJson(userPreferencesCache, writer);
+        } catch (IOException e) {
+            logger.error("Failed to save user preferences", e);
+        }
     }
 }

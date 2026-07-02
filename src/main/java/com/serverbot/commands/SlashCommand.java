@@ -1,5 +1,6 @@
 package com.serverbot.commands;
 
+import com.serverbot.utils.context.CommandContext;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
@@ -14,6 +15,34 @@ public interface SlashCommand {
      * @param event The slash command interaction event
      */
     void execute(SlashCommandInteractionEvent event);
+
+    /**
+     * Execute the command via the unified {@link CommandContext} abstraction.
+     *
+     * <p>Override this method (along with {@link #supportsCommandContext()}) to enable
+     * the command to be invoked identically from both slash and prefix paths.</p>
+     *
+     * <p>Default implementation: throws {@link UnsupportedOperationException} — commands
+     * that do not override this will fall back to the manual prefix handler.</p>
+     *
+     * @param ctx the command context (slash or prefix)
+     */
+    default void executeWithContext(CommandContext ctx) {
+        throw new UnsupportedOperationException(
+                getName() + " does not support CommandContext execution yet.");
+    }
+
+    /**
+     * Whether this command has been migrated to the unified {@link CommandContext} pattern.
+     *
+     * <p>If {@code true}, the prefix router will call {@link #executeWithContext(CommandContext)}
+     * instead of the manual handler in {@code PrefixCommandService}.</p>
+     *
+     * @return {@code true} if {@link #executeWithContext(CommandContext)} is implemented
+     */
+    default boolean supportsCommandContext() {
+        return false;
+    }
 
     /**
      * Get the command name
@@ -72,3 +101,4 @@ public interface SlashCommand {
         event.replyChoices().queue();
     }
 }
+

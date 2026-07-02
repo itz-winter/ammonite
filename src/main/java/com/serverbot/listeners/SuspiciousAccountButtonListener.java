@@ -48,7 +48,25 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
 
         // Masterlist view pagination (slv:page:<page>)
         if (componentId.startsWith("slv:page:")) {
+            // Disabled sentinel IDs used for prev/cur/next in boundary pages — silently ignore
+            if (componentId.equals("slv:page:prev") || componentId.equals("slv:page:next")
+                    || componentId.equals("slv:page:cur")) {
+                event.deferEdit().queue();
+                return;
+            }
             handleMasterlistPage(event, componentId);
+            return;
+        }
+
+        // Masterlist refresh (slv:refresh:<page>)
+        if (componentId.startsWith("slv:refresh:")) {
+            handleMasterlistRefresh(event, componentId);
+            return;
+        }
+
+        // Masterlist review actions (slv:review:<action>:<userId> or slv:review:done)
+        if (componentId.startsWith("slv:review:")) {
+            handleReviewAction(event, componentId);
             return;
         }
 
@@ -967,5 +985,132 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
                     .setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(shareBtn))
                     .queue();
         }
+    }
+
+    // ── Masterlist refresh ──────────────────────────────────────────────────────
+
+    private void handleMasterlistRefresh(ButtonInteractionEvent event, String componentId) {
+        // Format: slv:refresh:<page>
+        String[] parts = componentId.split(":");
+        if (parts.length < 3) { event.deferEdit().queue(); return; }
+        int page;
+        try { page = Integer.parseInt(parts[2]); } catch (NumberFormatException e) { event.deferEdit().queue(); return; }
+
+        BotConfig config = ServerBot.getConfigManager().getConfig();
+        if (!config.getAllOwnerIds().contains(event.getUser().getId())) {
+            event.reply("Only bot owners can refresh this list.").setEphemeral(true).queue();
+            return;
+        }
+
+        FileStorageManager storage = ServerBot.getStorageManager();
+        java.util.Map<String, java.util.Map<String, Object>> suspiciousUsers = storage.getAllSuspiciousUsers();
+
+        SuspiciousListCommand.PagedViewResult result =
+                SuspiciousListCommand.buildViewPage(event.getJDA(), suspiciousUsers, page);
+
+        net.dv8tion.jda.api.components.buttons.Button shareBtn =
+                net.dv8tion.jda.api.components.buttons.Button
+                        .secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share");
+
+        if (result.navRow() != null) {
+            event.editMessageEmbeds(result.embed())
+                    .setComponents(result.navRow(),
+                            net.dv8tion.jda.api.components.actionrow.ActionRow.of(shareBtn))
+                    .queue();
+        } else {
+            event.editMessageEmbeds(result.embed())
+                    .setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(shareBtn))
+                    .queue();
+        }
+    }
+
+    // ── Review mode actions ─────────────────────────────────────────────────────
+
+    private void handleReviewAction(ButtonInteractionEvent event, String componentId) {
+        BotConfig config = ServerBot.getConfigManager().getConfig();
+        if (!config.getAllOwnerIds().contains(event.getUser().getId())) {
+            event.reply("Only bot owners can perform review actions.").setEphemeral(true).queue();
+            return;
+        }
+
+        // slv:review:done
+        if (componentId.equals("slv:review:done")) {
+            event.editMessageEmbeds(com.serverbot.utils.EmbedUtils.createSuccessEmbed(
+                    "Review Complete", "You have finished the review session. Use `/suspiciouslist review` to start a new session."))
+                    .setComponents(java.util.Collections.emptyList())
+                    .queue();
+            return;
+        }
+
+        // slv:review:<action>:<userId>
+        String[] parts = componentId.split(":");
+        if (parts.length < 4) { event.deferEdit().queue(); return; }
+        String action = parts[2];
+        String userId = parts[3];
+
+        FileStorageManager storage = ServerBot.getStorageManager();
+
+        switch (action) {
+            case "validate" -> {
+                if (!storage.isUserSuspicious(userId)) {
+                    event.reply("This user is no longer on the suspicious list.").setEphemeral(true).queue();
+                    return;
+                }
+                storage.validateSuspiciousUser(userId, event.getUser().getId());
+                logger.info("Bot owner {} validated suspicious user {} via review", event.getUser().getId(), userId);
+                advanceReview(event, userId, "✅ Validated", "User `" + userId + "` has been **validated** as a confirmed threat.", storage);
+            }
+            case "safe" -> {
+                if (!storage.isUserSuspicious(userId)) {
+                    event.reply("This user is no longer on the suspicious list.").setEphemeral(true).queue();
+                    return;
+                }
+                java.util.List<String> autoBannedGuilds = storage.getAutoBannedGuilds(userId);
+                storage.removeUserFromSuspiciousList(userId);
+                logger.info("Bot owner {} marked suspicious user {} as safe via review", event.getUser().getId(), userId);
+                advanceReview(event, userId, "🟢 Marked Safe", "User `" + userId + "` has been **removed** from the suspicious list (marked as safe).", storage);
+            }
+            case "skip" -> {
+                logger.debug("Bot owner {} skipped suspicious user {} in review", event.getUser().getId(), userId);
+                advanceReview(event, userId, null, null, storage);
+            }
+            default -> event.deferEdit().queue();
+        }
+    }
+
+    /**
+     * After taking action on userId, find the next pending entry and show it.
+     * If none remain, show a completion message.
+     */
+    private void advanceReview(ButtonInteractionEvent event, String processedUserId,
+                               String actionTitle, String actionDetail, FileStorageManager storage) {
+        // Get fresh list of pending entries, excluding the one just processed
+        java.util.Map<String, java.util.Map<String, Object>> all = storage.getAllSuspiciousUsers();
+        java.util.List<java.util.Map.Entry<String, java.util.Map<String, Object>>> pending = new java.util.ArrayList<>();
+        for (java.util.Map.Entry<String, java.util.Map<String, Object>> entry : all.entrySet()) {
+            if (!entry.getKey().equals(processedUserId) && !Boolean.TRUE.equals(entry.getValue().get("validated"))) {
+                pending.add(entry);
+            }
+        }
+
+        if (pending.isEmpty()) {
+            String completionMsg = (actionDetail != null ? actionDetail + "\n\n" : "") +
+                    "✅ **Review complete!** No more pending entries.";
+            event.editMessageEmbeds(com.serverbot.utils.EmbedUtils.createSuccessEmbed(
+                    actionTitle != null ? actionTitle + " — Review Complete" : "Review Complete",
+                    completionMsg))
+                    .setComponents(java.util.Collections.emptyList())
+                    .queue();
+            return;
+        }
+
+        // Show the next pending entry
+        java.util.Map.Entry<String, java.util.Map<String, Object>> next = pending.get(0);
+        net.dv8tion.jda.api.entities.MessageEmbed nextEmbed =
+                com.serverbot.commands.utility.SuspiciousListCommand.buildReviewEmbed(event.getJDA(), next, pending.size());
+        net.dv8tion.jda.api.components.actionrow.ActionRow nextRow =
+                com.serverbot.commands.utility.SuspiciousListCommand.buildReviewActionRow(next.getKey());
+
+        event.editMessageEmbeds(nextEmbed).setComponents(nextRow).queue();
     }
 }
