@@ -79,6 +79,7 @@ public class SoftbanCommand implements SlashCommand {
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
+                            com.serverbot.utils.AutoLogUtils.logSoftban(event.getGuild(), targetUser, moderator.getUser(), reason);
 
                             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                                     "User Softbanned",
