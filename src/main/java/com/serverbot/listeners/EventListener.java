@@ -95,6 +95,9 @@ public class EventListener extends ListenerAdapter {
             return; // Message was spam and handled
         }
 
+        // Handle word filter
+        handleWordFilter(event);
+
         // Handle XP and points gain
         handleXpAndPointsGain(event);
     }
@@ -390,13 +393,26 @@ public class EventListener extends ListenerAdapter {
             String guildId = event.getGuild().getId();
             Map<String, Object> settings = ServerBot.getStorageManager().getGuildSettings(guildId);
 
-            String autoRoleId = (String) settings.get("welcomeAutoRoleId");
-            if (autoRoleId != null) {
-                Role autoRole = event.getGuild().getRoleById(autoRoleId);
-                if (autoRole != null && event.getGuild().getSelfMember().canInteract(autoRole)) {
-                    event.getGuild().addRoleToMember(event.getMember(), autoRole).queue(null, throwable -> {
-                        logger.warn("Failed to assign auto-role: {}", throwable.getMessage());
-                    });
+            // Support new multi-role list first, then fall back to legacy single role
+            @SuppressWarnings("unchecked")
+            java.util.List<String> autoRoleIds = (java.util.List<String>) settings.get("welcomeAutoRoleIds");
+            if (autoRoleIds != null && !autoRoleIds.isEmpty()) {
+                for (String roleId : autoRoleIds) {
+                    Role autoRole = event.getGuild().getRoleById(roleId);
+                    if (autoRole != null && event.getGuild().getSelfMember().canInteract(autoRole)) {
+                        event.getGuild().addRoleToMember(event.getMember(), autoRole).queue(null, throwable ->
+                                logger.warn("Failed to assign auto-role {}: {}", roleId, throwable.getMessage()));
+                    }
+                }
+            } else {
+                // Legacy single-role fallback
+                String autoRoleId = (String) settings.get("welcomeAutoRoleId");
+                if (autoRoleId != null) {
+                    Role autoRole = event.getGuild().getRoleById(autoRoleId);
+                    if (autoRole != null && event.getGuild().getSelfMember().canInteract(autoRole)) {
+                        event.getGuild().addRoleToMember(event.getMember(), autoRole).queue(null, throwable ->
+                                logger.warn("Failed to assign auto-role: {}", throwable.getMessage()));
+                    }
                 }
             }
         } catch (Exception e) {
@@ -478,6 +494,45 @@ public class EventListener extends ListenerAdapter {
             event.getMessage().reply(lvlMsg).queue(null, err -> {});
         } catch (Exception e) {
             logger.warn("Failed to send level-up reply: {}", e.getMessage());
+        }
+    }
+
+    private void handleWordFilter(MessageReceivedEvent event) {
+        try {
+            String guildId = event.getGuild().getId();
+            if (!com.serverbot.services.WordFilterService.isEnabled(guildId)) return;
+
+            // Skip users with bypass permission
+            net.dv8tion.jda.api.entities.Member member = event.getMember();
+            if (member != null && com.serverbot.utils.PermissionManager.hasPermission(member, "automod.wordfilter.bypass")) return;
+
+            String content = event.getMessage().getContentRaw();
+            String matchedPattern = com.serverbot.services.WordFilterService.findMatch(guildId, content);
+            if (matchedPattern == null) return;
+
+            String action = com.serverbot.services.WordFilterService.getAction(guildId);
+            boolean doDelete = action.contains("delete");
+            boolean doWarn = action.contains("warn");
+
+            if (doDelete) {
+                event.getMessage().delete().queue(null, err -> {});
+            }
+            if (doWarn && member != null) {
+                // Warn the user via AutoLogUtils
+                com.serverbot.utils.AutoLogUtils.logWarn(event.getGuild(), event.getAuthor(),
+                        event.getJDA().getSelfUser(),
+                        "Automatic word filter violation (matched: `" + matchedPattern + "`)");
+                // Reply ephemerally if possible
+                event.getChannel().sendMessage(event.getAuthor().getAsMention()
+                        + " ⚠️ Your message was removed because it violates the server's word filter.")
+                        .queue(msg -> msg.delete().queueAfter(8, java.util.concurrent.TimeUnit.SECONDS), err -> {});
+            } else if (doDelete) {
+                event.getChannel().sendMessage(event.getAuthor().getAsMention()
+                        + " ⚠️ Your message was removed because it violates the server's word filter.")
+                        .queue(msg -> msg.delete().queueAfter(8, java.util.concurrent.TimeUnit.SECONDS), err -> {});
+            }
+        } catch (Exception e) {
+            logger.warn("Error in word filter check: {}", e.getMessage());
         }
     }
 }
