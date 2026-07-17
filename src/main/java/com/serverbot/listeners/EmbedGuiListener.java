@@ -85,6 +85,7 @@ public class EmbedGuiListener extends ListenerAdapter {
                 String exportMsg = EmbedJsonUtils.buildExportMessage(session);
                 event.reply(exportMsg).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             }
+            case "import" -> event.replyModal(importModal(userId)).queue();
             case "send" -> handleSend(event, session, userId);
             default -> event.reply("Unknown action.").setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
         }
@@ -145,6 +146,14 @@ public class EmbedGuiListener extends ListenerAdapter {
                 String idOrUrl = event.getValue("id_url").getAsString().trim();
                 if (!label.isEmpty() && !style.isEmpty() && !idOrUrl.isEmpty() && session.buttons.size() < 25)
                     session.buttons.add(new EmbedGuiSession.ButtonEntry(label, style, idOrUrl));
+            }
+            case "import" -> {
+                String jsonInput = event.getValue("json").getAsString().trim();
+                String importError = EmbedJsonUtils.loadSessionFromJson(jsonInput, session);
+                if (importError != null) {
+                    event.reply(importError).setEphemeral(true).queue();
+                    return;
+                }
             }
         }
 
@@ -351,6 +360,15 @@ public class EmbedGuiListener extends ListenerAdapter {
                 .setPlaceholder("Custom ID (or URL if style is link)").setMaxLength(100).setRequired(true).build();
         return Modal.create("egm:btn:" + uid, "Add Button")
                 .addComponents(Label.of("Label", label), Label.of("Style", style), Label.of("Custom ID or URL", idUrl))
+                .build();
+    }
+
+    private Modal importModal(String uid) {
+        TextInput json = TextInput.create("json", TextInputStyle.PARAGRAPH)
+                .setPlaceholder("Paste embed JSON here (from /embed json: export or any Discord embed JSON)")
+                .setMaxLength(4000).setRequired(true).build();
+        return Modal.create("egm:import:" + uid, "Import Embed JSON")
+                .addComponents(Label.of("Embed JSON", json))
                 .build();
     }
 }

@@ -96,6 +96,7 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.moderation.PurgeCommand());
         registerCommand(new com.serverbot.commands.moderation.TimeoutCommand());
         registerCommand(new com.serverbot.commands.moderation.CheckCommand());
+        registerCommand(new com.serverbot.commands.moderation.WordFilterCommand());
 
         // Leveling commands that work with file storage
         registerCommand(new com.serverbot.commands.leveling.XpCommand());

@@ -434,6 +434,107 @@ public final class EmbedJsonUtils {
     }
 
     /**
+     * Load JSON into an existing EmbedGuiSession, overwriting all fields.
+     * Accepts the same JSON formats as {@link #parseEmbed(String)}.
+     * Returns null on success, or an error message string on failure.
+     */
+    public static String loadSessionFromJson(String json, EmbedGuiSession session) {
+        try {
+            JsonObject root = parseRootObject(json);
+            // Unwrap message-payload or embeds-array format
+            JsonObject embedObj = root;
+            if (root.has("embeds") && root.get("embeds").isJsonArray()) {
+                JsonArray embeds = root.getAsJsonArray("embeds");
+                if (!embeds.isEmpty() && embeds.get(0).isJsonObject()) {
+                    embedObj = embeds.get(0).getAsJsonObject();
+                }
+            }
+
+            session.clear();
+
+            session.title = getString(embedObj, "title");
+            session.titleUrl = getString(embedObj, "url");
+            session.description = getString(embedObj, "description");
+
+            // Color: accept "#RRGGBB", "RRGGBB", or integer
+            if (embedObj.has("color")) {
+                JsonElement colorEl = embedObj.get("color");
+                if (colorEl.isJsonPrimitive()) {
+                    JsonPrimitive colorP = colorEl.getAsJsonPrimitive();
+                    if (colorP.isNumber()) {
+                        int rgb = colorP.getAsInt();
+                        session.colorHex = String.format("#%06X", rgb & 0xFFFFFF);
+                    } else {
+                        String cs = colorP.getAsString().trim();
+                        session.colorHex = cs.startsWith("#") ? cs : "#" + cs;
+                    }
+                }
+            }
+
+            // Timestamp
+            if (embedObj.has("timestamp")) {
+                JsonElement ts = embedObj.get("timestamp");
+                session.timestamp = ts.isJsonPrimitive() && ts.getAsJsonPrimitive().isBoolean()
+                        ? ts.getAsBoolean()
+                        : ts.isJsonPrimitive() && !ts.getAsString().isEmpty();
+            }
+
+            // Author
+            if (embedObj.has("author") && embedObj.get("author").isJsonObject()) {
+                JsonObject a = embedObj.getAsJsonObject("author");
+                session.authorName = getString(a, "name");
+                session.authorIconUrl = getString(a, "icon_url");
+                session.authorUrl = getString(a, "url");
+            }
+
+            // Footer
+            if (embedObj.has("footer") && embedObj.get("footer").isJsonObject()) {
+                JsonObject f = embedObj.getAsJsonObject("footer");
+                session.footerText = getString(f, "text");
+                session.footerIconUrl = getString(f, "icon_url");
+            }
+
+            session.imageUrl = resolveUrlField(embedObj, "image");
+            session.thumbnailUrl = resolveUrlField(embedObj, "thumbnail");
+
+            // Fields
+            if (embedObj.has("fields") && embedObj.get("fields").isJsonArray()) {
+                for (JsonElement fe : embedObj.getAsJsonArray("fields")) {
+                    if (!fe.isJsonObject()) continue;
+                    JsonObject fo = fe.getAsJsonObject();
+                    String name = getString(fo, "name");
+                    String value = getString(fo, "value");
+                    if (name != null && value != null && session.fields.size() < 25) {
+                        boolean inline = fo.has("inline") && fo.get("inline").isJsonPrimitive()
+                                && fo.get("inline").getAsBoolean();
+                        session.fields.add(new EmbedGuiSession.FieldEntry(name, value, inline));
+                    }
+                }
+            }
+
+            // Buttons — parse raw JSON "buttons" key as ButtonEntry list
+            if (root.has("buttons") && root.get("buttons").isJsonArray()) {
+                for (JsonElement be : root.getAsJsonArray("buttons")) {
+                    if (!be.isJsonObject() || session.buttons.size() >= 25) continue;
+                    JsonObject bo = be.getAsJsonObject();
+                    String label = getString(bo, "label");
+                    String style = getString(bo, "style");
+                    String btnId = getString(bo, "id");
+                    String url = getString(bo, "url");
+                    String idOrUrl = btnId != null ? btnId : url;
+                    if (label != null && style != null && idOrUrl != null) {
+                        session.buttons.add(new EmbedGuiSession.ButtonEntry(label, style, idOrUrl));
+                    }
+                }
+            }
+
+            return null; // success
+        } catch (Exception e) {
+            return "❌ Failed to parse JSON: " + e.getMessage();
+        }
+    }
+
+    /**
      * Serialise session buttons to a JSON array string.
      */
     public static String buttonsToJson(EmbedGuiSession s) {
