@@ -16,6 +16,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 /**
  * Periodically (every 20 minutes) checks the suspicious-user masterlist for
@@ -38,6 +39,13 @@ public class SuspiciousCleanupService {
 
     /** JDA error code for "Unknown User" (deleted / suspended account). */
     private static final int UNKNOWN_USER = ErrorResponse.UNKNOWN_USER.getCode();
+
+    /**
+     * Regex that matches the username Discord assigns to deleted accounts.
+     * Examples: {@code deleted_user_a1b2c3}, {@code deleted_user_00000000}
+     */
+    private static final Pattern DELETED_USER_PATTERN =
+            Pattern.compile("^deleted_user_[a-zA-Z0-9_]+$", Pattern.CASE_INSENSITIVE);
 
     private final JDA jda;
     private final FileStorageManager storage;
@@ -156,8 +164,16 @@ public class SuspiciousCleanupService {
 
         for (String userId : userIds) {
             jda.retrieveUserById(userId).queue(
-                    // success — user still exists, do nothing
+                    // success — user still exists, but check if the username matches the
+                    // deleted-account pattern Discord uses (e.g. deleted_user_a1b2c3)
                     user -> {
+                        String name = user.getName();
+                        if (DELETED_USER_PATTERN.matcher(name).matches()) {
+                            storage.removeSuspiciousUser(userId);
+                            removed.incrementAndGet();
+                            logger.info("[suspicious-cleanup] Removed deleted account {} (username: {}) from masterlist.",
+                                    userId, name);
+                        }
                         if (remaining.decrementAndGet() == 0) {
                             finishScan(future, userIds.size(), removed.get(), failed.get());
                         }
@@ -189,5 +205,15 @@ public class SuspiciousCleanupService {
         ScanResult result = new ScanResult(checked, removed, failed);
         future.complete(result);
         logger.info("[suspicious-cleanup] Scan complete — {}", result.summary());
+    }
+
+    /**
+     * Returns {@code true} if {@code username} matches the pattern Discord uses
+     * for accounts that have been deleted by their owner.
+     * Pattern: {@code deleted_user_<alphanumeric>}
+     */
+    public static boolean isDeletedUserName(String username) {
+        if (username == null) return false;
+        return DELETED_USER_PATTERN.matcher(username).matches();
     }
 }

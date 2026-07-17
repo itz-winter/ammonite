@@ -116,7 +116,10 @@ public class SuspiciousAccountListener extends ListenerAdapter {
 
         // Check 5: Suspicious username patterns
         String username = user.getName().toLowerCase();
-        if (username.matches(".*discord.*")) {
+        if (com.serverbot.services.SuspiciousCleanupService.isDeletedUserName(user.getName())) {
+            report.addReason("Username matches deleted account pattern (`" + user.getName() + "`)");
+            suspiciousName = true;
+        } else if (username.matches(".*discord.*")) {
             report.addReason("Username contains 'discord' (potential impersonation)");
             suspiciousName = true;
         }
