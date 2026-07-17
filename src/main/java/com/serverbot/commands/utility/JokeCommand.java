@@ -2,7 +2,6 @@ package com.serverbot.commands.utility;
 
 import com.serverbot.commands.CommandCategory;
 import com.serverbot.commands.SlashCommand;
-import com.serverbot.utils.EmbedUtils;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
@@ -80,10 +79,7 @@ public class JokeCommand implements SlashCommand {
     @Override
     public void execute(SlashCommandInteractionEvent event) {
         String joke = JOKES[random.nextInt(JOKES.length)];
-
-        event.replyEmbeds(EmbedUtils.createSuccessEmbed(
-                "😄 Random Joke",
-                joke)).queue();
+        event.reply(joke).queue();
     }
 
     public static CommandData getCommandData() {
