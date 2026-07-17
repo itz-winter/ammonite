@@ -191,6 +191,8 @@ public class EmbedGuiCommand implements SlashCommand {
                         Button.danger("egui:rmbtn:" + u, "Remove Button").withEmoji(TRASH),
                         Button.danger("egui:clear:" + u, "Clear All").withEmoji(TRASH),
                         Button.secondary("egui:export:" + u, "Export JSON").withEmoji(SAVE),
+                        Button.secondary("egui:import:" + u, "📥 Import JSON")),
+                ActionRow.of(
                         sendBtn));
     }
 
