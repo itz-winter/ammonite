@@ -170,20 +170,25 @@
           <li><strong>Mention spam</strong> — limit mass mentions</li>
           <li><strong>Caps filter</strong> — detect excessive caps</li>
           <li><strong>Invite blocking</strong> — remove Discord invite links</li>
-          <li><strong>Word blacklist/whitelist</strong> — custom word filtering</li>
-          <li><strong>Bypass permission</strong> — users with <code>automod.bypass</code> are exempt</li>
+          <li><strong>Word blacklist/whitelist</strong> — custom word and <strong>regex</strong> pattern filtering via <code>/wordfilter</code></li>
+          <li><strong>Word filter actions</strong> — delete message, warn user, or both</li>
+          <li><strong>Bypass permission</strong> — users with <code>automod.wordfilter.bypass</code> are exempt</li>
         </ul>
-        <p>Configure with <code>/automod config</code> and <code>/antispam</code>.</p>
+        <p>Configure with <code>/automod config</code>, <code>/antispam</code>, and <code>/wordfilter</code>.</p>
       </div>
 
       <div class="doc-section" id="logging">
         <h2>Comprehensive Logging</h2>
         <p>Log server events to designated channels for transparency and record-keeping.</p>
         <ul>
-          <li><strong>Message logs</strong> — edits, deletions, and bulk deletes</li>
-          <li><strong>Moderation logs</strong> — bans, kicks, mutes, warns</li>
+          <li><strong>Message logs</strong> — edits, deletions (with attachments &amp; embeds), and bulk deletes</li>
+          <li><strong>Moderation logs</strong> — bans, softbans, kicks, mutes, warns (standardized format)</li>
           <li><strong>Join/leave logs</strong> — member join, leave, and role changes</li>
-          <li><strong>Manual logs</strong> — <code>/log</code> for staff to create manual entries</li>
+          <li><strong>Channel logs</strong> — channel create, delete, rename, topic changes</li>
+          <li><strong>Role logs</strong> — role create, delete, rename, color, permission changes</li>
+          <li><strong>Server logs</strong> — server name, description, icon, banner, vanity URL changes</li>
+          <li><strong>Scheduled event logs</strong> — event create and delete</li>
+          <li><strong>User logs</strong> — avatar and display name changes</li>
           <li><strong>Selective log types</strong> — configure which events go to which channels with <code>/logchannel</code></li>
         </ul>
       </div>
@@ -192,8 +197,9 @@
         <h2>Welcome System</h2>
         <ul>
           <li><strong>Welcome messages</strong> — customizable messages when members join</li>
-          <li><strong>Auto-roles</strong> — automatically assign roles to new members</li>
+          <li><strong>Multiple auto-roles</strong> — assign up to 10 roles automatically to new members</li>
           <li><strong>Variable support</strong> — placeholders for user names, server names, member counts</li>
+          <li><strong>DM welcome</strong> — send a private DM to new members</li>
         </ul>
         <p>Configure with <code>/welcome</code>.</p>
       </div>
@@ -203,7 +209,7 @@
         <p>Automated system that analyzes new members and flags potentially suspicious accounts.</p>
         <ul>
           <li><strong>Account age analysis</strong> — flags very new accounts</li>
-          <li><strong>Pattern detection</strong> — identifies bot-like username patterns</li>
+          <li><strong>Pattern detection</strong> — identifies bot-like username patterns, including deleted account usernames (<code>deleted_user_*</code>)</li>
           <li><strong>Risk scoring</strong> — multi-factor suspicion level calculation</li>
           <li><strong>Admin notifications</strong> — alerts sent to designated channels</li>
           <li><strong>Validate/invalidate</strong> — staff can mark accounts as safe or suspicious</li>

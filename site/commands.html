@@ -480,6 +480,39 @@
                 </ul>
             </div>
         </div>
+
+        <!-- /wordfilter -->
+        <div class="cmd-row" data-cmd="wordfilter">
+            <div class="cmd-summary" onclick="toggleCmd(this)">
+                <span class="cmd-name">/wordfilter<span class="cmd-expand-icon">&#9654;</span></span>
+                <span class="cmd-desc">Manage the server's custom word and regex phrase filter</span>
+                <span class="cmd-perm">mod.wordfilter</span>
+            </div>
+            <div class="cmd-detail">
+                <h4>Subcommands</h4>
+                <table class="param-table">
+                    <tr><th>Subcommand</th><th>Description</th></tr>
+                    <tr><td><code>add &lt;pattern&gt;</code></td><td>Add a plain word or regex pattern to the filter (max 100 patterns)</td></tr>
+                    <tr><td><code>remove &lt;pattern&gt;</code></td><td>Remove a pattern by exact text</td></tr>
+                    <tr><td><code>removeat &lt;index&gt;</code></td><td>Remove a pattern by its 1-based list index</td></tr>
+                    <tr><td><code>list</code></td><td>Show all current filter patterns, status, and action</td></tr>
+                    <tr><td><code>clear</code></td><td>Remove all patterns</td></tr>
+                    <tr><td><code>enable</code></td><td>Enable the word filter</td></tr>
+                    <tr><td><code>disable</code></td><td>Disable the word filter</td></tr>
+                    <tr><td><code>action &lt;delete|warn|delete+warn&gt;</code></td><td>Set what happens when a message matches</td></tr>
+                </table>
+                <h4>Notes</h4>
+                <ul>
+                    <li>Patterns are matched as <strong>regex</strong> — plain words like <code>badword</code> work too (they're valid regex)</li>
+                    <li>Members with the <code>automod.wordfilter.bypass</code> permission are exempt</li>
+                    <li>Action <code>delete+warn</code> removes the message <em>and</em> issues an automatic warn logged to the moderation log channel</li>
+                </ul>
+                <h4>Examples</h4>
+                <div class="example-block"><code>/wordfilter add badword</code></div>
+                <div class="example-block"><code>/wordfilter add \b(bad|terrible)\s+word\b</code> — regex pattern</div>
+                <div class="example-block"><code>/wordfilter action delete+warn</code></div>
+            </div>
+        </div>
     </div>
 
     <!-- ============================================================ -->
@@ -1020,8 +1053,10 @@
                 <div class="example-block"><code>/welcome action:message text:Welcome {user} to {server}!</code></div>
                 <h4>Details</h4>
                 <ul>
-                    <li>Actions: <code>view</code>, <code>message</code>, <code>embed-color</code>, <code>auto-role</code>, <code>enable</code>, <code>test</code></li>
-                    <li>Variables: <code>{user}</code>, <code>{server}</code>, <code>{membercount}</code>, etc.</li>
+                    <li>Actions: <code>message</code>, <code>color</code>, <code>channel</code>, <code>auto-role</code>, <code>enable</code>, <code>dm-enable</code>, <code>dm-message</code>, <code>test</code>, <code>dm-test</code></li>
+                    <li>Variables: <code>{user}</code>, <code>{username}</code>, <code>{server}</code>, <code>{membercount}</code></li>
+                    <li><strong>Multiple auto-roles</strong> are supported — use <code>action:auto-role role:@Role</code> multiple times to add up to 10 roles. Add <code>remove:true</code> to remove a role. Omit <code>role</code> to clear all.</li>
+                    <li>Run <code>/welcome</code> with no arguments to open the interactive GUI panel.</li>
                 </ul>
             </div>
         </div>
@@ -1116,6 +1151,7 @@
                 <h4>Details</h4>
                 <ul>
                     <li>Prefix commands are separate from slash commands and are disabled by default.</li>
+                    <li>Prefixes can be 1–16 characters long (no spaces, no <code>/</code>).</li>
                     <li>If all prefixes are removed, prefix commands are automatically disabled.</li>
                     <li>Re-enabling with no prefixes configured will reset to <code>!</code>.</li>
                 </ul>
@@ -1349,9 +1385,17 @@
             </div>
             <div class="cmd-detail">
                 <h4>Syntax</h4>
-                <div class="syntax-block">/echo <span class="required">&lt;message&gt;</span> <span class="optional">[channel]</span></div>
+                <div class="syntax-block">/echo <span class="required">&lt;message&gt;</span> <span class="optional">[channel]</span> <span class="optional">[embed]</span></div>
+                <h4>Parameters</h4>
+                <table class="param-table">
+                    <tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+                    <tr><td><code>message</code></td><td>String</td><td><span class="param-required">Yes</span></td><td>The text to send (max 2000 chars)</td></tr>
+                    <tr><td><code>channel</code></td><td>Channel</td><td><span class="param-optional">No</span></td><td>Target channel (defaults to current)</td></tr>
+                    <tr><td><code>embed</code></td><td>Boolean</td><td><span class="param-optional">No</span></td><td>Send as an embed instead of plain text</td></tr>
+                </table>
                 <h4>Examples</h4>
-                <div class="example-block"><code>/echo Hello World #general</code></div>
+                <div class="example-block"><code>/echo Hello World</code></div>
+                <div class="example-block"><code>/echo Welcome to the server! embed:true</code></div>
             </div>
         </div>
 
@@ -1366,6 +1410,31 @@
                 <div class="syntax-block">/embed <span class="required">&lt;type&gt;</span> <span class="required">&lt;title&gt;</span> <span class="required">&lt;description&gt;</span> <span class="optional">[color]</span></div>
                 <h4>Examples</h4>
                 <div class="example-block"><code>/embed type:simple title:Welcome description:Hello everyone! color:#ff0000</code></div>
+            </div>
+        </div>
+
+        <div class="cmd-row" data-cmd="embedgui">
+            <div class="cmd-summary" onclick="toggleCmd(this)">
+                <span class="cmd-name">/embedgui<span class="cmd-expand-icon">&#9654;</span></span>
+                <span class="cmd-desc">Interactive embed builder with live preview, full controls, JSON export and import</span>
+                <span class="cmd-perm">embed.simple / embed.advanced</span>
+            </div>
+            <div class="cmd-detail">
+                <h4>Parameters</h4>
+                <table class="param-table">
+                    <tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+                    <tr><td><code>channel</code></td><td>Channel</td><td><span class="param-optional">No</span></td><td>Channel to send the embed to (default: current)</td></tr>
+                </table>
+                <h4>Controls</h4>
+                <ul>
+                    <li>Button-driven interface with a live preview embed</li>
+                    <li>Set title, description, color, author, footer, image, thumbnail, fields, and buttons</li>
+                    <li><strong>Export JSON</strong> — export embed as JSON compatible with <code>/embed json:</code></li>
+                    <li><strong>Import JSON</strong> — paste embed JSON to load it into the builder</li>
+                </ul>
+                <h4>Examples</h4>
+                <div class="example-block"><code>/embedgui</code></div>
+                <div class="example-block"><code>/embedgui channel:#announcements</code></div>
             </div>
         </div>
 
