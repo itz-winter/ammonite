@@ -204,9 +204,9 @@ public class PrefixCommand implements SlashCommand {
                     .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return false;
         }
-        if (prefix.length() > 5) {
+        if (prefix.length() > 16) {
             event.replyEmbeds(
-                    EmbedUtils.createErrorEmbed("Invalid Prefix", "Prefix cannot be longer than 5 characters."))
+                    EmbedUtils.createErrorEmbed("Invalid Prefix", "Prefix cannot be longer than 16 characters."))
                     .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return false;
         }
@@ -278,9 +278,9 @@ public class PrefixCommand implements SlashCommand {
                         new SubcommandData("enable", "Enable prefix commands for this server"),
                         new SubcommandData("disable", "Disable prefix commands for this server"),
                         new SubcommandData("set", "Replace all prefixes with a single new prefix")
-                                .addOption(OptionType.STRING, "prefix", "The new prefix (1-5 characters)", false),
+                                .addOption(OptionType.STRING, "prefix", "The new prefix (1-16 characters)", false),
                         new SubcommandData("add", "Add an additional command prefix")
-                                .addOption(OptionType.STRING, "prefix", "The prefix to add (1-5 characters, no spaces)",
+                                .addOption(OptionType.STRING, "prefix", "The prefix to add (1-16 characters, no spaces)",
                                         true),
                         new SubcommandData("remove",
                                 "Remove a command prefix (removing all auto-disables prefix commands)")
