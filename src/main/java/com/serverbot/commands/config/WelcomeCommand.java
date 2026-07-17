@@ -93,8 +93,18 @@ public class WelcomeCommand implements SlashCommand {
         boolean chEnabled = Boolean.TRUE.equals(settings.get("welcomeEnabled"));
         boolean dmEnabled = Boolean.TRUE.equals(settings.get("welcomeDMEnabled"));
         String channelId = (String) settings.get("welcomeChannelId");
-        String autoRoleId = (String) settings.get("welcomeAutoRoleId");
-        String message = (String) settings.getOrDefault("welcomeMessage",
+        @SuppressWarnings("unchecked")
+        java.util.List<String> autoRoleIds = (java.util.List<String>) settings.get("welcomeAutoRoleIds");
+        // Legacy fallback
+        String legacyRoleId = (String) settings.get("welcomeAutoRoleId");
+        String roleDisplay;
+        if (autoRoleIds != null && !autoRoleIds.isEmpty()) {
+            roleDisplay = autoRoleIds.stream().map(id -> "<@&" + id + ">").collect(java.util.stream.Collectors.joining(", "));
+        } else if (legacyRoleId != null) {
+            roleDisplay = "<@&" + legacyRoleId + ">";
+        } else {
+            roleDisplay = "*None*";
+        }        String message = (String) settings.getOrDefault("welcomeMessage",
                 "Welcome to {server}, {user}! We're glad to have you here. \uD83C\uDF89");
         String dmMessage = (String) settings.get("welcomeDMMessage");
         String colorHex = (String) settings.getOrDefault("welcomeEmbedColor", "#00FF00");
@@ -107,7 +117,6 @@ public class WelcomeCommand implements SlashCommand {
         }
 
         String chanDisplay = channelId != null ? "<#" + channelId + ">" : "*Not set*";
-        String roleDisplay = autoRoleId != null ? "<@&" + autoRoleId + ">" : "*None*";
         String msgPreview = message.length() > 90 ? message.substring(0, 87) + "\u2026" : message;
         String dmPreview = dmMessage != null
                 ? (dmMessage.length() > 90 ? dmMessage.substring(0, 87) + "\u2026" : dmMessage)
@@ -262,15 +271,50 @@ public class WelcomeCommand implements SlashCommand {
         try {
             String guildId = event.getGuild().getId();
             OptionMapping opt = event.getOption("role");
-            if (opt == null) {
+            OptionMapping removeOpt = event.getOption("remove");
+            boolean removing = removeOpt != null && removeOpt.getAsBoolean();
+
+            @SuppressWarnings("unchecked")
+            java.util.List<String> autoRoleIds = new java.util.ArrayList<>(
+                    (java.util.List<String>) com.serverbot.ServerBot.getStorageManager()
+                            .getGuildSettings(guildId).getOrDefault("welcomeAutoRoleIds", new java.util.ArrayList<>()));
+
+            if (opt == null && !removing) {
+                // Clear all auto-roles
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeAutoRoleIds", new java.util.ArrayList<>());
                 ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeAutoRoleId", null);
-                event.replyEmbeds(EmbedUtils.createSuccessEmbed("Auto-Role Cleared",
-                        "New members will no longer receive an automatic role.")).queue();
-            } else {
+                event.replyEmbeds(EmbedUtils.createSuccessEmbed("Auto-Roles Cleared",
+                        "New members will no longer receive automatic roles.")).queue();
+            } else if (opt != null && removing) {
+                // Remove specific role
                 Role role = opt.getAsRole();
-                ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeAutoRoleId", role.getId());
-                event.replyEmbeds(EmbedUtils.createSuccessEmbed("Auto-Role Set",
-                        "New members will receive " + role.getAsMention() + ".")).queue();
+                boolean removed = autoRoleIds.remove(role.getId());
+                if (!removed) {
+                    event.replyEmbeds(EmbedUtils.createErrorEmbed("Not Found",
+                            role.getAsMention() + " is not in the auto-role list.")).setEphemeral(true).queue();
+                    return;
+                }
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeAutoRoleIds", autoRoleIds);
+                event.replyEmbeds(EmbedUtils.createSuccessEmbed("Auto-Role Removed",
+                        role.getAsMention() + " removed from the auto-role list.")).queue();
+            } else if (opt != null) {
+                // Add role
+                Role role = opt.getAsRole();
+                if (autoRoleIds.contains(role.getId())) {
+                    event.replyEmbeds(EmbedUtils.createErrorEmbed("Already Added",
+                            role.getAsMention() + " is already in the auto-role list.")).setEphemeral(true).queue();
+                    return;
+                }
+                if (autoRoleIds.size() >= 10) {
+                    event.replyEmbeds(EmbedUtils.createErrorEmbed("Too Many Roles",
+                            "Maximum of 10 auto-roles reached.")).setEphemeral(true).queue();
+                    return;
+                }
+                autoRoleIds.add(role.getId());
+                ServerBot.getStorageManager().updateGuildSettings(guildId, "welcomeAutoRoleIds", autoRoleIds);
+                String allRoles = autoRoleIds.stream().map(id -> "<@&" + id + ">").collect(java.util.stream.Collectors.joining(", "));
+                event.replyEmbeds(EmbedUtils.createSuccessEmbed("Auto-Role Added",
+                        "New members will receive: " + allRoles)).queue();
             }
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed("Failed", e.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
@@ -411,7 +455,8 @@ public class WelcomeCommand implements SlashCommand {
                         actionOpt,
                         new OptionData(OptionType.STRING, "text", "Message text (for message/dm-message)", false),
                         new OptionData(OptionType.STRING, "color", "Hex color e.g. #FF0000 (for color)", false),
-                        new OptionData(OptionType.ROLE, "role", "Role for new members, omit to clear", false),
+                        new OptionData(OptionType.ROLE, "role", "Role to add/remove (for auto-role), omit to clear all", false),
+                        new OptionData(OptionType.BOOLEAN, "remove", "Set true to remove a role from auto-roles (for auto-role)", false),
                         new OptionData(OptionType.CHANNEL, "channel", "Welcome channel (for channel action)", false),
                         new OptionData(OptionType.BOOLEAN, "enabled", "Explicitly on/off \u2014 omit to toggle",
                                 false));
