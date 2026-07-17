@@ -14,6 +14,24 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateTimeOutEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
+import net.dv8tion.jda.api.events.channel.ChannelCreateEvent;
+import net.dv8tion.jda.api.events.channel.ChannelDeleteEvent;
+import net.dv8tion.jda.api.events.channel.update.ChannelUpdateNameEvent;
+import net.dv8tion.jda.api.events.channel.update.ChannelUpdateTopicEvent;
+import net.dv8tion.jda.api.events.role.RoleCreateEvent;
+import net.dv8tion.jda.api.events.role.RoleDeleteEvent;
+import net.dv8tion.jda.api.events.role.update.RoleUpdateNameEvent;
+import net.dv8tion.jda.api.events.role.update.RoleUpdateColorEvent;
+import net.dv8tion.jda.api.events.role.update.RoleUpdatePermissionsEvent;
+import net.dv8tion.jda.api.events.guild.update.GuildUpdateNameEvent;
+import net.dv8tion.jda.api.events.guild.update.GuildUpdateDescriptionEvent;
+import net.dv8tion.jda.api.events.guild.update.GuildUpdateIconEvent;
+import net.dv8tion.jda.api.events.guild.update.GuildUpdateBannerEvent;
+import net.dv8tion.jda.api.events.guild.update.GuildUpdateVanityCodeEvent;
+import net.dv8tion.jda.api.events.guild.scheduledevent.ScheduledEventCreateEvent;
+import net.dv8tion.jda.api.events.guild.scheduledevent.ScheduledEventDeleteEvent;
+import net.dv8tion.jda.api.events.user.update.UserUpdateAvatarEvent;
+import net.dv8tion.jda.api.events.user.update.UserUpdateGlobalNameEvent;
 import net.dv8tion.jda.api.events.message.MessageBulkDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -44,7 +62,8 @@ public class AutoLogListener extends ListenerAdapter {
      * Cached metadata for a recently received message, used for delete/edit
      * logging.
      */
-    private record CachedMessage(String content, String authorMention, String authorId, String authorTag) {
+    private record CachedMessage(String content, String authorMention, String authorId, String authorTag,
+            List<String> attachmentUrls, List<String> embedDescriptions) {
     }
 
     /**
@@ -121,7 +140,13 @@ public class AutoLogListener extends ListenerAdapter {
                 msg.getContentRaw(),
                 author.getAsMention(),
                 author.getId(),
-                author.getName()));
+                author.getName(),
+                msg.getAttachments().stream()
+                        .map(a -> "[" + a.getFileName() + "](" + a.getUrl() + ")")
+                        .collect(java.util.stream.Collectors.toList()),
+                msg.getEmbeds().stream()
+                        .map(e -> e.getDescription() != null ? truncateText(e.getDescription(), 200) : "*[embed]*")
+                        .collect(java.util.stream.Collectors.toList())));
     }
 
     @Override
@@ -150,13 +175,15 @@ public class AutoLogListener extends ListenerAdapter {
                     newContent,
                     event.getAuthor().getAsMention(),
                     event.getAuthor().getId(),
-                    event.getAuthor().getName()));
+                    event.getAuthor().getName(),
+                    List.of(), List.of()));
             return;
         }
 
         // Update the cache with the new content
         messageCache.put(messageId, new CachedMessage(
-                newContent, cached.authorMention(), cached.authorId(), cached.authorTag()));
+                newContent, cached.authorMention(), cached.authorId(), cached.authorTag(),
+                cached.attachmentUrls(), cached.embedDescriptions()));
 
         String guildId = event.getGuild().getId();
         if (!isAutoLogEnabled(guildId, "message", "edits")) {
@@ -247,6 +274,12 @@ public class AutoLogListener extends ListenerAdapter {
             String content = cached.content();
             embed.addField("Content",
                     content.isEmpty() ? "*[No text content]*" : truncateText(content, 1024), false);
+            if (!cached.attachmentUrls().isEmpty()) {
+                embed.addField("Attachments", String.join("\n", cached.attachmentUrls()), false);
+            }
+            if (!cached.embedDescriptions().isEmpty()) {
+                embed.addField("Embeds", String.join("\n", cached.embedDescriptions()), false);
+            }
             embed.setFooter("Author ID: " + cached.authorId());
         } else {
             embed.setFooter("Content unavailable (not cached)");
@@ -612,6 +645,352 @@ public class AutoLogListener extends ListenerAdapter {
                 logChannel.sendMessageEmbeds(embed.build()),
                 "log voice channel event",
                 success -> trackLogMessage(success.getId()));
+    }
+
+    // ── Channel logging ──────────────────────────────────────────────────────────
+
+    @Override
+    public void onChannelCreate(ChannelCreateEvent event) {
+        if (!event.isFromGuild()) return;
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "channel", "create")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "channel");
+        if (logChannel == null) return;
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Color.GREEN)
+                .setTitle("📝 Channel Created")
+                .addField("Channel", event.getChannel().getAsMention(), true)
+                .addField("Type", event.getChannelType().name(), true)
+                .setFooter("Channel ID: " + event.getChannel().getId())
+                .setTimestamp(OffsetDateTime.now());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log channel create",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    @Override
+    public void onChannelDelete(ChannelDeleteEvent event) {
+        if (!event.isFromGuild()) return;
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "channel", "delete")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "channel");
+        if (logChannel == null) return;
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Color.RED)
+                .setTitle("🗑️ Channel Deleted")
+                .addField("Name", "#" + event.getChannel().getName(), true)
+                .addField("Type", event.getChannelType().name(), true)
+                .setFooter("Channel ID: " + event.getChannel().getId())
+                .setTimestamp(OffsetDateTime.now());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log channel delete",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    @Override
+    public void onChannelUpdateName(ChannelUpdateNameEvent event) {
+        if (!event.isFromGuild()) return;
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "channel", "update")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "channel");
+        if (logChannel == null) return;
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Color.ORANGE)
+                .setTitle("✏️ Channel Renamed")
+                .addField("Channel", event.getChannel().getAsMention(), true)
+                .addField("Before", "#" + event.getOldValue(), true)
+                .addField("After", "#" + event.getNewValue(), true)
+                .setFooter("Channel ID: " + event.getChannel().getId())
+                .setTimestamp(OffsetDateTime.now());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log channel rename",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    @Override
+    public void onChannelUpdateTopic(ChannelUpdateTopicEvent event) {
+        if (!event.isFromGuild()) return;
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "channel", "update")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "channel");
+        if (logChannel == null) return;
+        String oldTopic = event.getOldValue() != null ? event.getOldValue() : "*none*";
+        String newTopic = event.getNewValue() != null ? event.getNewValue() : "*none*";
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Color.ORANGE)
+                .setTitle("✏️ Channel Topic Changed")
+                .addField("Channel", event.getChannel().getAsMention(), true)
+                .addField("Before", truncateText(oldTopic, 512), false)
+                .addField("After", truncateText(newTopic, 512), false)
+                .setFooter("Channel ID: " + event.getChannel().getId())
+                .setTimestamp(OffsetDateTime.now());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log channel topic",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    // ── Role logging ─────────────────────────────────────────────────────────────
+
+    @Override
+    public void onRoleCreate(RoleCreateEvent event) {
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "role", "create")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "role");
+        if (logChannel == null) return;
+        net.dv8tion.jda.api.entities.Role role = event.getRole();
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(role.getColor() != null ? role.getColor() : Color.GREEN)
+                .setTitle("🏷️ Role Created")
+                .addField("Role", role.getAsMention(), true)
+                .addField("Name", role.getName(), true)
+                .setFooter("Role ID: " + role.getId())
+                .setTimestamp(OffsetDateTime.now());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log role create",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    @Override
+    public void onRoleDelete(RoleDeleteEvent event) {
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "role", "delete")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "role");
+        if (logChannel == null) return;
+        net.dv8tion.jda.api.entities.Role role = event.getRole();
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Color.RED)
+                .setTitle("🗑️ Role Deleted")
+                .addField("Name", role.getName(), true)
+                .setFooter("Role ID: " + role.getId())
+                .setTimestamp(OffsetDateTime.now());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log role delete",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    @Override
+    public void onRoleUpdateName(RoleUpdateNameEvent event) {
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "role", "update")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "role");
+        if (logChannel == null) return;
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Color.ORANGE)
+                .setTitle("✏️ Role Renamed")
+                .addField("Role", event.getRole().getAsMention(), true)
+                .addField("Before", event.getOldName(), true)
+                .addField("After", event.getNewName(), true)
+                .setFooter("Role ID: " + event.getRole().getId())
+                .setTimestamp(OffsetDateTime.now());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log role rename",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    @Override
+    public void onRoleUpdateColor(RoleUpdateColorEvent event) {
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "role", "update")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "role");
+        if (logChannel == null) return;
+        String oldHex = event.getOldColor() != null ? String.format("#%06X", event.getOldColor().getRGB() & 0xFFFFFF) : "*none*";
+        String newHex = event.getNewColor() != null ? String.format("#%06X", event.getNewColor().getRGB() & 0xFFFFFF) : "*none*";
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(event.getNewColor() != null ? event.getNewColor() : Color.ORANGE)
+                .setTitle("🎨 Role Color Changed")
+                .addField("Role", event.getRole().getAsMention(), true)
+                .addField("Before", oldHex, true)
+                .addField("After", newHex, true)
+                .setFooter("Role ID: " + event.getRole().getId())
+                .setTimestamp(OffsetDateTime.now());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log role color",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    @Override
+    public void onRoleUpdatePermissions(RoleUpdatePermissionsEvent event) {
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "role", "update")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "role");
+        if (logChannel == null) return;
+        long added = event.getNewPermissionsRaw() & ~event.getOldPermissionsRaw();
+        long removed = event.getOldPermissionsRaw() & ~event.getNewPermissionsRaw();
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Color.ORANGE)
+                .setTitle("🔐 Role Permissions Changed")
+                .addField("Role", event.getRole().getAsMention(), true);
+        if (added != 0)
+            embed.addField("Permissions Added", net.dv8tion.jda.api.Permission.getPermissions(added).toString(), false);
+        if (removed != 0)
+            embed.addField("Permissions Removed", net.dv8tion.jda.api.Permission.getPermissions(removed).toString(), false);
+        embed.setFooter("Role ID: " + event.getRole().getId()).setTimestamp(OffsetDateTime.now());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log role perms",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    // ── Server (guild) logging ────────────────────────────────────────────────────
+
+    @Override
+    public void onGuildUpdateName(GuildUpdateNameEvent event) {
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "server", "update")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "server");
+        if (logChannel == null) return;
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Color.ORANGE)
+                .setTitle("🏠 Server Renamed")
+                .addField("Before", event.getOldName(), true)
+                .addField("After", event.getNewName(), true)
+                .setFooter("Guild ID: " + guildId)
+                .setTimestamp(OffsetDateTime.now());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log guild rename",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    @Override
+    public void onGuildUpdateDescription(GuildUpdateDescriptionEvent event) {
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "server", "update")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "server");
+        if (logChannel == null) return;
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Color.ORANGE)
+                .setTitle("📝 Server Description Changed")
+                .addField("Before", event.getOldDescription() != null ? truncateText(event.getOldDescription(), 512) : "*none*", false)
+                .addField("After", event.getNewDescription() != null ? truncateText(event.getNewDescription(), 512) : "*none*", false)
+                .setFooter("Guild ID: " + guildId)
+                .setTimestamp(OffsetDateTime.now());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log guild desc",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    @Override
+    public void onGuildUpdateIcon(GuildUpdateIconEvent event) {
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "server", "update")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "server");
+        if (logChannel == null) return;
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Color.ORANGE)
+                .setTitle("🖼️ Server Icon Changed")
+                .addField("New Icon", event.getNewIconUrl() != null ? "[View](" + event.getNewIconUrl() + ")" : "*removed*", true)
+                .setFooter("Guild ID: " + guildId)
+                .setTimestamp(OffsetDateTime.now());
+        if (event.getNewIconUrl() != null)
+            embed.setThumbnail(event.getNewIconUrl());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log guild icon",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    @Override
+    public void onGuildUpdateBanner(GuildUpdateBannerEvent event) {
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "server", "update")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "server");
+        if (logChannel == null) return;
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Color.ORANGE)
+                .setTitle("🖼️ Server Banner Changed")
+                .addField("New Banner", event.getNewBannerUrl() != null ? "[View](" + event.getNewBannerUrl() + ")" : "*removed*", true)
+                .setFooter("Guild ID: " + guildId)
+                .setTimestamp(OffsetDateTime.now());
+        if (event.getNewBannerUrl() != null)
+            embed.setImage(event.getNewBannerUrl());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log guild banner",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    @Override
+    public void onGuildUpdateVanityCode(GuildUpdateVanityCodeEvent event) {
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "server", "update")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "server");
+        if (logChannel == null) return;
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Color.ORANGE)
+                .setTitle("🔗 Server Vanity URL Changed")
+                .addField("Before", event.getOldVanityCode() != null ? "discord.gg/" + event.getOldVanityCode() : "*none*", true)
+                .addField("After", event.getNewVanityCode() != null ? "discord.gg/" + event.getNewVanityCode() : "*removed*", true)
+                .setFooter("Guild ID: " + guildId)
+                .setTimestamp(OffsetDateTime.now());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log guild vanity",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    // ── Scheduled event logging ───────────────────────────────────────────────────
+
+    @Override
+    public void onScheduledEventCreate(ScheduledEventCreateEvent event) {
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "event", "create")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "event");
+        if (logChannel == null) return;
+        net.dv8tion.jda.api.entities.ScheduledEvent se = event.getScheduledEvent();
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Color.GREEN)
+                .setTitle("📅 Scheduled Event Created")
+                .addField("Name", se.getName(), true)
+                .addField("Start", String.format("<t:%d:F>", se.getStartTime().toEpochSecond()), true)
+                .setFooter("Event ID: " + se.getId())
+                .setTimestamp(OffsetDateTime.now());
+        if (se.getDescription() != null && !se.getDescription().isBlank())
+            embed.addField("Description", truncateText(se.getDescription(), 512), false);
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log scheduled event create",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    @Override
+    public void onScheduledEventDelete(ScheduledEventDeleteEvent event) {
+        String guildId = event.getGuild().getId();
+        if (!isAutoLogEnabled(guildId, "event", "delete")) return;
+        TextChannel logChannel = getLogChannel(event.getGuild(), "event");
+        if (logChannel == null) return;
+        net.dv8tion.jda.api.entities.ScheduledEvent se = event.getScheduledEvent();
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(Color.RED)
+                .setTitle("🗑️ Scheduled Event Deleted")
+                .addField("Name", se.getName(), true)
+                .setFooter("Event ID: " + se.getId())
+                .setTimestamp(OffsetDateTime.now());
+        SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log scheduled event delete",
+                success -> trackLogMessage(success.getId()));
+    }
+
+    // ── User logging (pfp + display name) ────────────────────────────────────────
+
+    @Override
+    public void onUserUpdateAvatar(UserUpdateAvatarEvent event) {
+        // For each mutual guild, check if logging is enabled
+        event.getUser().getMutualGuilds().forEach(guild -> {
+            if (!isAutoLogEnabled(guild.getId(), "member", "updates")) return;
+            TextChannel logChannel = getLogChannel(guild, "member");
+            if (logChannel == null) return;
+            EmbedBuilder embed = new EmbedBuilder()
+                    .setColor(Color.CYAN)
+                    .setTitle("🖼️ User Avatar Changed")
+                    .addField("User", event.getUser().getAsMention() + " (`" + event.getUser().getName() + "`)", true)
+                    .addField("New Avatar", event.getNewAvatarUrl() != null ? "[View](" + event.getNewAvatarUrl() + ")" : "*removed*", true)
+                    .setFooter("User ID: " + event.getUser().getId())
+                    .setTimestamp(OffsetDateTime.now());
+            if (event.getOldAvatarUrl() != null)
+                embed.setThumbnail(event.getOldAvatarUrl());
+            if (event.getNewAvatarUrl() != null)
+                embed.setImage(event.getNewAvatarUrl());
+            SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log avatar change",
+                    success -> trackLogMessage(success.getId()));
+        });
+    }
+
+    @Override
+    public void onUserUpdateGlobalName(UserUpdateGlobalNameEvent event) {
+        event.getUser().getMutualGuilds().forEach(guild -> {
+            if (!isAutoLogEnabled(guild.getId(), "member", "updates")) return;
+            TextChannel logChannel = getLogChannel(guild, "member");
+            if (logChannel == null) return;
+            EmbedBuilder embed = new EmbedBuilder()
+                    .setColor(Color.CYAN)
+                    .setTitle("✏️ User Display Name Changed")
+                    .addField("User", event.getUser().getAsMention() + " (`" + event.getUser().getName() + "`)", true)
+                    .addField("Before", event.getOldValue() != null ? event.getOldValue() : "*none*", true)
+                    .addField("After", event.getNewValue() != null ? event.getNewValue() : "*removed*", true)
+                    .setFooter("User ID: " + event.getUser().getId())
+                    .setTimestamp(OffsetDateTime.now());
+            SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log displayname change",
+                    success -> trackLogMessage(success.getId()));
+        });
     }
 
     /**

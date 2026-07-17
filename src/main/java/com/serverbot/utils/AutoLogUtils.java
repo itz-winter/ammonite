@@ -31,6 +31,11 @@ public class AutoLogUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(AutoLogUtils.class);
 
+    /** Returns the reason string or a fallback if null/blank. */
+    private static String safeReason(String reason) {
+        return (reason != null && !reason.isBlank()) ? reason : "*No reason provided*";
+    }
+
     /**
      * Log a ban action to the AutoLog channel
      */
@@ -50,7 +55,7 @@ public class AutoLogUtils {
                 .addField("User", targetUser.getAsMention(), true)
                 .addField("Username", targetUser.getName(), true)
                 .addField("Moderator", moderator.getAsMention(), true)
-                .addField("Reason", reason, false)
+                .addField("Reason", safeReason(reason), false)
                 .setFooter("User ID: " + targetUser.getId() + " | Moderator ID: " + moderator.getId())
                 .setTimestamp(OffsetDateTime.now());
 
@@ -87,7 +92,7 @@ public class AutoLogUtils {
                 .addField("User", targetUser.getAsMention(), true)
                 .addField("Username", targetUser.getName(), true)
                 .addField("Moderator", moderator.getAsMention(), true)
-                .addField("Reason", reason, false)
+                .addField("Reason", safeReason(reason), false)
                 .setFooter("User ID: " + targetUser.getId() + " | Moderator ID: " + moderator.getId())
                 .setTimestamp(OffsetDateTime.now());
 
@@ -119,7 +124,7 @@ public class AutoLogUtils {
                 .addField("Username", targetUser.getName(), true)
                 .addField("Moderator", moderator.getAsMention(), true)
                 .addField("Duration", formatDuration(duration), true)
-                .addField("Reason", reason, false)
+                .addField("Reason", safeReason(reason), false)
                 .setFooter("User ID: " + targetUser.getId() + " | Moderator ID: " + moderator.getId())
                 .setTimestamp(OffsetDateTime.now());
 
@@ -151,7 +156,7 @@ public class AutoLogUtils {
                 .addField("Username", targetUser.getName(), true)
                 .addField("Moderator", moderator.getAsMention(), true)
                 .addField("Duration", formatDuration(duration), true)
-                .addField("Reason", reason, false)
+                .addField("Reason", safeReason(reason), false)
                 .setFooter("User ID: " + targetUser.getId() + " | Moderator ID: " + moderator.getId())
                 .setTimestamp(OffsetDateTime.now());
 
@@ -182,7 +187,7 @@ public class AutoLogUtils {
                 .addField("User", targetUser.getAsMention(), true)
                 .addField("Username", targetUser.getName(), true)
                 .addField("Moderator", moderator.getAsMention(), true)
-                .addField("Reason", reason, false)
+                .addField("Reason", safeReason(reason), false)
                 .setFooter("User ID: " + targetUser.getId() + " | Moderator ID: " + moderator.getId())
                 .setTimestamp(OffsetDateTime.now());
 
@@ -192,6 +197,34 @@ public class AutoLogUtils {
                     logger.debug("Logged warning for user {} to AutoLog channel", targetUser.getId());
                 },
                 error -> logger.warn("Failed to log warning to AutoLog channel: {}", error.getMessage()));
+    }
+
+    /**
+     * Log a softban action (ban + immediate unban to clear messages) to the AutoLog channel
+     */
+    public static void logSoftban(Guild guild, User targetUser, User moderator, String reason) {
+        if (!isAutoLogEnabled(guild.getId(), "moderation", "bans")) {
+            return;
+        }
+        TextChannel logChannel = getLogChannel(guild, "moderation", "bans");
+        if (logChannel == null) return;
+        EmbedBuilder embed = new EmbedBuilder()
+                .setColor(new Color(0xFF8C00)) // dark orange to distinguish from full ban
+                .setTitle(EMOJI_BAN + " User Softbanned")
+                .setThumbnail(targetUser.getAvatarUrl())
+                .addField("User", targetUser.getAsMention(), true)
+                .addField("Username", targetUser.getName(), true)
+                .addField("Moderator", moderator.getAsMention(), true)
+                .addField("Reason", reason != null && !reason.isBlank() ? reason : "*No reason provided*", false)
+                .addField("Note", "Messages from the past 7 days were deleted. User was immediately unbanned.", false)
+                .setFooter("User ID: " + targetUser.getId() + " | Moderator ID: " + moderator.getId())
+                .setTimestamp(OffsetDateTime.now());
+        logChannel.sendMessageEmbeds(embed.build()).queue(
+                success -> {
+                    AutoLogListener.trackLogMessage(success.getId());
+                    logger.debug("Logged softban for user {} to AutoLog channel", targetUser.getId());
+                },
+                error -> logger.warn("Failed to log softban to AutoLog channel: {}", error.getMessage()));
     }
 
     /**
@@ -213,7 +246,7 @@ public class AutoLogUtils {
                 .addField("User", targetUser.getAsMention(), true)
                 .addField("Username", targetUser.getName(), true)
                 .addField("Moderator", moderator.getAsMention(), true)
-                .addField("Reason", reason, false)
+                .addField("Reason", safeReason(reason), false)
                 .setFooter("User ID: " + targetUser.getId() + " | Moderator ID: " + moderator.getId())
                 .setTimestamp(OffsetDateTime.now());
 
@@ -244,7 +277,7 @@ public class AutoLogUtils {
                 .addField("User", targetUser.getAsMention(), true)
                 .addField("Username", targetUser.getName(), true)
                 .addField("Moderator", moderator.getAsMention(), true)
-                .addField("Reason", reason, false)
+                .addField("Reason", safeReason(reason), false)
                 .setFooter("User ID: " + targetUser.getId() + " | Moderator ID: " + moderator.getId())
                 .setTimestamp(OffsetDateTime.now());
 
@@ -276,8 +309,8 @@ public class AutoLogUtils {
                 .addField("User", targetUser.getAsMention(), true)
                 .addField("Username", targetUser.getName(), true)
                 .addField("Moderator", moderator.getAsMention(), true)
-                .addField("Reason for Removal", reason, false)
-                .addField("Original Warning", originalWarningReason, false)
+                .addField("Reason for Removal", safeReason(reason), false)
+                .addField("Original Warning", safeReason(originalWarningReason), false)
                 .setFooter("User ID: " + targetUser.getId() + " | Moderator ID: " + moderator.getId())
                 .setTimestamp(OffsetDateTime.now());
 
