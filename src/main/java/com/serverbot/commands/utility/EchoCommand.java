@@ -4,6 +4,7 @@ import com.serverbot.commands.CommandCategory;
 import com.serverbot.commands.SlashCommand;
 import com.serverbot.utils.EmbedUtils;
 import com.serverbot.utils.PermissionManager;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
@@ -35,17 +36,18 @@ public class EchoCommand implements SlashCommand {
         // "backdoor" to allow announcements without giving full admin permissions. owner does not need to be in the server to use this command
 
         Member member = event.getMember();
-        if (!PermissionUtils.isBotOwner(event.getUser())) {
+        boolean isBotOwner = PermissionUtils.isBotOwner(event.getUser());
+        if (!isBotOwner) {
             if (!PermissionManager.hasPermission(member, "utility.echo")) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Insufficient Permissions", "You need moderation permissions to use this command."))
                         .setEphemeral(true).queue();
                 return;
             }
-            return;
         }
 
         String message = event.getOption("message").getAsString();
+        boolean asEmbed = event.getOption("embed") != null && event.getOption("embed").getAsBoolean();
 
         // Check message length (Discord's limit is 2000 characters)
         if (message.length() > 2000) {
@@ -70,7 +72,28 @@ public class EchoCommand implements SlashCommand {
         }
 
         // Send the echo message
-        targetChannel.sendMessage(message).queue(
+        if (asEmbed) {
+            net.dv8tion.jda.api.entities.MessageEmbed embedMsg = new EmbedBuilder()
+                    .setDescription(message)
+                    .setColor(0x5865F2)
+                    .build();
+            targetChannel.sendMessageEmbeds(embedMsg).queue(
+                    success -> {
+                        if (targetChannel.equals(event.getChannel())) {
+                            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+                                    "Message Sent", "Your embed has been sent.")).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                        } else {
+                            event.replyEmbeds(EmbedUtils.createSuccessEmbed(
+                                    "Message Sent", "Your embed has been sent to " + targetChannel.getAsMention()))
+                                    .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                        }
+                    },
+                    error -> {
+                        event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                                "Send Failed", "Failed to send embed: " + error.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
+                    });
+        } else {
+            targetChannel.sendMessage(message).queue(
                 success -> {
                     if (targetChannel.equals(event.getChannel())) {
                         // If same channel, just acknowledge
@@ -87,6 +110,7 @@ public class EchoCommand implements SlashCommand {
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
                             "Send Failed", "Failed to send message: " + error.getMessage())).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 });
+        }
     }
 
     public static CommandData getCommandData() {
@@ -94,7 +118,8 @@ public class EchoCommand implements SlashCommand {
                 .addOption(OptionType.STRING, "message", "Message to send", true)
                 .addOptions(new OptionData(OptionType.CHANNEL, "channel",
                         "Channel to send message to (defaults to current)", false)
-                        .setChannelTypes(ChannelType.TEXT, ChannelType.NEWS));
+                        .setChannelTypes(ChannelType.TEXT, ChannelType.NEWS))
+                .addOption(OptionType.BOOLEAN, "embed", "Send as an embed instead of plain text", false);
     }
 
     @Override
