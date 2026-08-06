@@ -52,9 +52,9 @@ public class CurrencyCommand implements SlashCommand {
         switch (subcommand) {
             case "name" -> {
                 String name = event.getOption("name").getAsString();
-                if (name.length() > 50) {
+                if (name.length() > 100) {
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                            "Too Long", "Currency name must be 50 characters or less."))
+                            "Too Long", "Currency name must be 100 characters or less."))
                             .setEphemeral(true).queue();
                     return;
                 }
@@ -66,9 +66,9 @@ public class CurrencyCommand implements SlashCommand {
             }
             case "icon" -> {
                 String icon = event.getOption("icon").getAsString();
-                if (icon.length() > 10) {
+                if (icon.length() > 50) {
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
-                            "Too Long", "Currency icon must be 10 characters or less."))
+                            "Too Long", "Currency icon must be 50 characters or less."))
                             .setEphemeral(true).queue();
                     return;
                 }
