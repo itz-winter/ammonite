@@ -41,8 +41,6 @@ public class PreferenceCommand implements SlashCommand {
         }
     }
 
-    // ── Subcommand handlers ────────────────────────────────────────────────────
-
     /**
      * `/preference ephemeral <true|false>` — Toggle whether command responses
      * are ephemeral (visible only to you) or public.
@@ -92,8 +90,6 @@ public class PreferenceCommand implements SlashCommand {
         event.replyEmbeds(embed.build()).setEphemeral(true).queue();
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────────
-
     private static EmbedBuilder buildEphemeralStatusEmbed(boolean enabled) {
         return EmbedUtils.createEmbedBuilder(EmbedUtils.INFO_COLOR)
                 .setTitle("🔒 Ephemeral Preference")
@@ -106,8 +102,6 @@ public class PreferenceCommand implements SlashCommand {
                                 + "`/preference ephemeral enabled:false` — make responses public",
                         false);
     }
-
-    // ── Command metadata ───────────────────────────────────────────────────────
 
     public static CommandData getCommandData() {
         return Commands.slash("preference", "Manage your personal bot preferences")

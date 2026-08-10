@@ -121,8 +121,6 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         }
     }
 
-    // ── Shared helper ────────────────────────────────────────────────────────
-
     private static List<String> getStringList(Map<String, Object> settings, String key) {
         List<String> list = new ArrayList<>();
         Object obj = settings.get(key);
@@ -133,8 +131,6 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         }
         return list;
     }
-
-    // ── /suspiciousnotify add ─────────────────────────────────────────────────
 
     private void handleAdd(SlashCommandInteractionEvent event) {
         Guild guild = event.getGuild();
@@ -190,8 +186,6 @@ public class SuspiciousNotifyCommand implements SlashCommand {
         event.reply(response.toString().trim()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
 
-    // ── /suspiciousnotify remove ──────────────────────────────────────────────
-
     private void handleRemove(SlashCommandInteractionEvent event) {
         Guild guild = event.getGuild();
         OptionMapping userOpt = event.getOption("user");
@@ -243,8 +237,6 @@ public class SuspiciousNotifyCommand implements SlashCommand {
 
         event.reply(response.toString().trim()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
-
-    // ── /suspiciousnotify deny ────────────────────────────────────────────────
 
     private void handleDeny(SlashCommandInteractionEvent event) {
         Guild guild = event.getGuild();
@@ -298,8 +290,6 @@ public class SuspiciousNotifyCommand implements SlashCommand {
 
         event.reply(response.toString().trim()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
-
-    // ── /suspiciousnotify undeny ──────────────────────────────────────────────
 
     private void handleUndeny(SlashCommandInteractionEvent event) {
         Guild guild = event.getGuild();

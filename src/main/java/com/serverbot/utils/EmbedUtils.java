@@ -167,8 +167,6 @@ public class EmbedUtils {
                 .setTimestamp(Instant.now());
     }
 
-    // ── Shareable ephemeral helpers ───────────────────────────────────────────
-
     /** The share button for an ephemeral message owned by userId. */
     public static Button shareButton(String userId) {
         return Button.secondary("share_req:" + userId, "\uD83D\uDCE4 Share");

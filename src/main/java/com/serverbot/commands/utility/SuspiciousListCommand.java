@@ -168,8 +168,6 @@ public class SuspiciousListCommand implements SlashCommand {
         }
     }
 
-    // ── Record + static page builder (called from button listener too) ─────────
-
     public record PagedViewResult(MessageEmbed embed, ActionRow navRow) {}
 
     public static PagedViewResult buildViewPage(net.dv8tion.jda.api.JDA jda,

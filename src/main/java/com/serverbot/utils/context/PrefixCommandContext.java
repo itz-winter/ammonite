@@ -54,8 +54,6 @@ public class PrefixCommandContext extends CommandContext {
         return args;
     }
 
-    // ── Identity ──────────────────────────────────────────────────────────────
-
     @Override
     public User getUser() {
         return event.getAuthor();
@@ -90,8 +88,6 @@ public class PrefixCommandContext extends CommandContext {
     public boolean isSlashContext() {
         return false;
     }
-
-    // ── Option access ─────────────────────────────────────────────────────────
 
     @Override
     public String getStringOption(String name) {
@@ -207,8 +203,6 @@ public class PrefixCommandContext extends CommandContext {
         return args.containsKey(name) && args.get(name) != null;
     }
 
-    // ── Responding ────────────────────────────────────────────────────────────
-
     @Override
     public void reply(MessageEmbed embed) {
         event.getChannel().sendMessageEmbeds(embed).queue();
@@ -254,8 +248,6 @@ public class PrefixCommandContext extends CommandContext {
         // Prefix commands have no ephemeral concept — always reply publicly
         reply(embed);
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     /**
      * Extract a snowflake ID from a string using the given pattern.

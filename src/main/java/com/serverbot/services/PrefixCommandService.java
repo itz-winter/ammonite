@@ -341,7 +341,6 @@ public class PrefixCommandService {
         // Parse arguments for this command
         Map<String, String> options = parseArguments(commandName, args);
 
-        // ── Unified CommandContext routing ─────────────────────────────────────
         // If the command has been migrated to the CommandContext pattern, use it.
         if (slashCommand != null && slashCommand.supportsCommandContext()) {
             try {
@@ -7423,8 +7422,6 @@ public class PrefixCommandService {
         } catch (Exception e) { return 0; }
     }
 
-    // ── Change 3: New prefix command handlers ─────────────────────────────────
-
     /**
      * !check @user / !check <id> / !check <discord_url>
      * Routes to CheckCommand if it supports CommandContext, else provides a basic response.
@@ -7561,8 +7558,6 @@ public class PrefixCommandService {
                     "Error Reports", "Use `/reports error` (slash command) to view error reports.")).queue();
         }
     }
-
-    // ── Change 3 batch 2: new handler methods ────────────────────────────────
 
     /** !support — show the support server link. */
     private void handleSupportCommand(MessageReceivedEvent event) {

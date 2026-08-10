@@ -34,8 +34,6 @@ public class SlashCommandContext extends CommandContext {
         return event;
     }
 
-    // ── Identity ──────────────────────────────────────────────────────────────
-
     @Override
     public User getUser() {
         return event.getUser();
@@ -70,8 +68,6 @@ public class SlashCommandContext extends CommandContext {
     public boolean isSlashContext() {
         return true;
     }
-
-    // ── Option access ─────────────────────────────────────────────────────────
 
     @Override
     public String getStringOption(String name) {
@@ -134,8 +130,6 @@ public class SlashCommandContext extends CommandContext {
     public boolean hasOption(String name) {
         return event.getOption(name) != null;
     }
-
-    // ── Responding ────────────────────────────────────────────────────────────
 
     @Override
     public void reply(MessageEmbed embed) {

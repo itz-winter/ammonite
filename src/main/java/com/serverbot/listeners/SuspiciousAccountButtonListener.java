@@ -948,8 +948,6 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
                 .queue();
     }
 
-    // ── Masterlist view pagination ──────────────────────────────────────────────
-
     private void handleMasterlistPage(ButtonInteractionEvent event, String componentId) {
         // Format: slv:page:<pageNumber>
         String[] parts = componentId.split(":");
@@ -987,8 +985,6 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
         }
     }
 
-    // ── Masterlist refresh ──────────────────────────────────────────────────────
-
     private void handleMasterlistRefresh(ButtonInteractionEvent event, String componentId) {
         // Format: slv:refresh:<page>
         String[] parts = componentId.split(":");
@@ -1023,8 +1019,6 @@ public class SuspiciousAccountButtonListener extends ListenerAdapter {
                     .queue();
         }
     }
-
-    // ── Review mode actions ─────────────────────────────────────────────────────
 
     private void handleReviewAction(ButtonInteractionEvent event, String componentId) {
         BotConfig config = ServerBot.getConfigManager().getConfig();

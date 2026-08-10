@@ -39,7 +39,24 @@ public class CommandListener extends ListenerAdapter {
             return;
         }
 
-        // Check if command is guild only
+        if (event.isFromGuild() && com.serverbot.ServerBot.getStorageManager().isGuildBlacklisted(event.getGuild().getId())) {
+            SafeRestAction.queue(
+                    event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                            "Unavailable",
+                            "This bot is not available in this server.")).setEphemeral(true),
+                    "reply with guild blacklist error");
+            return;
+        }
+
+        if (com.serverbot.ServerBot.getStorageManager().isUserBlacklisted(event.getUser().getId())) {
+            SafeRestAction.queue(
+                    event.replyEmbeds(EmbedUtils.createErrorEmbed(
+                            "Access Denied",
+                            "You are not permitted to use this bot.")).setEphemeral(true),
+                    "reply with user blacklist error");
+            return;
+        }
+
         if (command.isGuildOnly() && !event.isFromGuild()) {
             SafeRestAction.queue(
                     event.replyEmbeds(EmbedUtils.createErrorEmbed(
@@ -49,7 +66,6 @@ public class CommandListener extends ListenerAdapter {
             return;
         }
 
-        // Check if economy commands are allowed in this guild
         if (event.isFromGuild() && isEconomyCommand(command)) {
             Map<String, Object> settings = com.serverbot.ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
             boolean economyEnabled = Boolean.TRUE.equals(settings.get("enableEconomy"));
@@ -63,7 +79,6 @@ public class CommandListener extends ListenerAdapter {
             }
         }
 
-        // Check if leveling commands are allowed in this guild
         if (event.isFromGuild() && isLevelingCommand(command)) {
             Map<String, Object> settings = com.serverbot.ServerBot.getStorageManager().getGuildSettings(event.getGuild().getId());
             boolean levelingEnabled = Boolean.TRUE.equals(settings.get("enableLeveling"));
@@ -82,19 +97,11 @@ public class CommandListener extends ListenerAdapter {
                     commandName,
                     event.getUser().getName(),
                     event.isFromGuild() ? event.getGuild().getName() : "DM");
-
-            // Defer reply for commands that might take a long time to respond.
-            // This prevents "The application did not respond" errors.
-            // Individual commands can still use event.reply() or event.deferReply()
-            // as they see fit; this is a safety net that checks after a short delay.
-
             command.execute(event);
 
         } catch (Exception e) {
             logger.error("Error executing command: {}", commandName, e);
 
-            // Build a helpful error message based on the exception type.
-            // Only unexpected exceptions (bugs) get the "Report Bug" button.
             String errorTitle = "Command Error";
             String errorDescription;
             boolean reportable = false;
@@ -114,7 +121,7 @@ public class CommandListener extends ListenerAdapter {
                 errorDescription = "Expected a number but received something else.\n\n" +
                         "💡 **Tip:** Make sure you're providing numeric values where required.";
             } else {
-                // NullPointerException or any other unexpected exception — likely a bug
+                // Unexpected exception — reportable as a potential bug
                 reportable = true;
                 if (e instanceof NullPointerException) {
                     errorTitle = "Missing Data";
@@ -127,7 +134,6 @@ public class CommandListener extends ListenerAdapter {
                 }
             }
 
-            // Build the button row — reportable errors get an extra "Report Bug" button
             net.dv8tion.jda.api.components.actionrow.ActionRow buttons;
             if (reportable) {
                 String simpleName  = e.getClass().getSimpleName();
@@ -136,7 +142,6 @@ public class CommandListener extends ListenerAdapter {
                 String dedupKey    = commandName + ":" + simpleName;
                 String contextKey  = event.getUser().getId() + ":" + safeCmdName + ":" + safeErr;
 
-                // Collect report context so the button listener can retrieve it
                 Map<String, Object> reportCtx = new java.util.HashMap<>();
                 reportCtx.put("dedupKey",      dedupKey);
                 reportCtx.put("commandName",   commandName);
@@ -171,7 +176,6 @@ public class CommandListener extends ListenerAdapter {
                                 .setEphemeral(true).setComponents(buttons),
                         "reply with command error");
             } else {
-                // Already acknowledged (deferred) — use hook follow-up
                 SafeRestAction.queue(
                         event.getHook().sendMessageEmbeds(EmbedUtils.createErrorEmbed(errorTitle, errorDescription))
                                 .setEphemeral(true).setComponents(buttons),

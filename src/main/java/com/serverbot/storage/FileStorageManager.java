@@ -61,6 +61,11 @@ public class FileStorageManager {
     private final Map<String, Map<String, Object>> userPreferencesCache = new ConcurrentHashMap<>();
     private final File userPreferencesFile;
 
+    // Blacklist cache: id (guildId or userId) -> entry map
+    // Entry keys: "id", "type" ("guild"|"user"), "reason", "moderatorId", "timestamp", "duration" (-1 = permanent)
+    private final Map<String, Map<String, Object>> blacklistCache = new ConcurrentHashMap<>();
+    private final File blacklistFile;
+
     /** A single entry in a user-created playlist. */
     public static class PlaylistEntry {
         public String url;
@@ -100,6 +105,7 @@ public class FileStorageManager {
         this.userPlaylistsFile = new File(dataDir, "user_playlists.json");
         this.errorReportsFile = new File(dataDir, "error_reports.json");
         this.userPreferencesFile = new File(dataDir, "user_preferences.json");
+        this.blacklistFile = new File(dataDir, "blacklist.json");
         this.gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .registerTypeAdapter(java.time.Instant.class, new com.serverbot.utils.InstantTypeAdapter())
@@ -132,6 +138,7 @@ public class FileStorageManager {
         loadUserPlaylists();
         loadErrorReports();
         loadUserPreferences();
+        loadBlacklist();
         logger.info("All data loaded from files");
     }
 
@@ -1378,8 +1385,6 @@ public class FileStorageManager {
         logger.info("File storage manager closed");
     }
 
-    // ── Error Reports ─────────────────────────────────────────────────────────
-
     /**
      * Save (or increment) an error report.
      * dedupKey = "cmdName:exceptionSimpleName", stored in reportData under "dedupKey".
@@ -1588,6 +1593,150 @@ public class FileStorageManager {
             gson.toJson(userPreferencesCache, writer);
         } catch (IOException e) {
             logger.error("Failed to save user preferences", e);
+        }
+    }
+
+    // ==================== Blacklist ====================
+
+    /**
+     * Add a guild to the blacklist.
+     *
+     * @param guildId     the guild's snowflake ID
+     * @param reason      reason for blacklisting
+     * @param duration    duration in milliseconds, or -1 for permanent
+     * @param moderatorId the bot-owner user ID who issued the blacklist
+     */
+    public void addGuildBlacklist(String guildId, String reason, long duration, String moderatorId) {
+        Map<String, Object> entry = new HashMap<>();
+        entry.put("id", guildId);
+        entry.put("type", "guild");
+        entry.put("reason", reason != null ? reason : "No reason provided.");
+        entry.put("duration", duration);
+        entry.put("moderatorId", moderatorId);
+        entry.put("timestamp", System.currentTimeMillis());
+        blacklistCache.put(guildId, entry);
+        saveBlacklist();
+        logger.info("Blacklisted guild {} by {}", guildId, moderatorId);
+    }
+
+    /**
+     * Add a user to the blacklist.
+     *
+     * @param userId      the user's snowflake ID
+     * @param reason      reason for blacklisting
+     * @param duration    duration in milliseconds, or -1 for permanent
+     * @param moderatorId the bot-owner user ID who issued the blacklist
+     */
+    public void addUserBlacklist(String userId, String reason, long duration, String moderatorId) {
+        Map<String, Object> entry = new HashMap<>();
+        entry.put("id", userId);
+        entry.put("type", "user");
+        entry.put("reason", reason != null ? reason : "No reason provided.");
+        entry.put("duration", duration);
+        entry.put("moderatorId", moderatorId);
+        entry.put("timestamp", System.currentTimeMillis());
+        blacklistCache.put(userId, entry);
+        saveBlacklist();
+        logger.info("Blacklisted user {} by {}", userId, moderatorId);
+    }
+
+    /** @return {@code true} if the given guild ID is currently blacklisted. */
+    public boolean isGuildBlacklisted(String guildId) {
+        Map<String, Object> entry = blacklistCache.get(guildId);
+        if (entry == null) return false;
+        return isBlacklistEntryActive(entry);
+    }
+
+    /** @return {@code true} if the given user ID is currently blacklisted. */
+    public boolean isUserBlacklisted(String userId) {
+        Map<String, Object> entry = blacklistCache.get(userId);
+        if (entry == null) return false;
+        return isBlacklistEntryActive(entry);
+    }
+
+    /** Returns entry data for the given ID, or {@code null} if not blacklisted / expired. */
+    public Map<String, Object> getBlacklistEntry(String id) {
+        Map<String, Object> entry = blacklistCache.get(id);
+        if (entry == null || !isBlacklistEntryActive(entry)) return null;
+        return new HashMap<>(entry);
+    }
+
+    /**
+     * Remove a guild or user from the blacklist.
+     *
+     * @return {@code true} if the entry existed and was removed.
+     */
+    public boolean removeBlacklist(String id) {
+        if (blacklistCache.remove(id) != null) {
+            saveBlacklist();
+            logger.info("Removed blacklist entry for {}", id);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * @return an unmodifiable snapshot of all currently active blacklist entries.
+     *         Key = guild/user ID, value = entry map.
+     */
+    public Map<String, Map<String, Object>> getAllBlacklisted() {
+        Map<String, Map<String, Object>> result = new HashMap<>();
+        for (Map.Entry<String, Map<String, Object>> e : blacklistCache.entrySet()) {
+            if (isBlacklistEntryActive(e.getValue())) {
+                result.put(e.getKey(), new HashMap<>(e.getValue()));
+            }
+        }
+        return result;
+    }
+
+    /** Returns all active guild-type blacklist entries. */
+    public Map<String, Map<String, Object>> getAllBlacklistedGuilds() {
+        Map<String, Map<String, Object>> result = new HashMap<>();
+        for (Map.Entry<String, Map<String, Object>> e : blacklistCache.entrySet()) {
+            if ("guild".equals(e.getValue().get("type")) && isBlacklistEntryActive(e.getValue())) {
+                result.put(e.getKey(), new HashMap<>(e.getValue()));
+            }
+        }
+        return result;
+    }
+
+    /** Returns all active user-type blacklist entries. */
+    public Map<String, Map<String, Object>> getAllBlacklistedUsers() {
+        Map<String, Map<String, Object>> result = new HashMap<>();
+        for (Map.Entry<String, Map<String, Object>> e : blacklistCache.entrySet()) {
+            if ("user".equals(e.getValue().get("type")) && isBlacklistEntryActive(e.getValue())) {
+                result.put(e.getKey(), new HashMap<>(e.getValue()));
+            }
+        }
+        return result;
+    }
+
+    /** Returns {@code true} if the entry has not yet expired (duration == -1 means permanent). */
+    private boolean isBlacklistEntryActive(Map<String, Object> entry) {
+        long duration = ((Number) entry.getOrDefault("duration", -1L)).longValue();
+        if (duration < 0) return true; // permanent
+        long timestamp = ((Number) entry.getOrDefault("timestamp", 0L)).longValue();
+        return System.currentTimeMillis() < timestamp + duration;
+    }
+
+    private void loadBlacklist() {
+        blacklistCache.clear();
+        if (!blacklistFile.exists()) return;
+        try (FileReader reader = new FileReader(blacklistFile)) {
+            Type type = new TypeToken<Map<String, Map<String, Object>>>() {}.getType();
+            Map<String, Map<String, Object>> data = gson.fromJson(reader, type);
+            if (data != null) blacklistCache.putAll(data);
+            logger.debug("Loaded {} blacklist entries", blacklistCache.size());
+        } catch (IOException e) {
+            logger.error("Failed to load blacklist", e);
+        }
+    }
+
+    private void saveBlacklist() {
+        try (FileWriter writer = new FileWriter(blacklistFile)) {
+            gson.toJson(blacklistCache, writer);
+        } catch (IOException e) {
+            logger.error("Failed to save blacklist", e);
         }
     }
 }

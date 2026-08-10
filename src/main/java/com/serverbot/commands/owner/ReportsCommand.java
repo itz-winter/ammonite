@@ -33,13 +33,10 @@ public class ReportsCommand implements SlashCommand {
 
     private static final int PAGE_SIZE = 10;
 
-    // ── Sort choice constants ────────────────────────────────────────────────
     private static final String SORT_MOST   = "most-reported";
     private static final String SORT_LEAST  = "least-reported";
     private static final String SORT_NEWEST = "newest";
     private static final String SORT_OLDEST = "oldest";
-
-    // ── SlashCommand boilerplate ─────────────────────────────────────────────
 
     @Override
     public String getName() { return "reports"; }
@@ -61,8 +58,6 @@ public class ReportsCommand implements SlashCommand {
 
     @Override
     public boolean supportsCommandContext() { return true; }
-
-    // ── CommandData ──────────────────────────────────────────────────────────
 
     public static CommandData getCommandData() {
         return Commands.slash("reports", "View and manage bot error reports (bot owner only)")
@@ -95,8 +90,6 @@ public class ReportsCommand implements SlashCommand {
                                         new OptionData(OptionType.STRING, "key",
                                                 "The dedupKey of the report to delete (cmdName:errorType)", true)));
     }
-
-    // ── Slash execution ──────────────────────────────────────────────────────
 
     @Override
     public void execute(SlashCommandInteractionEvent event) {
@@ -132,8 +125,6 @@ public class ReportsCommand implements SlashCommand {
         }
     }
 
-    // ── CommandContext (prefix) execution ────────────────────────────────────
-
     @Override
     public void executeWithContext(CommandContext ctx) {
         if (!PermissionUtils.isBotOwner(ctx.getUser())) {
@@ -142,10 +133,9 @@ public class ReportsCommand implements SlashCommand {
             return;
         }
 
-        // Prefix: !reports error [query] [sort] [page]
-        // Subcommand name comes from the "subcommand" option set by PrefixCommandService
+        // "subcommand" option is set by PrefixCommandService
         String sub = ctx.getStringOption("subcommand");
-        if (sub == null) sub = "error"; // default
+        if (sub == null) sub = "error";
 
         if ("error".equalsIgnoreCase(sub)) {
             String query = ctx.getStringOption("query");
@@ -156,7 +146,6 @@ public class ReportsCommand implements SlashCommand {
                 try { page = Math.max(1, Integer.parseInt(pageStr)); } catch (NumberFormatException ignored) {}
             }
             if (sort == null) sort = SORT_MOST;
-            // Normalise sort string from prefix (fuzzy)
             sort = normaliseSort(sort);
             ctx.reply(buildErrorListEmbed(query, sort, page));
         } else {
@@ -166,11 +155,6 @@ public class ReportsCommand implements SlashCommand {
         }
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
-    /**
-     * Build the paginated error list embed.
-     */
     private MessageEmbed buildErrorListEmbed(String query, String sort, int page) {
         int total = ServerBot.getStorageManager().getErrorReportTotalCount(query);
         int totalPages = Math.max(1, (int) Math.ceil((double) total / PAGE_SIZE));
@@ -239,8 +223,7 @@ public class ReportsCommand implements SlashCommand {
     }
 
     /**
-     * Normalise a prefix-typed sort string to a canonical value.
-     * Accepts case-insensitive partial matches.
+     * Normalises a prefix-typed sort string via case-insensitive partial match.
      */
     private static String normaliseSort(String raw) {
         if (raw == null) return SORT_MOST;
@@ -248,7 +231,7 @@ public class ReportsCommand implements SlashCommand {
         if (s.startsWith("least"))  return SORT_LEAST;
         if (s.startsWith("new"))    return SORT_NEWEST;
         if (s.startsWith("old"))    return SORT_OLDEST;
-        return SORT_MOST; // default
+        return SORT_MOST;
     }
 
     private static String truncate(String s, int max) {

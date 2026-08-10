@@ -647,8 +647,6 @@ public class AutoLogListener extends ListenerAdapter {
                 success -> trackLogMessage(success.getId()));
     }
 
-    // ── Channel logging ──────────────────────────────────────────────────────────
-
     @Override
     public void onChannelCreate(ChannelCreateEvent event) {
         if (!event.isFromGuild()) return;
@@ -724,8 +722,6 @@ public class AutoLogListener extends ListenerAdapter {
         SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log channel topic",
                 success -> trackLogMessage(success.getId()));
     }
-
-    // ── Role logging ─────────────────────────────────────────────────────────────
 
     @Override
     public void onRoleCreate(RoleCreateEvent event) {
@@ -821,8 +817,6 @@ public class AutoLogListener extends ListenerAdapter {
                 success -> trackLogMessage(success.getId()));
     }
 
-    // ── Server (guild) logging ────────────────────────────────────────────────────
-
     @Override
     public void onGuildUpdateName(GuildUpdateNameEvent event) {
         String guildId = event.getGuild().getId();
@@ -910,8 +904,6 @@ public class AutoLogListener extends ListenerAdapter {
                 success -> trackLogMessage(success.getId()));
     }
 
-    // ── Scheduled event logging ───────────────────────────────────────────────────
-
     @Override
     public void onScheduledEventCreate(ScheduledEventCreateEvent event) {
         String guildId = event.getGuild().getId();
@@ -948,8 +940,6 @@ public class AutoLogListener extends ListenerAdapter {
         SafeRestAction.queue(logChannel.sendMessageEmbeds(embed.build()), "log scheduled event delete",
                 success -> trackLogMessage(success.getId()));
     }
-
-    // ── User logging (pfp + display name) ────────────────────────────────────────
 
     @Override
     public void onUserUpdateAvatar(UserUpdateAvatarEvent event) {

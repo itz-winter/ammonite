@@ -37,8 +37,6 @@ public abstract class CommandContext {
     /** Whether deferReply() has been called (only meaningful for slash context) */
     protected boolean deferred = false;
 
-    // ── Identity ──────────────────────────────────────────────────────────────
-
     /** The user who invoked the command. */
     public abstract User getUser();
 
@@ -59,8 +57,6 @@ public abstract class CommandContext {
 
     /** True for slash commands, false for prefix commands. */
     public abstract boolean isSlashContext();
-
-    // ── Option access ─────────────────────────────────────────────────────────
 
     /**
      * Get a string option by name.
@@ -121,8 +117,6 @@ public abstract class CommandContext {
      */
     public abstract boolean hasOption(String name);
 
-    // ── Responding ────────────────────────────────────────────────────────────
-
     /**
      * Reply publicly with an embed.
      * For slash: calls event.replyEmbeds() (or hook if deferred).
@@ -178,8 +172,6 @@ public abstract class CommandContext {
     public boolean isDeferred() {
         return deferred;
     }
-
-    // ── Convenience helpers ───────────────────────────────────────────────────
 
     /**
      * Get the guild ID, or null if not in a guild.

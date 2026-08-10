@@ -48,7 +48,6 @@ public class HelpCommand implements SlashCommand {
                 .setTitle("📘 Command: /" + command.getName())
                 .setDescription(command.getDescription());
 
-        // ── Core fields ──────────────────────────────────────────────────────
         embed.addField("Category", command.getCategory().toString(), true);
         embed.addField("Guild Only", command.isGuildOnly() ? "Yes" : "No", true);
 
@@ -61,25 +60,21 @@ public class HelpCommand implements SlashCommand {
             embed.addField("Owner Only", "✅ This command is restricted to the bot owner.", false);
         }
 
-        // ── Cooldown ─────────────────────────────────────────────────────────
         String cooldown = getCommandCooldown(command.getName());
         if (cooldown != null) {
             embed.addField("Cooldown", cooldown, true);
         }
 
-        // ── Prefix aliases ───────────────────────────────────────────────────
         String aliases = getPrefixAliases(command.getName());
         if (aliases != null) {
             embed.addField("Prefix Aliases", aliases, false);
         }
 
-        // ── Subcommands ──────────────────────────────────────────────────────
         String subcommands = getSubcommandList(command.getName());
         if (subcommands != null) {
             embed.addField("Subcommands", subcommands, false);
         }
 
-        // ── Usage ─────────────────────────────────────────────────────────────
         String usage = getCommandUsage(command.getName());
         if (usage != null) {
             embed.addField("Usage & Examples", usage, false);
@@ -131,8 +126,6 @@ public class HelpCommand implements SlashCommand {
 
         event.replyEmbeds(embed.build()).setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
     }
-
-    // ── Helpers ────────────────────────────────────────────────────────────────
 
     /** Returns the permission node required for a command, or null. */
     private static String getPermissionNode(String cmd) {
@@ -305,7 +298,6 @@ public class HelpCommand implements SlashCommand {
 
     private static String getCommandUsage(String commandName) {
         return switch (commandName.toLowerCase()) {
-            // ── Moderation ──────────────────────────────────────────────────────────
             case "ban" ->
                 "`/ban <user> <duration> [reason]`\n" +
                 "Duration format: `7d`, `2h`, `30m`, or `0` for permanent\n" +
@@ -356,7 +348,6 @@ public class HelpCommand implements SlashCommand {
                 "`/lockdown [channel]`\n" +
                 "Lock or unlock a channel (toggle). Defaults to current channel.\n" +
                 "Example: `/lockdown #general`";
-            // ── Economy ─────────────────────────────────────────────────────────────
             case "balance" ->
                 "`/balance [@user]`\n" +
                 "View your balance or another user's balance.\n" +
@@ -424,7 +415,6 @@ public class HelpCommand implements SlashCommand {
                 "`/currency name:<name> icon:<emoji>`\n" +
                 "Customise the server currency name and icon.\n" +
                 "Example: `/currency name:coins icon:🪙`";
-            // ── Leveling ────────────────────────────────────────────────────────────
             case "rank" ->
                 "`/rank [@user]`\n" +
                 "View your rank card or another user's rank card.\n" +
@@ -441,7 +431,6 @@ public class HelpCommand implements SlashCommand {
                 "`/level <user> <set> <level>`\n" +
                 "Manually set a user's level. Requires leveling.admin.\n" +
                 "Example: `/level @user set 10`";
-            // ── Utility ─────────────────────────────────────────────────────────────
             case "help" ->
                 "`/help` — Show all commands by category\n" +
                 "`/help command:<name>` — Get detailed help for a specific command\n" +
@@ -493,7 +482,6 @@ public class HelpCommand implements SlashCommand {
                 "`/suspiciouslist validate <userId>` — Mark as reviewed + legitimate\n" +
                 "`/suspiciouslist ban <userId> [reason]` — Ban immediately\n" +
                 "`/suspiciouslist review` — Interactive review workflow (owner only)";
-            // ── Configuration ───────────────────────────────────────────────────────
             case "settings" ->
                 "`/settings view [setting]` — View current settings\n" +
                 "`/settings set <setting> <value>` — Change a setting\n" +
@@ -530,7 +518,6 @@ public class HelpCommand implements SlashCommand {
             case "autoconfig" ->
                 "`/autoconfig`\n" +
                 "Launch the interactive setup wizard to configure the bot for your server.";
-            // ── Music ───────────────────────────────────────────────────────────────
             case "play" ->
                 "`/play <query or url>`\n" +
                 "Search YouTube/Spotify or play a direct URL.\n" +
@@ -567,7 +554,6 @@ public class HelpCommand implements SlashCommand {
                 "`/playlist play <name>` — Queue all tracks in a playlist\n" +
                 "`/playlist add <name> <url>` — Add a track to a playlist\n" +
                 "Example: `/playlist create lofi` or `/playlist play chill vibes`";
-            // ── Owner ───────────────────────────────────────────────────────────────
             case "status" ->
                 "`/status action:<set|clear|online> [type:<playing|watching|listening>] [text:<status>]`\n" +
                 "Example: `/status action:set type:playing text:with fire`";

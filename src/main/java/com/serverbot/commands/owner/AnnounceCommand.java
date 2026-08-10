@@ -38,7 +38,6 @@ public class AnnounceCommand implements SlashCommand {
         event.deferReply(true).queue();
 
         try {
-            // Build the announcement embed
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(title)
                     .setDescription(message)
@@ -49,7 +48,7 @@ public class AnnounceCommand implements SlashCommand {
                 try {
                     embed.setColor(Color.decode(colorStr));
                 } catch (Exception e) {
-                    embed.setColor(new Color(100, 149, 237)); // cornflower blue
+                    embed.setColor(new Color(100, 149, 237));
                 }
             } else {
                 embed.setColor(new Color(100, 149, 237));
@@ -64,14 +63,11 @@ public class AnnounceCommand implements SlashCommand {
                 TextChannel channel = guild.getTextChannelById(channelId);
                 if (channel == null) continue;
 
-                // Check permissions
-                if (!guild.getSelfMember().hasPermission(channel, 
+                if (!guild.getSelfMember().hasPermission(channel,
                         net.dv8tion.jda.api.Permission.MESSAGE_SEND,
                         net.dv8tion.jda.api.Permission.MESSAGE_EMBED_LINKS)) continue;
 
-                channel.sendMessageEmbeds(embed.build()).queue(
-                        success -> {}, 
-                        err -> {});
+                channel.sendMessageEmbeds(embed.build()).queue(success -> {}, err -> {});
                 sentCount++;
             }
 
@@ -91,7 +87,7 @@ public class AnnounceCommand implements SlashCommand {
     }
 
     /**
-     * Get the configured announcement channel for a guild.
+     * Returns the configured announcement channel ID for a guild, or null if unset.
      * Stored in guild settings under "announcementChannel".
      */
     private String getAnnouncementChannel(String guildId) {

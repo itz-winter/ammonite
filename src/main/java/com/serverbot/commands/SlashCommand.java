@@ -5,27 +5,16 @@ import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInterac
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 /**
- * Interface for all slash commands
+ * Interface for all slash commands.
  */
 public interface SlashCommand {
 
-    /**
-     * Execute the slash command
-     * 
-     * @param event The slash command interaction event
-     */
     void execute(SlashCommandInteractionEvent event);
 
     /**
-     * Execute the command via the unified {@link CommandContext} abstraction.
-     *
-     * <p>Override this method (along with {@link #supportsCommandContext()}) to enable
-     * the command to be invoked identically from both slash and prefix paths.</p>
-     *
-     * <p>Default implementation: throws {@link UnsupportedOperationException} — commands
-     * that do not override this will fall back to the manual prefix handler.</p>
-     *
-     * @param ctx the command context (slash or prefix)
+     * Execute via the unified {@link CommandContext} abstraction (slash or prefix).
+     * Override alongside {@link #supportsCommandContext()} to enable prefix routing.
+     * Default throws {@link UnsupportedOperationException}.
      */
     default void executeWithContext(CommandContext ctx) {
         throw new UnsupportedOperationException(
@@ -33,69 +22,40 @@ public interface SlashCommand {
     }
 
     /**
-     * Whether this command has been migrated to the unified {@link CommandContext} pattern.
-     *
-     * <p>If {@code true}, the prefix router will call {@link #executeWithContext(CommandContext)}
-     * instead of the manual handler in {@code PrefixCommandService}.</p>
-     *
-     * @return {@code true} if {@link #executeWithContext(CommandContext)} is implemented
+     * Return {@code true} if {@link #executeWithContext} is implemented.
+     * When true the prefix router calls executeWithContext instead of the manual handler.
      */
     default boolean supportsCommandContext() {
         return false;
     }
 
-    /**
-     * Get the command name
-     * 
-     * @return Command name
-     */
     String getName();
 
-    /**
-     * Get the command description
-     * 
-     * @return Command description
-     */
     String getDescription();
 
-    /**
-     * Get the command category
-     * 
-     * @return Command category
-     */
     CommandCategory getCategory();
 
     /**
-     * Check if the command requires special permissions
-     * 
-     * @return true if admin/moderator permissions are required
+     * Return {@code true} if this command requires admin/moderator permissions.
      */
     default boolean requiresPermissions() {
         return false;
     }
 
-    /**
-     * Check if the command can only be used in guilds
-     * 
-     * @return true if guild only
-     */
     default boolean isGuildOnly() {
         return true;
     }
 
     /**
-     * Check if the command is restricted to the bot owner only.
+     * Return {@code true} if only the bot owner can use this command.
      * Owner-only commands are hidden from the help menu for non-owners.
-     * 
-     * @return true if only the bot owner can use this command
      */
     default boolean isOwnerOnly() {
         return false;
     }
 
     /**
-     * Handle autocomplete interactions for this command.
-     * Override in commands that have options marked with setAutoComplete(true).
+     * Handle autocomplete interactions. Override for options with setAutoComplete(true).
      */
     default void handleAutoComplete(CommandAutoCompleteInteractionEvent event) {
         event.replyChoices().queue();
