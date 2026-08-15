@@ -138,6 +138,7 @@ public class CommandManager {
         registerCommand(new com.serverbot.commands.utility.DeleteDataCommand());
 
         registerCommand(new com.serverbot.commands.utility.PreferenceCommand());
+        registerCommand(new com.serverbot.commands.utility.BugReportCommand());
 
         registerCommand(new com.serverbot.commands.music.PlayCommand());
         registerCommand(new com.serverbot.commands.music.SkipCommand());
@@ -294,6 +295,7 @@ public class CommandManager {
         commandDataList.add(com.serverbot.commands.utility.PrivacyCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.DeleteDataCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.utility.PreferenceCommand.getCommandData());
+        commandDataList.add(com.serverbot.commands.utility.BugReportCommand.getCommandData());
 
         commandDataList.add(com.serverbot.commands.music.PlaylistCommand.getCommandData());
         commandDataList.add(com.serverbot.commands.music.PlayCommand.getCommandData());

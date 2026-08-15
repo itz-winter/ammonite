@@ -84,7 +84,7 @@ public class RankCommand implements SlashCommand {
     private String createProgressBar(double percent) {
         int filledBars = (int) (percent / 10);
         int emptyBars = 10 - filledBars;
-        return "â–°".repeat(Math.max(0, filledBars)) + "â–±".repeat(Math.max(0, emptyBars));
+        return "\u25B0".repeat(Math.max(0, filledBars)) + "\u25B1".repeat(Math.max(0, emptyBars));
     }
 
     private int getUserRank(String guildId, String userId) {

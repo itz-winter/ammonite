@@ -719,47 +719,65 @@ public class PrefixCommandService {
     private Map<String, String> parseArguments(String commandName, String[] args) {
         Map<String, String> options = new HashMap<>();
         List<String> positionalArgs = new ArrayList<>();
-        
+
         // args are already properly tokenized (quotes handled upstream in handlePrefixCommand),
         // so we iterate directly without re-joining and re-parsing.
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
-            
+
             if (arg.startsWith("--") && arg.length() > 2) {
-                // Long flag: --flag value
+                // Long flag: --flag [value]
                 String flag = arg.substring(2);
-                if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
-                    String value = args[i + 1];
-                    String optionName = mapFlagToOption(flag);
-                    options.put(optionName, value);
+                if (i + 1 < args.length && !isFlag(args[i + 1])) {
+                    options.put(mapFlagToOption(flag, commandName), args[i + 1]);
                     i++;
                 } else {
-                    // Flag with no value — treat as boolean flag
-                    String optionName = mapFlagToOption(flag);
-                    options.put(optionName, "true");
+                    // Boolean flag (no value following)
+                    options.put(mapFlagToOption(flag, commandName), "true");
                 }
-            } else if (arg.startsWith("-") && arg.length() > 1 && !arg.startsWith("--")) {
-                // Short flag: -f value
+            } else if (arg.startsWith("-") && arg.length() > 1 && !arg.startsWith("--")
+                    && !arg.matches("-\\d+(\\.\\d+)?")) {
+                // Short flag: -f [value]  (skip bare negative numbers like -5, -3.14)
                 String flag = arg.substring(1);
-                if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
-                    String value = args[i + 1];
-                    String optionName = mapFlagToOption(flag);
-                    options.put(optionName, value);
+                if (i + 1 < args.length && !isFlag(args[i + 1])) {
+                    options.put(mapFlagToOption(flag, commandName), args[i + 1]);
                     i++;
                 } else {
-                    String optionName = mapFlagToOption(flag);
-                    options.put(optionName, "true");
+                    options.put(mapFlagToOption(flag, commandName), "true");
                 }
-            } else if (!arg.startsWith("-")) {
-                // Positional argument
+            } else {
+                // Positional argument (includes negative numbers and bare non-flag tokens)
                 positionalArgs.add(arg);
             }
         }
-        
-        // Handle positional arguments based on command
+
+        // Fill in positional arguments for keys not already set by flags
         handlePositionalArguments(commandName, options, positionalArgs);
-        
+
         return options;
+    }
+
+    /**
+     * Returns true if {@code s} looks like a time duration string such as
+     * "7d", "2h", "30m", "1w", "45s", "1h30m", or plain "0" (permanent).
+     * Must start with a digit and end with a known unit letter (or be all digits).
+     */
+    private static boolean looksLikeDuration(String s) {
+        if (s == null || s.isEmpty()) return false;
+        // plain zero = permanent ban
+        if (s.equals("0")) return true;
+        // Must start with a digit and consist of digit+unit pairs only
+        return s.matches("\\d+[wdhms](\\d+[wdhms])*");
+    }
+
+    /**
+     * Returns true if {@code s} looks like a flag token (starts with - followed by
+     * a non-digit, or starts with --). Negative numbers like "-5" return false.
+     */
+    private static boolean isFlag(String s) {
+        if (s.startsWith("--") && s.length() > 2) return true;
+        if (s.startsWith("-") && s.length() > 1 && !s.matches("-\\d+(\\.\\d+)?")) return true;
+        return false;
     }
     
     /**
@@ -797,28 +815,107 @@ public class PrefixCommandService {
     }
     
     /**
-     * Map prefix command flags to slash command option names
+     * Map a flag name to a canonical option key, taking command context into account.
+     * Short flags that are ambiguous (e.g. -r = reason vs role) are resolved here.
+     */
+    private String mapFlagToOption(String flag, String commandName) {
+        String f = flag.toLowerCase();
+        // Command-specific overrides
+        switch (commandName.toLowerCase()) {
+            case "ban", "kick", "warn", "mute", "timeout", "softban",
+                 "unban", "unmute", "hist", "warns", "unwarn", "check" -> {
+                return switch (f) {
+                    case "u", "user"                   -> "user";
+                    case "r", "re", "rsn", "reason"    -> "reason";
+                    case "d", "dur", "duration"        -> "duration";
+                    case "m", "message", "msg"         -> "message";
+                    case "p", "page"                   -> "page";
+                    default -> mapFlagToOption(f);
+                };
+            }
+            case "rpc", "presence", "statusmsg", "status" -> {
+                return switch (f) {
+                    case "t", "type"     -> "type";
+                    case "a", "action"   -> "action";
+                    case "text"          -> "text";
+                    default -> mapFlagToOption(f);
+                };
+            }
+            case "antispam", "automod", "settings", "welcome",
+                 "logging", "autoconfig", "config" -> {
+                return switch (f) {
+                    case "a", "action"   -> "action";
+                    case "s", "setting"  -> "setting";
+                    case "v", "value"    -> "value";
+                    case "c", "channel"  -> "channel";
+                    default -> mapFlagToOption(f);
+                };
+            }
+            case "permissions" -> {
+                return switch (f) {
+                    case "t", "te", "target-entity" -> "target-entity";
+                    case "n", "node"                -> "node";
+                    case "r", "role"                -> "role";
+                    case "u", "user"                -> "user";
+                    case "v", "value"               -> "value";
+                    default -> mapFlagToOption(f);
+                };
+            }
+            case "reports" -> {
+                return switch (f) {
+                    case "q", "query"   -> "query";
+                    case "s", "sort"    -> "sort";
+                    case "p", "page"    -> "page";
+                    default -> mapFlagToOption(f);
+                };
+            }
+            case "pay", "addbalance", "add", "subtractbalance", "subtract", "setbalance" -> {
+                return switch (f) {
+                    case "u", "user"     -> "user";
+                    case "a", "amount"   -> "amount";
+                    default -> mapFlagToOption(f);
+                };
+            }
+            case "embed" -> {
+                return switch (f) {
+                    case "t", "title"       -> "title";
+                    case "d", "desc"        -> "description";
+                    case "c", "color"       -> "color";
+                    case "f", "footer"      -> "footer";
+                    case "i", "image"       -> "image";
+                    case "type"             -> "type";
+                    default -> mapFlagToOption(f);
+                };
+            }
+        }
+        return mapFlagToOption(f);
+    }
+
+    /**
+     * Global flag-to-option mapping (used as fallback from the command-aware overload).
      */
     private String mapFlagToOption(String flag) {
         return switch (flag.toLowerCase()) {
-            case "u", "user" -> "user";
-            case "r", "role" -> "role";
-            case "c", "channel" -> "channel";
-            case "m", "message", "msg" -> "message";
-            case "a", "amount" -> "amount";
-            case "time" -> "time";
-            case "reason" -> "reason";
-            case "p", "permission" -> "permission";
-            case "v", "value" -> "value";
-            case "action" -> "action";
-            case "type" -> "type";
-            case "category" -> "category";
-            case "id" -> "id";
-            // Permissions command specific flags
-            case "t", "te", "target-entity" -> "target-entity";
-            case "n", "node" -> "node";
-            case "target" -> "target";
-            default -> flag;
+            case "u", "user"                    -> "user";
+            case "r", "role"                    -> "role";
+            case "c", "channel"                 -> "channel";
+            case "m", "message", "msg"          -> "message";
+            case "a", "amount"                  -> "amount";
+            case "d", "dur", "duration"         -> "duration";
+            case "re", "rsn", "reason"          -> "reason";
+            case "time"                         -> "time";
+            case "p", "permission"              -> "permission";
+            case "v", "value"                   -> "value";
+            case "action"                       -> "action";
+            case "type"                         -> "type";
+            case "category"                     -> "category";
+            case "id"                           -> "id";
+            case "q", "query"                   -> "query";
+            case "s", "sort"                    -> "sort";
+            case "t", "te", "target-entity"     -> "target-entity";
+            case "n", "node"                    -> "node";
+            case "target"                       -> "target";
+            default                             -> flag;
         };
     }
     
@@ -831,173 +928,170 @@ public class PrefixCommandService {
         switch (commandName.toLowerCase()) {
             case "pay":
                 if (positionalArgs.size() >= 2) {
-                    options.put("user", positionalArgs.get(0));
-                    options.put("amount", positionalArgs.get(1));
+                    options.putIfAbsent("user", positionalArgs.get(0));
+                    options.putIfAbsent("amount", positionalArgs.get(1));
                 }
                 break;
             case "ban":
                 if (positionalArgs.size() >= 1) {
-                    options.put("user", positionalArgs.get(0));
+                    options.putIfAbsent("user", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        // Check if second arg looks like duration (contains d, h, m)
+                        // Check if second arg looks like a duration: e.g. "7d", "2h30m", "1w", "0"
                         String secondArg = positionalArgs.get(1);
-                        if (secondArg.matches(".*[dhm].*")) {
-                            options.put("duration", secondArg);
+                        if (looksLikeDuration(secondArg)) {
+                            options.putIfAbsent("duration", secondArg);
                             if (positionalArgs.size() >= 3) {
-                                options.put("reason", String.join(" ", positionalArgs.subList(2, positionalArgs.size())));
+                                options.putIfAbsent("reason", String.join(" ", positionalArgs.subList(2, positionalArgs.size())));
                             }
                         } else {
-                            // Treat everything as reason
-                            options.put("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                            options.putIfAbsent("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
                         }
                     }
                 }
                 break;
             case "kick", "warn":
                 if (positionalArgs.size() >= 1) {
-                    options.put("user", positionalArgs.get(0));
+                    options.putIfAbsent("user", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                        options.putIfAbsent("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
                     }
                 }
                 break;
             case "mute", "timeout":
                 if (positionalArgs.size() >= 1) {
-                    options.put("user", positionalArgs.get(0));
+                    options.putIfAbsent("user", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        // Check if second arg looks like duration (contains d, h, m, s, w)
                         String secondArg = positionalArgs.get(1);
-                        if (secondArg.matches(".*[dhmsw].*")) {
-                            options.put("duration", secondArg);
+                        if (looksLikeDuration(secondArg)) {
+                            options.putIfAbsent("duration", secondArg);
                             if (positionalArgs.size() >= 3) {
-                                options.put("reason", String.join(" ", positionalArgs.subList(2, positionalArgs.size())));
+                                options.putIfAbsent("reason", String.join(" ", positionalArgs.subList(2, positionalArgs.size())));
                             }
                         } else {
-                            // Treat everything as reason
-                            options.put("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                            options.putIfAbsent("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
                         }
                     }
                 }
                 break;
             case "echo", "talkas":
                 if (positionalArgs.size() >= 1) {
-                    options.put("message", String.join(" ", positionalArgs));
+                    options.putIfAbsent("message", String.join(" ", positionalArgs));
                 }
                 break;
             case "rank", "balance", "xp":
                 if (positionalArgs.size() >= 1) {
-                    options.put("user", positionalArgs.get(0));
+                    options.putIfAbsent("user", positionalArgs.get(0));
                 }
                 break;
             case "rules":
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("id", positionalArgs.get(1));
+                        options.putIfAbsent("id", positionalArgs.get(1));
                     }
                 }
                 break;
             case "gamble", "slots":
                 if (positionalArgs.size() >= 1) {
-                    options.put("amount", positionalArgs.get(0));
+                    options.putIfAbsent("amount", positionalArgs.get(0));
                 }
                 break;
             case "flip":
                 if (positionalArgs.size() >= 1) {
-                    options.put("amount", positionalArgs.get(0));
+                    options.putIfAbsent("amount", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("choice", positionalArgs.get(1));
+                        options.putIfAbsent("choice", positionalArgs.get(1));
                     }
                 }
                 break;
             case "dice":
                 if (positionalArgs.size() >= 1) {
-                    options.put("amount", positionalArgs.get(0));
+                    options.putIfAbsent("amount", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("guess", positionalArgs.get(1));
+                        options.putIfAbsent("guess", positionalArgs.get(1));
                     }
                 }
                 break;
             case "purge":
                 if (positionalArgs.size() >= 1) {
-                    options.put("amount", positionalArgs.get(0));
+                    options.putIfAbsent("amount", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("user", positionalArgs.get(1));
+                        options.putIfAbsent("user", positionalArgs.get(1));
                     }
                 }
                 break;
             case "automod":
                 // !automod <action> <feature> [threshold]
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("feature", positionalArgs.get(1));
+                        options.putIfAbsent("feature", positionalArgs.get(1));
                     }
                     if (positionalArgs.size() >= 3) {
-                        options.put("threshold", positionalArgs.get(2));
+                        options.putIfAbsent("threshold", positionalArgs.get(2));
                     }
                 }
                 break;
             case "ticket":
                 // !ticket <action> [reason/user]
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                        options.putIfAbsent("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
                     }
                 }
                 break;
             case "softban":
                 // !softban @user [reason]
                 if (positionalArgs.size() >= 1) {
-                    options.put("user", positionalArgs.get(0));
+                    options.putIfAbsent("user", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                        options.putIfAbsent("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
                     }
                 }
                 break;
             case "hist":
                 // !hist @user
                 if (positionalArgs.size() >= 1) {
-                    options.put("user", positionalArgs.get(0));
+                    options.putIfAbsent("user", positionalArgs.get(0));
                 }
                 break;
             case "warns":
                 // !warns [@user]
                 if (positionalArgs.size() >= 1) {
-                    options.put("user", positionalArgs.get(0));
+                    options.putIfAbsent("user", positionalArgs.get(0));
                 }
                 break;
             case "lockdown":
                 // !lockdown [#channel]
                 if (positionalArgs.size() >= 1) {
-                    options.put("channel", positionalArgs.get(0));
+                    options.putIfAbsent("channel", positionalArgs.get(0));
                 }
                 break;
             case "rob":
                 // !rob @user
                 if (positionalArgs.size() >= 1) {
-                    options.put("user", positionalArgs.get(0));
+                    options.putIfAbsent("user", positionalArgs.get(0));
                 }
                 break;
             case "blackjack":
                 // !blackjack <bet>
                 if (positionalArgs.size() >= 1) {
-                    options.put("bet", positionalArgs.get(0));
+                    options.putIfAbsent("bet", positionalArgs.get(0));
                 }
                 break;
             case "bank":
                 // !bank <setting> [action] [user] [amount]
                 if (positionalArgs.size() >= 1) {
-                    options.put("setting", positionalArgs.get(0));
+                    options.putIfAbsent("setting", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("action", positionalArgs.get(1));
+                        options.putIfAbsent("action", positionalArgs.get(1));
                     }
                     if (positionalArgs.size() >= 3) {
-                        options.put("user", positionalArgs.get(2));
+                        options.putIfAbsent("user", positionalArgs.get(2));
                     }
                     if (positionalArgs.size() >= 4) {
-                        options.put("amount", positionalArgs.get(3));
+                        options.putIfAbsent("amount", positionalArgs.get(3));
                     }
                 }
                 break;
@@ -1008,12 +1102,12 @@ public class PrefixCommandService {
                     // Support pipe separator: !embed Title | Description
                     if (fullText.contains("|")) {
                         String[] splitParts = fullText.split("\\|", 2);
-                        options.put("title", splitParts[0].trim());
+                        options.putIfAbsent("title", splitParts[0].trim());
                         if (splitParts.length > 1) {
-                            options.put("description", splitParts[1].trim());
+                            options.putIfAbsent("description", splitParts[1].trim());
                         }
                     } else {
-                        options.put("title", fullText);
+                        options.putIfAbsent("title", fullText);
                     }
                 }
                 break;
@@ -1021,26 +1115,26 @@ public class PrefixCommandService {
             case "statusmsg":
                 // !statusmsg [message...] (all args are the status message)
                 if (positionalArgs.size() >= 1) {
-                    options.put("message", String.join(" ", positionalArgs));
+                    options.putIfAbsent("message", String.join(" ", positionalArgs));
                 }
                 break;
             case "rpc":
                 // !rpc <action> [type] [text...]
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
                         // Check if second arg is a known type
                         String secondArg = positionalArgs.get(1).toLowerCase();
                         if (secondArg.equals("playing") || secondArg.equals("watching") || 
                             secondArg.equals("listening") || secondArg.equals("streaming") || 
                             secondArg.equals("competing")) {
-                            options.put("type", secondArg);
+                            options.putIfAbsent("type", secondArg);
                             if (positionalArgs.size() >= 3) {
-                                options.put("text", String.join(" ", positionalArgs.subList(2, positionalArgs.size())));
+                                options.putIfAbsent("text", String.join(" ", positionalArgs.subList(2, positionalArgs.size())));
                             }
                         } else {
                             // No type specified, everything after action is text
-                            options.put("text", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                            options.putIfAbsent("text", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
                         }
                     }
                 }
@@ -1048,101 +1142,101 @@ public class PrefixCommandService {
             case "appearance":
                 // !appearance <status>
                 if (positionalArgs.size() >= 1) {
-                    options.put("status", positionalArgs.get(0));
+                    options.putIfAbsent("status", positionalArgs.get(0));
                 }
                 break;
             case "backup":
                 // !backup <action> [timestamp]
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("timestamp", positionalArgs.get(1));
+                        options.putIfAbsent("timestamp", positionalArgs.get(1));
                     }
                 }
                 break;
             case "config":
                 // !config [action]
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                 }
                 break;
             // Music command positional arguments
             case "play":
                 // !play <query...> [index] — handled specially in handler via raw args
                 if (positionalArgs.size() >= 1) {
-                    options.put("query", String.join(" ", positionalArgs));
+                    options.putIfAbsent("query", String.join(" ", positionalArgs));
                 }
                 break;
             case "skip":
                 // !skip [count]
                 if (positionalArgs.size() >= 1) {
-                    options.put("count", positionalArgs.get(0));
+                    options.putIfAbsent("count", positionalArgs.get(0));
                 }
                 break;
             case "volume":
                 // !volume [level]
                 if (positionalArgs.size() >= 1) {
-                    options.put("level", positionalArgs.get(0));
+                    options.putIfAbsent("level", positionalArgs.get(0));
                 }
                 break;
             case "prefix":
                 // !prefix <action> [prefix]
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("prefix", positionalArgs.get(1));
+                        options.putIfAbsent("prefix", positionalArgs.get(1));
                     }
                 }
                 break;
             case "flags":
                 // !flags [action] [flag]
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("flag", positionalArgs.get(1));
+                        options.putIfAbsent("flag", positionalArgs.get(1));
                     }
                 }
                 break;
             case "pronouns":
                 // !pronouns <action> [pronoun1/pronoun2/...]
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("pronouns", String.join("/", positionalArgs.subList(1, positionalArgs.size())));
+                        options.putIfAbsent("pronouns", String.join("/", positionalArgs.subList(1, positionalArgs.size())));
                     }
                 }
                 break;
             case "welcome":
                 // !welcome <action> [value]
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("value", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                        options.putIfAbsent("value", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
                     }
                 }
                 break;
             case "logging":
                 // !logging <type> [channel]
                 if (positionalArgs.size() >= 1) {
-                    options.put("type", positionalArgs.get(0));
+                    options.putIfAbsent("type", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("channel", positionalArgs.get(1));
+                        options.putIfAbsent("channel", positionalArgs.get(1));
                     }
                 }
                 break;
             case "log":
                 // !log <type> <message...>
                 if (positionalArgs.size() >= 2) {
-                    options.put("type", positionalArgs.get(0));
-                    options.put("message", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                    options.putIfAbsent("type", positionalArgs.get(0));
+                    options.putIfAbsent("message", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
                 }
                 break;
             case "antispam":
                 // !antispam <setting> [threshold]
                 if (positionalArgs.size() >= 1) {
-                    options.put("setting", positionalArgs.get(0));
+                    options.putIfAbsent("setting", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("threshold", positionalArgs.get(1));
+                        options.putIfAbsent("threshold", positionalArgs.get(1));
                     }
                 }
                 break;
@@ -1150,7 +1244,7 @@ public class PrefixCommandService {
             case "points":
                 // !levels <enable/disable>
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                 }
                 break;
             case "support":
@@ -1159,34 +1253,34 @@ public class PrefixCommandService {
             case "chess":
                 // !chess [opponent]
                 if (positionalArgs.size() >= 1) {
-                    options.put("opponent", positionalArgs.get(0));
+                    options.putIfAbsent("opponent", positionalArgs.get(0));
                 }
                 break;
             case "poker":
                 // !poker <bet>
                 if (positionalArgs.size() >= 1) {
-                    options.put("bet", positionalArgs.get(0));
+                    options.putIfAbsent("bet", positionalArgs.get(0));
                 }
                 break;
             case "announce":
                 // !announce [message...] — all remaining positional args = the message
                 // Also works with -m "message" or --message "message"
                 if (positionalArgs.size() >= 1) {
-                    options.put("message", String.join(" ", positionalArgs));
+                    options.putIfAbsent("message", String.join(" ", positionalArgs));
                 }
                 break;
             case "check":
                 // !check @user or !check 123456789
                 if (positionalArgs.size() >= 1) {
-                    options.put("user", positionalArgs.get(0));
+                    options.putIfAbsent("user", positionalArgs.get(0));
                 }
                 break;
             case "reports":
                 // !reports [subcommand] [query]
                 if (positionalArgs.size() >= 1) {
-                    options.put("subcommand", positionalArgs.get(0));
+                    options.putIfAbsent("subcommand", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("query", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                        options.putIfAbsent("query", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
                     }
                 }
                 break;
@@ -1194,47 +1288,47 @@ public class PrefixCommandService {
             case "subtract":
                 // !add @user 1000  /  !subtract @user 500
                 if (positionalArgs.size() >= 1) {
-                    options.put("user", positionalArgs.get(0));
+                    options.putIfAbsent("user", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("amount", positionalArgs.get(1));
+                        options.putIfAbsent("amount", positionalArgs.get(1));
                     }
                 }
                 break;
             case "chargeback":
                 // !chargeback <transactionId> [reason...]
                 if (positionalArgs.size() >= 1) {
-                    options.put("transactionid", positionalArgs.get(0));
+                    options.putIfAbsent("transactionid", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
+                        options.putIfAbsent("reason", String.join(" ", positionalArgs.subList(1, positionalArgs.size())));
                     }
                 }
                 break;
             case "rolepersistence":
                 // !rolepersistence [enable|disable|status|clear]
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                 }
                 break;
             case "punishment-dm":
                 // !punishmentdm [enable|disable|status]
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                 }
                 break;
             case "suspiciousnotify":
                 // !suspiciousnotify [enable|disable|status]
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                 }
                 break;
             case "servermessages":
                 // !servermessages [list|set <key> <value>]
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("key", positionalArgs.get(1));
+                        options.putIfAbsent("key", positionalArgs.get(1));
                         if (positionalArgs.size() >= 3) {
-                            options.put("value", String.join(" ", positionalArgs.subList(2, positionalArgs.size())));
+                            options.putIfAbsent("value", String.join(" ", positionalArgs.subList(2, positionalArgs.size())));
                         }
                     }
                 }
@@ -1242,11 +1336,11 @@ public class PrefixCommandService {
             case "playlist":
                 // !playlist [action] [name] [args...]
                 if (positionalArgs.size() >= 1) {
-                    options.put("action", positionalArgs.get(0));
+                    options.putIfAbsent("action", positionalArgs.get(0));
                     if (positionalArgs.size() >= 2) {
-                        options.put("name", positionalArgs.get(1));
+                        options.putIfAbsent("name", positionalArgs.get(1));
                         if (positionalArgs.size() >= 3) {
-                            options.put("args", String.join(" ", positionalArgs.subList(2, positionalArgs.size())));
+                            options.putIfAbsent("args", String.join(" ", positionalArgs.subList(2, positionalArgs.size())));
                         }
                     }
                 }
@@ -1254,13 +1348,13 @@ public class PrefixCommandService {
             case "suspiciouslist":
                 // !suspiciouslist [page]
                 if (positionalArgs.size() >= 1) {
-                    options.put("page", positionalArgs.get(0));
+                    options.putIfAbsent("page", positionalArgs.get(0));
                 }
                 break;
             default:
                 // For other commands, put the first positional arg as "target"
                 if (positionalArgs.size() >= 1) {
-                    options.put("target", positionalArgs.get(0));
+                    options.putIfAbsent("target", positionalArgs.get(0));
                 }
                 break;
         }

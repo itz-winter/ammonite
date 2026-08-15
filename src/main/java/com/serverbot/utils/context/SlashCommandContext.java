@@ -133,15 +133,10 @@ public class SlashCommandContext extends CommandContext {
 
     @Override
     public void reply(MessageEmbed embed) {
-        Button shareBtn = EmbedUtils.shareButton(event.getUser().getId());
         if (deferred) {
-            event.getHook().sendMessageEmbeds(embed)
-                    .setComponents(ActionRow.of(shareBtn))
-                    .queue();
+            event.getHook().sendMessageEmbeds(embed).queue();
         } else {
-            event.replyEmbeds(embed)
-                    .setComponents(ActionRow.of(shareBtn))
-                    .queue();
+            event.replyEmbeds(embed).queue();
         }
     }
 
@@ -187,10 +182,7 @@ public class SlashCommandContext extends CommandContext {
 
     @Override
     public void sendFollowup(MessageEmbed embed) {
-        Button shareBtn = EmbedUtils.shareButton(event.getUser().getId());
-        event.getHook().sendMessageEmbeds(embed)
-                .setComponents(ActionRow.of(shareBtn))
-                .queue();
+        event.getHook().sendMessageEmbeds(embed).queue();
     }
 
     @Override

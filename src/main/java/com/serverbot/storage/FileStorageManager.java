@@ -1556,11 +1556,11 @@ public class FileStorageManager {
 
     /**
      * Whether the user prefers ephemeral (private) command responses.
-     * Default: {@code true} — responses are ephemeral unless the user explicitly disables it.
+     * Default: {@code false} — responses are public unless the user explicitly enables it.
      */
     public boolean getUserEphemeralPreference(String userId) {
         Object val = getUserPrefs(userId).get("ephemeralEnabled");
-        if (val == null) return true; // default: ephemeral ON
+        if (val == null) return false; // default: public
         return Boolean.TRUE.equals(val);
     }
 
