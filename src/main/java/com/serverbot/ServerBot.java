@@ -178,6 +178,7 @@ public class ServerBot {
                             new TicketListener(),
                             new PunishmentAppealListener(),
                             new AppealModalListener(),
+                            new com.serverbot.listeners.BugReportModalListener(),
                             new ProxyListener(),
                             new AutoLogListener(),
                             new SuspiciousAccountListener(),

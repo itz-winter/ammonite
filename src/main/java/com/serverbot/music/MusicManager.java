@@ -50,6 +50,27 @@ public class MusicManager {
         playerManager.registerSourceManager(ytSourceManager);
         logger.info("Registered youtube-source plugin (dev.lavalink.youtube) with search enabled");
 
+        // Enable OAuth so YouTube doesn't block requests as bot traffic.
+        // If a saved refresh token exists in config.json (youtube_oauth_refresh_token),
+        // it is supplied directly and the interactive device-code flow is skipped.
+        // Otherwise, the library prints a one-time URL + code to the console — open it,
+        // sign in with a BURNER account, and the refresh token is logged; paste it into
+        // config.json so future restarts skip the flow entirely.
+        try {
+            String refreshToken = com.serverbot.ServerBot.getConfigManager().getConfig()
+                    .getYoutubeOauthRefreshToken();
+            boolean hasToken = refreshToken != null && !refreshToken.isBlank();
+            ytSourceManager.useOauth2(hasToken ? refreshToken : null, false);
+            if (hasToken) {
+                logger.info("YouTube OAuth initialised with stored refresh token (flow skipped)");
+            } else {
+                logger.info("YouTube OAuth: no refresh token found — complete the device-code flow " +
+                        "printed above, then save the token to youtube_oauth_refresh_token in config.json");
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to initialise YouTube OAuth (playback may be degraded): {}", e.getMessage());
+        }
+
         // Register Spotify source if credentials are configured.
         // Spotify is a "mirroring" source — it resolves track metadata from Spotify's
         // API,

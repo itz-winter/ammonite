@@ -55,6 +55,9 @@ public class BotConfig {
     @SerializedName("spotify_country_code")
     private String spotifyCountryCode = "US";
 
+    @SerializedName("youtube_oauth_refresh_token")
+    private String youtubeOauthRefreshToken = "";
+
     public String getBotToken() {
         return botToken;
     }
@@ -209,5 +212,13 @@ public class BotConfig {
 
     public void setSpotifyCountryCode(String spotifyCountryCode) {
         this.spotifyCountryCode = spotifyCountryCode;
+    }
+
+    public String getYoutubeOauthRefreshToken() {
+        return youtubeOauthRefreshToken;
+    }
+
+    public void setYoutubeOauthRefreshToken(String youtubeOauthRefreshToken) {
+        this.youtubeOauthRefreshToken = youtubeOauthRefreshToken;
     }
 }

@@ -58,7 +58,7 @@
         <dependency>
             <groupId>dev.lavalink.youtube</groupId>
             <artifactId>v2</artifactId>
-            <version>1.18.0</version>
+            <version>1.18.2</version>
         </dependency>
 
         <!-- LavaSrc - Spotify, Apple Music, and other source managers for LavaPlayer -->
