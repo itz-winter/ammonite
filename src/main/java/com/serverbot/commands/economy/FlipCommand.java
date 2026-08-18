@@ -41,12 +41,14 @@ public class FlipCommand implements SlashCommand {
             String userId = event.getUser().getId();
 
             long currentBalance = ServerBot.getStorageManager().getBalance(guildId, userId);
+            String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
+            String currencyIcon = ServerBot.getStorageManager().getCurrencyIcon(guildId);
 
             if (currentBalance < betAmount) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Insufficient Funds",
-                        "You don't have enough points to place this bet.\n" +
-                                "Your balance: " + currentBalance + " points"))
+                        "You don't have enough " + currencyName + " to place this bet.\n" +
+                                "Your balance: " + currentBalance + " " + currencyName))
                         .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
@@ -67,9 +69,9 @@ public class FlipCommand implements SlashCommand {
                         "🪙 Coin Flip - YOU WON! 🎉",
                         "**Your Prediction:** " + predictionEmoji + " " + prediction.toUpperCase() + "\n" +
                                 "**Coin Result:** " + resultEmoji + " " + result.toUpperCase() + "\n" +
-                                "**Bet Amount:** " + betAmount + " points\n" +
-                                "**Winnings:** +" + winnings + " points\n" +
-                                "**New Balance:** " + newBalance + " points"))
+                                "**Bet Amount:** " + betAmount + " " + currencyName + "\n" +
+                                "**Winnings:** +" + winnings + " " + currencyName + "\n" +
+                                "**New Balance:** " + currencyIcon + " " + newBalance + " " + currencyName))
                         .queue();
             } else {
                 // Subtract the bet amount
@@ -80,8 +82,8 @@ public class FlipCommand implements SlashCommand {
                         "🪙 Coin Flip - You Lost",
                         "**Your Prediction:** " + predictionEmoji + " " + prediction.toUpperCase() + "\n" +
                                 "**Coin Result:** " + resultEmoji + " " + result.toUpperCase() + "\n" +
-                                "**Lost Amount:** " + betAmount + " points\n" +
-                                "**New Balance:** " + newBalance + " points"))
+                                "**Lost Amount:** " + betAmount + " " + currencyName + "\n" +
+                                "**New Balance:** " + currencyIcon + " " + newBalance + " " + currencyName))
                         .queue();
             }
 

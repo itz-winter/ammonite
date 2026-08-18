@@ -58,18 +58,19 @@ public class SubtractBalanceCommand implements SlashCommand {
             long newBalance = Math.max(0, currentBalance - amount);
             ServerBot.getStorageManager().setBalance(guildId, userId, newBalance);
 
+            String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                     "💰 Balance Updated",
                     "**User:** " + target.getAsMention() + "\n" +
-                            "**Subtracted:** " + amount + " points\n" +
-                            "**New Balance:** " + newBalance + " points\n" +
-                            "**Previous Balance:** " + currentBalance + " points"))
+                            "**Subtracted:** " + amount + " " + currencyName + "\n" +
+                            "**New Balance:** " + newBalance + " " + currencyName + "\n" +
+                            "**Previous Balance:** " + currentBalance + " " + currencyName))
                     .queue();
 
             // Log the action
             ServerBot.getStorageManager().logModerationAction(
                     guildId, userId, event.getUser().getId(),
-                    "BALANCE_SUBTRACT", "Subtracted " + amount + " points", String.valueOf(amount));
+                    "BALANCE_SUBTRACT", "Subtracted " + amount + " " + currencyName, String.valueOf(amount));
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(

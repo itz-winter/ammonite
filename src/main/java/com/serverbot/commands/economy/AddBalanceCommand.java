@@ -58,18 +58,19 @@ public class AddBalanceCommand implements SlashCommand {
             ServerBot.getStorageManager().addBalance(guildId, userId, amount);
             long newBalance = ServerBot.getStorageManager().getBalance(guildId, userId);
 
+            String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                     "Balance Updated",
                     "**User:** " + target.getAsMention() + "\n" +
-                            "**Added:** " + amount + " points\n" +
-                            "**New Balance:** " + newBalance + " points\n" +
-                            "**Previous Balance:** " + currentBalance + " points"))
+                            "**Added:** " + amount + " " + currencyName + "\n" +
+                            "**New Balance:** " + newBalance + " " + currencyName + "\n" +
+                            "**Previous Balance:** " + currentBalance + " " + currencyName))
                     .queue();
 
             // Log the action
             ServerBot.getStorageManager().logModerationAction(
                     guildId, userId, event.getUser().getId(),
-                    "BALANCE_ADD", "Added " + amount + " points", String.valueOf(amount));
+                    "BALANCE_ADD", "Added " + amount + " " + currencyName, String.valueOf(amount));
 
         } catch (Exception e) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(

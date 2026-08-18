@@ -47,12 +47,14 @@ public class DiceCommand implements SlashCommand {
             String userId = event.getUser().getId();
 
             long currentBalance = ServerBot.getStorageManager().getBalance(guildId, userId);
+            String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
+            String currencyIcon = ServerBot.getStorageManager().getCurrencyIcon(guildId);
 
             if (currentBalance < betAmount) {
                 event.replyEmbeds(EmbedUtils.createErrorEmbed(
                         "Insufficient Funds",
-                        "You don't have enough points to place this bet.\n" +
-                                "Your balance: " + currentBalance + " points"))
+                        "You don't have enough " + currencyName + " to place this bet.\n" +
+                                "Your balance: " + currentBalance + " " + currencyName))
                         .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
                 return;
             }
@@ -70,9 +72,9 @@ public class DiceCommand implements SlashCommand {
                         "🎲 Dice Roll - YOU WON! 🎉",
                         "**Your Prediction:** " + prediction + "\n" +
                                 "**Dice Result:** " + diceRoll + "\n" +
-                                "**Bet Amount:** " + betAmount + " points\n" +
-                                "**Winnings:** +" + winnings + " points\n" +
-                                "**New Balance:** " + newBalance + " points"))
+                                "**Bet Amount:** " + betAmount + " " + currencyName + "\n" +
+                                "**Winnings:** +" + winnings + " " + currencyName + "\n" +
+                                "**New Balance:** " + currencyIcon + " " + newBalance + " " + currencyName))
                         .queue();
             } else {
                 ServerBot.getStorageManager().removeBalance(guildId, userId, betAmount);
@@ -82,8 +84,8 @@ public class DiceCommand implements SlashCommand {
                         "🎲 Dice Roll - You Lost",
                         "**Your Prediction:** " + prediction + "\n" +
                                 "**Dice Result:** " + diceRoll + "\n" +
-                                "**Lost Amount:** " + betAmount + " points\n" +
-                                "**New Balance:** " + newBalance + " points"))
+                                "**Lost Amount:** " + betAmount + " " + currencyName + "\n" +
+                                "**New Balance:** " + currencyIcon + " " + newBalance + " " + currencyName))
                         .queue();
             }
 

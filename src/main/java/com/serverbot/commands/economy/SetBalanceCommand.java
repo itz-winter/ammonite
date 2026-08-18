@@ -56,11 +56,12 @@ public class SetBalanceCommand implements SlashCommand {
             // Set the new balance
             ServerBot.getStorageManager().setBalance(guildId, userId, amount);
 
+            String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
             event.replyEmbeds(EmbedUtils.createSuccessEmbed(
                     "💰 Balance Set",
                     "**User:** " + target.getAsMention() + "\n" +
-                            "**New Balance:** " + amount + " points\n" +
-                            "**Previous Balance:** " + currentBalance + " points"))
+                            "**New Balance:** " + amount + " " + currencyName + "\n" +
+                            "**Previous Balance:** " + currentBalance + " " + currencyName))
                     .queue();
 
             // Log the action

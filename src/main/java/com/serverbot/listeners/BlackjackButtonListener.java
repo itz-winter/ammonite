@@ -78,7 +78,8 @@ public class BlackjackButtonListener extends ListenerAdapter {
                     .setDescription("Choose your action!")
                     .addField("Your Hand (" + playerTotal + ")", game.formatPlayerCards(), true)
                     .addField("Dealer Shows", game.formatSingleCard(dealerShowing) + " + ?", true)
-                    .addField("Bet Amount", String.format("%,d coins", game.getEffectiveBet()), true);
+                    .addField("Bet Amount", String.format("%,d %s", game.getEffectiveBet(),
+                            ServerBot.getStorageManager().getCurrencyName(game.getGuildId())), true);
 
             Button hitButton = Button.primary("bj_hit_" + game.getGameId(), "Hit 🃏");
             Button standButton = Button.success("bj_stand_" + game.getGameId(), "Stand ✋");

@@ -62,11 +62,13 @@ public class BlackjackCommand implements SlashCommand {
         }
 
         long userBalance = ServerBot.getStorageManager().getBalance(guildId, user.getId());
+        String currencyName = ServerBot.getStorageManager().getCurrencyName(guildId);
+        String currencyIcon = ServerBot.getStorageManager().getCurrencyIcon(guildId);
 
         if (userBalance < points) {
             event.replyEmbeds(EmbedUtils.createErrorEmbed(
                     "Insufficient Funds",
-                    String.format("You only have %,d coins but tried to bet %,d coins.", userBalance, points)))
+                    String.format("You only have %,d %s but tried to bet %,d %s.", userBalance, currencyName, points, currencyName)))
                     .setEphemeral(true).setComponents(net.dv8tion.jda.api.components.actionrow.ActionRow.of(net.dv8tion.jda.api.components.buttons.Button.secondary("share_req:" + event.getUser().getId(), "\uD83D\uDCE4 Share"))).queue();
             return;
         }
